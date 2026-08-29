@@ -5,7 +5,7 @@ import { requestOtp, verifyOtp } from "./auth.service.js";
 import { requireAuth } from "./auth.middleware.js";
 import { User } from "../../models/User.js";
 
-const otpRequestLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: process.env.NODE_ENV === "test" ? 100 : 5 });
+const otpRequestLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: process.env.NODE_ENV === "test" ? 100 : 30 });
 
 export const authRouter = Router();
 
