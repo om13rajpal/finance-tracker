@@ -1,0 +1,9 @@
+packages:
+  - "web"
+  - "api"
+  - "shared"
+allowBuilds:
+  esbuild: true
+  mongodb-memory-server: true
+  msgpackr-extract: true
+  unrs-resolver: true

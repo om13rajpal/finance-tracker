@@ -1,0 +1,16 @@
+node_modules
+.env
+.env.local
+dist
+.next
+coverage
+*.log
+._*
+*.tsbuildinfo
+web/test-results
+web/playwright-report
+.worktrees
+.playwright-mcp
+# ad-hoc screenshots dropped at repo root by Playwright MCP verification runs —
+# scoped to root only (leading /) so real project assets under web/public/ etc. aren't affected
+/*.png

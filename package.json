@@ -1,0 +1,23 @@
+{
+  "name": "finance-tracker",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "test:api": "pnpm --filter api test",
+    "test:e2e": "pnpm --filter web test:e2e",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.6",
+    "@eslint/js": "^8.57.0",
+    "eslint": "8.57.1",
+    "eslint-config-next": "14.2.5",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.11.0",
+    "prettier": "^3.9.6",
+    "typescript-eslint": "^8.68.0"
+  }
+}
