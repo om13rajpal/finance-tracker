@@ -46,7 +46,7 @@ export async function recordSale(
   // effects" contract holdings-fifo.ts documents and callers (like the CSV
   // import's per-row failure isolation) rely on.
   const financialYear = financialYearFromDate(params.sellDate);
-  const { stcgHoldingDays } = await getCapitalGainsConfig(financialYear);
+  const { stcgHoldingDays, isDefault } = await getCapitalGainsConfig(financialYear);
 
   const matchedLots = await applySellFifo(userId, params.symbol, params.unitsSold);
 
@@ -69,6 +69,7 @@ export async function recordSale(
       gainAmount,
       classification,
       financialYear,
+      usedDefaultCapitalGainsConfig: isDefault,
     });
     events.push(event);
   }

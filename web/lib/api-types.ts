@@ -122,6 +122,26 @@ export interface ImportPdfEnqueuedResult {
   status: "processing";
 }
 
+// ── bulk-confirm (async) ────────────────────────────────────────────────────
+
+export interface BulkConfirmEnqueuedResult {
+  batchId: string;
+  status: "processing";
+}
+
+export interface BulkConfirmBatchResult {
+  _id: string;
+  status: "processing" | "completed" | "failed";
+  total: number;
+  results: {
+    id: string;
+    status: "success" | "skipped";
+    reason?: "not_found" | "account_required" | "possible_duplicate";
+    transactionId?: string;
+  }[];
+  error?: string | null;
+}
+
 // ── statement passwords ────────────────────────────────────────────────────
 
 /**
@@ -275,6 +295,10 @@ export interface BuyHoldingResult {
 export interface SellHoldingResult {
   events: SellEventRow[];
   transaction: Transaction | null;
+  // True when no tax slab config existed for the sell's financial year, so
+  // classification used the built-in statutory default (still correct under
+  // current law, just not a config anyone explicitly confirmed).
+  usedDefaultConfig: boolean;
 }
 
 // ── goals ──────────────────────────────────────────────────────────────────

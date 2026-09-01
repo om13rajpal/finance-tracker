@@ -6,6 +6,31 @@ import { PendingTransaction } from "../../src/models/PendingTransaction.js";
 import { Transaction } from "../../src/models/Transaction.js";
 import { CategorizationRule } from "../../src/models/CategorizationRule.js";
 import { Account } from "../../src/models/Account.js";
+import { processBulkConfirm } from "../../src/jobs/workers/bulkConfirmPending.worker.js";
+
+/**
+ * `POST /bulk-confirm` only enqueues a job (see that route's own doc comment
+ * for why) — no worker runs during tests, so this drives the SAME
+ * `processBulkConfirm` the real "bulk-confirm-pending" BullMQ worker calls,
+ * directly, exactly the pattern `statementProcess.worker.reconciliation.test.ts`
+ * already uses for the equivalent PDF-import worker. Returns the finished
+ * batch via the real poll route, so this still exercises that route's own
+ * scoping/shape, not just the worker function in isolation.
+ */
+async function runBulkConfirm(cookie: string, userId: string, ids: string[]) {
+  const enqueueRes = await request(app).post("/pending-transactions/bulk-confirm").set("Cookie", cookie).send({ ids });
+  expect(enqueueRes.status).toBe(202);
+  await processBulkConfirm({ batchId: enqueueRes.body.batchId, userId, ids });
+  const batchRes = await request(app).get(`/pending-transactions/bulk-confirm/${enqueueRes.body.batchId}`).set("Cookie", cookie);
+  expect(batchRes.status).toBe(200);
+  expect(batchRes.body.status).toBe("completed");
+  return batchRes.body as {
+    _id: string;
+    status: string;
+    total: number;
+    results: { id: string; status: "success" | "skipped"; reason?: string; transactionId?: string }[];
+  };
+}
 
 function authCookie(userId = "user-1") {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET as string);
@@ -515,12 +540,46 @@ describe("pending transactions", () => {
   });
 
   describe("bulk actions", () => {
-    it("requires auth for bulk-reject and bulk-confirm", async () => {
+    it("requires auth for bulk-reject, bulk-confirm, and polling a bulk-confirm batch", async () => {
       const rejectRes = await request(app).post("/pending-transactions/bulk-reject").send({ ids: ["x"] });
       expect(rejectRes.status).toBe(401);
 
       const confirmRes = await request(app).post("/pending-transactions/bulk-confirm").send({ ids: ["x"] });
       expect(confirmRes.status).toBe(401);
+
+      const pollRes = await request(app).get("/pending-transactions/bulk-confirm/000000000000000000000000");
+      expect(pollRes.status).toBe(401);
+    });
+
+    it("bulk-confirm returns 202 with a batchId immediately, before any item is actually confirmed", async () => {
+      const userId = "user-bulk-confirm-async";
+      const cookie = authCookie(userId);
+      const pending = await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        amount: -100,
+        date: new Date("2026-08-16"),
+        merchant: "ASYNC TEST",
+        source: "email_parsed",
+      });
+
+      const res = await request(app)
+        .post("/pending-transactions/bulk-confirm")
+        .set("Cookie", cookie)
+        .send({ ids: [pending._id.toString()] });
+
+      expect(res.status).toBe(202);
+      expect(res.body.batchId).toBeTruthy();
+      expect(res.body.status).toBe("processing");
+      // Not yet touched — enqueueing does not itself process anything.
+      expect(await PendingTransaction.findById(pending._id)).not.toBeNull();
+    });
+
+    it("404s polling a nonexistent or another user's bulk-confirm batch", async () => {
+      const res = await request(app)
+        .get("/pending-transactions/bulk-confirm/000000000000000000000000")
+        .set("Cookie", authCookie("user-bulk-poll-404"));
+      expect(res.status).toBe(404);
     });
 
     it("rejects an empty ids array as a validation error", async () => {
@@ -603,14 +662,10 @@ describe("pending transactions", () => {
         source: "pdf_statement_parsed",
       });
 
-      const res = await request(app)
-        .post("/pending-transactions/bulk-confirm")
-        .set("Cookie", cookie)
-        .send({ ids: [a._id.toString(), b._id.toString()] });
+      const batch = await runBulkConfirm(cookie, userId, [a._id.toString(), b._id.toString()]);
 
-      expect(res.status).toBe(200);
-      expect(res.body.confirmedIds.sort()).toEqual([a._id.toString(), b._id.toString()].sort());
-      expect(res.body.skipped).toEqual([]);
+      expect(batch.results.every((r) => r.status === "success")).toBe(true);
+      expect(batch.results.map((r) => r.id).sort()).toEqual([a._id.toString(), b._id.toString()].sort());
 
       expect(await PendingTransaction.countDocuments({ userId })).toBe(0);
       expect(await Transaction.countDocuments({ userId })).toBe(2);
@@ -655,13 +710,10 @@ describe("pending transactions", () => {
         source: "email_parsed",
       });
 
-      const res = await request(app)
-        .post("/pending-transactions/bulk-confirm")
-        .set("Cookie", cookie)
-        .send({ ids: [a._id.toString(), b._id.toString(), needsAccount._id.toString()] });
+      const batch = await runBulkConfirm(cookie, userId, [a._id.toString(), b._id.toString(), needsAccount._id.toString()]);
 
-      expect(res.status).toBe(200);
-      expect(res.body.confirmedIds.sort()).toEqual([a._id.toString(), b._id.toString()].sort());
+      const succeeded = batch.results.filter((r) => r.status === "success").map((r) => r.id);
+      expect(succeeded.sort()).toEqual([a._id.toString(), b._id.toString()].sort());
 
       // 1000 - 450 - 120 = 430. The skipped 9999 must NOT be reflected.
       const updated = await Account.findById(account._id);
@@ -716,23 +768,18 @@ describe("pending transactions", () => {
         source: "email_parsed",
       });
 
-      const res = await request(app)
-        .post("/pending-transactions/bulk-confirm")
-        .set("Cookie", cookie)
-        .send({
-          ids: [
-            needsAccount._id.toString(),
-            duplicate._id.toString(),
-            notMine._id.toString(),
-            fine._id.toString(),
-          ],
-        });
+      const batch = await runBulkConfirm(cookie, userId, [
+        needsAccount._id.toString(),
+        duplicate._id.toString(),
+        notMine._id.toString(),
+        fine._id.toString(),
+      ]);
 
-      expect(res.status).toBe(200);
-      expect(res.body.confirmedIds).toEqual([fine._id.toString()]);
+      const succeeded = batch.results.filter((r) => r.status === "success").map((r) => r.id);
+      expect(succeeded).toEqual([fine._id.toString()]);
 
       const skippedByReason = Object.fromEntries(
-        res.body.skipped.map((s: { id: string; reason: string }) => [s.id, s.reason])
+        batch.results.filter((r) => r.status === "skipped").map((r) => [r.id, r.reason])
       );
       expect(skippedByReason[needsAccount._id.toString()]).toBe("account_required");
       expect(skippedByReason[duplicate._id.toString()]).toBe("possible_duplicate");

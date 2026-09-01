@@ -17,9 +17,39 @@ export interface CapitalGainsEquityConfig {
   stcgRate: number | null;
   ltcgRate: number | null;
   ltcgExemptionLimit: number;
+  /** True when no `TaxSlabConfig` exists for the FY and this is the built-in
+   * statutory fallback below, not a user-confirmed config. */
+  isDefault: boolean;
 }
 
 const EQUITY_FIELDS = ["stcgHoldingDays", "stcgRate", "ltcgRate", "ltcgExemptionLimit"] as const;
+
+/**
+ * The current statutory equity capital-gains rule (365-day STCG threshold,
+ * 20%/12.5% rates, ₹1,25,000 LTCG exemption per FY — the rule set by the
+ * July 2024 Union Budget, unchanged since). Used ONLY as a fallback when a
+ * financial year has no `TaxSlabConfig` document yet.
+ *
+ * This narrow rule (needed just to classify a sale as STCG/LTCG) is
+ * deliberately NOT the same thing as "the full tax slab config is
+ * optional" — income-tax slabs, rebate limits, and 80C figures genuinely do
+ * change every Budget and still hard-require an explicit, human-confirmed
+ * `TaxSlabConfig` wherever they're used (`getSlabConfig`, untouched by this
+ * fallback). The STCG/LTCG holding-period rule is comparatively stable law,
+ * and gating an unrelated feature (recording a sale at all) behind a
+ * document nobody has any UI to create was a real production bug: every
+ * `POST /holdings/sell` 404'd once the seeded FY2025-26 config aged out.
+ * Still verify against the current FY's actual notification before relying
+ * on this for anything beyond "did this sale happen" — see
+ * `usedDefaultCapitalGainsConfig` on `SellEvent`, stamped whenever this
+ * fallback is what classified a sale.
+ */
+const DEFAULT_EQUITY_CAPITAL_GAINS: Omit<CapitalGainsEquityConfig, "isDefault"> = {
+  stcgHoldingDays: 365,
+  stcgRate: 0.2,
+  ltcgRate: 0.125,
+  ltcgExemptionLimit: 125000,
+};
 
 /**
  * Resolves the FY's canonical equity capital gains rules.
@@ -37,10 +67,17 @@ const EQUITY_FIELDS = ["stcgHoldingDays", "stcgRate", "ltcgRate", "ltcgExemption
  * requires their `capitalGains.equity` blocks to agree, failing loudly (409) if they
  * don't. Because the block is regime-independent, a single regime's document is
  * enough — classification does not hard-depend on the "new" document existing.
+ *
+ * When NO config exists for the FY at all, this falls back to
+ * `DEFAULT_EQUITY_CAPITAL_GAINS` (`isDefault: true`) instead of throwing — see
+ * that constant's doc comment for why. A drift between two EXISTING regime
+ * documents still throws (409): that's always a data-entry error worth
+ * surfacing loudly, unlike simply not having gotten around to configuring
+ * this FY yet.
  */
 export async function getCapitalGainsConfig(financialYear: string): Promise<CapitalGainsEquityConfig> {
   const configs = await TaxSlabConfig.find({ financialYear });
-  const present: { regime: string; equity: CapitalGainsEquityConfig }[] = [];
+  const present: { regime: string; equity: Omit<CapitalGainsEquityConfig, "isDefault"> }[] = [];
   for (const config of configs) {
     const equity = config.capitalGains?.equity;
     if (!equity) continue;
@@ -56,11 +93,7 @@ export async function getCapitalGainsConfig(financialYear: string): Promise<Capi
   }
 
   if (present.length === 0) {
-    const err = new Error(
-      `No tax slab config with a capitalGains.equity block found for FY ${financialYear}. Add one via POST /tax/slab-config before using this feature for that year.`
-    );
-    (err as any).status = 404;
-    throw err;
+    return { ...DEFAULT_EQUITY_CAPITAL_GAINS, isDefault: true };
   }
 
   const [canonical, ...rest] = present;
@@ -76,5 +109,5 @@ export async function getCapitalGainsConfig(financialYear: string): Promise<Capi
     }
   }
 
-  return canonical.equity;
+  return { ...canonical.equity, isDefault: false };
 }

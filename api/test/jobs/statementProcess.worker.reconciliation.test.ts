@@ -11,6 +11,8 @@ import { Account } from "../../src/models/Account.js";
 import { BalanceSnapshot } from "../../src/models/BalanceSnapshot.js";
 import { ImportBatch } from "../../src/models/ImportBatch.js";
 import { PendingTransaction } from "../../src/models/PendingTransaction.js";
+import { Transaction } from "../../src/models/Transaction.js";
+import { processBulkConfirm } from "../../src/jobs/workers/bulkConfirmPending.worker.js";
 
 function authCookie(userId: string) {
   return `token=${jwt.sign({ userId }, process.env.JWT_SECRET as string)}`;
@@ -384,12 +386,18 @@ describe("processStatementUpload — balance reconciliation staleness guard", ()
       expect((await Account.findById(account._id))!.currentBalance).toBe(40000);
 
       const pendingIds = (await PendingTransaction.find({ userId })).map((p) => p._id.toString());
-      const res = await request(app)
+      // Bulk-confirm now only enqueues a job (see pending.routes.ts's doc
+      // comment) — no worker runs during tests, so this drives
+      // `processBulkConfirm` directly, the same pattern this file already
+      // uses for `processStatementUpload` itself.
+      const enqueueRes = await request(app)
         .post("/pending-transactions/bulk-confirm")
         .set("Cookie", authCookie(userId))
         .send({ ids: pendingIds });
-      expect(res.status).toBe(200);
-      expect(res.body.confirmedIds).toHaveLength(2);
+      expect(enqueueRes.status).toBe(202);
+      await processBulkConfirm({ batchId: enqueueRes.body.batchId, userId, ids: pendingIds });
+      const confirmedCount = await Transaction.countDocuments({ userId });
+      expect(confirmedCount).toBe(2);
 
       // Still 40000 — bulk-confirming both rows must not add their 5000+35000
       // on top of a balance that already reflects them.

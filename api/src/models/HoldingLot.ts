@@ -13,6 +13,12 @@ const holdingLotSchema = new Schema({
   // auto-derived 80C contribution). Additive and optional — existing lots
   // default to false, no backfill required.
   isElss: { type: Boolean, default: false },
+  // The linked expense `Transaction` created when this lot was bought WITH a
+  // funding account (see POST /holdings) — null for a lot bought with no
+  // account, or one imported via CSV (Zerodha/Groww), which never had one.
+  // Lets a lot delete also delete + reverse its own funding transaction,
+  // rather than leaving an orphaned expense in the account's history.
+  transactionId: { type: String, default: null },
 });
 
 holdingLotSchema.index({ userId: 1, symbol: 1 });

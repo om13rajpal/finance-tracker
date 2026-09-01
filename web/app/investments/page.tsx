@@ -22,6 +22,7 @@ import { Field, FieldGrid, FormActions, MoneyInput, DateInput, Segmented, Select
 import {
   EmptyState,
   Helper,
+  IconButton,
   Notice,
   PageHeader,
   Panel,
@@ -58,6 +59,9 @@ import { useToast } from "@/components/ui/Toast";
  */
 
 export default function InvestmentsPage() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
   const holdings = useQuery({
     queryKey: ["holdings"],
     queryFn: () => apiFetch<Holding[]>("/holdings"),
@@ -69,6 +73,19 @@ export default function InvestmentsPage() {
   const accounts = useQuery({
     queryKey: ["accounts"],
     queryFn: () => apiFetch<Account[]>("/accounts"),
+  });
+
+  const deleteLot = useMutation({
+    mutationFn: (lotId: string) => apiFetch<void>(`/holding-lots/${lotId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["holdings"] });
+      queryClient.invalidateQueries({ queryKey: ["holding-lots"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      showToast("Holding deleted", "success");
+    },
+    onError: (e) => showToast((e as Error).message || "Could not delete that holding", "error"),
   });
 
   const rows = holdings.data ?? [];
@@ -235,36 +252,64 @@ export default function InvestmentsPage() {
                       <Th align="left" className="hidden sm:table-cell">
                         Platform
                       </Th>
+                      <Th align="right">
+                        <span className="sr-only">Delete</span>
+                      </Th>
                     </tr>
                   </thead>
                   <tbody>
-                    {lots.data!.items.map((lot) => (
-                      <tr key={lot._id} className="border-b border-rule last:border-b-0">
-                        <td className="py-10 pr-14 align-top">
-                          <span className="block break-words font-medium">{lot.symbol}</span>
-                          <span className="mt-2 block font-num text-micro uppercase tracking-micro text-dim sm:hidden">
-                            {formatDate(lot.buyDate)} · {formatPrice(lot.buyPrice)} · {lot.platform}
+                    {lots.data!.items.map((lot) => {
+                      // Only an untouched lot (nothing FIFO-matched off it yet)
+                      // can be deleted — see the route's own doc comment. A
+                      // partially/fully sold lot has SellEvents referencing it.
+                      const deletable = lot.remainingUnits === lot.units;
+                      return (
+                        <tr key={lot._id} className="border-b border-rule last:border-b-0">
+                          <td className="py-10 pr-14 align-top">
+                            <span className="block break-words font-medium">{lot.symbol}</span>
+                            <span className="mt-2 block font-num text-micro uppercase tracking-micro text-dim sm:hidden">
+                              {formatDate(lot.buyDate)} · {formatPrice(lot.buyPrice)} · {lot.platform}
+                              {lot.isElss ? " · ELSS" : ""}
+                            </span>
+                          </td>
+                          <td className="hidden py-10 pr-14 align-top font-num text-micro uppercase tracking-micro text-dim sm:table-cell">
+                            {formatDate(lot.buyDate)}
+                          </td>
+                          <td className="money py-10 pr-14 text-right align-top">
+                            {formatUnits(lot.remainingUnits)}
+                            {lot.remainingUnits !== lot.units ? (
+                              <span className="text-dim"> / {formatUnits(lot.units)}</span>
+                            ) : null}
+                          </td>
+                          <td className="money hidden py-10 pr-14 text-right align-top sm:table-cell">
+                            {formatPrice(lot.buyPrice)}
+                          </td>
+                          <td className="hidden py-10 pr-14 align-top font-num text-micro uppercase tracking-micro text-dim sm:table-cell">
+                            {lot.platform}
                             {lot.isElss ? " · ELSS" : ""}
-                          </span>
-                        </td>
-                        <td className="hidden py-10 pr-14 align-top font-num text-micro uppercase tracking-micro text-dim sm:table-cell">
-                          {formatDate(lot.buyDate)}
-                        </td>
-                        <td className="money py-10 pr-14 text-right align-top">
-                          {formatUnits(lot.remainingUnits)}
-                          {lot.remainingUnits !== lot.units ? (
-                            <span className="text-dim"> / {formatUnits(lot.units)}</span>
-                          ) : null}
-                        </td>
-                        <td className="money hidden py-10 pr-14 text-right align-top sm:table-cell">
-                          {formatPrice(lot.buyPrice)}
-                        </td>
-                        <td className="hidden py-10 align-top font-num text-micro uppercase tracking-micro text-dim sm:table-cell">
-                          {lot.platform}
-                          {lot.isElss ? " · ELSS" : ""}
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className="py-10 text-right align-top">
+                            {deletable ? (
+                              <IconButton
+                                icon="trash"
+                                label={`Delete ${lot.symbol} lot`}
+                                disabled={deleteLot.isPending}
+                                className="h-22 w-22 border-transparent text-dim hover:border-ink hover:text-alert"
+                                onClick={() => {
+                                  if (
+                                    window.confirm(
+                                      `Delete this ${lot.symbol} lot (${formatUnits(lot.units)} units)? This cannot be undone.`
+                                    )
+                                  ) {
+                                    deleteLot.mutate(lot._id);
+                                  }
+                                }}
+                              />
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </ScrollableTable>
@@ -368,10 +413,19 @@ function BuySellPanel({ accounts }: { accounts: Account[] }) {
   const sell = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
       apiFetch<SellHoldingResult>("/holdings/sell", { method: "POST", body: JSON.stringify(payload) }),
-    onSuccess: () => {
+    onSuccess: (result) => {
       invalidateAfterTrade();
       setForm(empty);
-      showToast("Sale recorded", "success");
+      // No confirmed tax slab config exists yet for this sale's financial
+      // year — it was still recorded correctly (using the current statutory
+      // STCG/LTCG rule), just flagging that nobody's confirmed a config for
+      // this FY specifically. See Settings/Tax for adding one.
+      showToast(
+        result.usedDefaultConfig
+          ? "Sale recorded (using the default tax rule — no confirmed config for this year yet)"
+          : "Sale recorded",
+        "success"
+      );
     },
     onError: (e) => showToast((e as Error).message || "Could not record that sale", "error"),
   });

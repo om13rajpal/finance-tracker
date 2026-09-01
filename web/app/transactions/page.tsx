@@ -12,6 +12,8 @@ import {
 import { API_BASE, ApiError, apiFetch } from "@/lib/api-client";
 import type {
   Account,
+  BulkConfirmBatchResult,
+  BulkConfirmEnqueuedResult,
   CategorizationSuggestion,
   CategoryNode,
   ImportBatchResult,
@@ -701,12 +703,6 @@ function CategorizationSuggestionsPanel({
 // The parser's queue
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** Response shape of `POST /pending-transactions/bulk-confirm`. */
-interface BulkConfirmResult {
-  confirmedIds: string[];
-  skipped: { id: string; reason: "not_found" | "account_required" | "possible_duplicate" }[];
-}
-
 function PendingPanel({
   items,
   accounts,
@@ -807,42 +803,85 @@ function PendingPanel({
     onError: () => showToast("Could not discard those", "error"),
   });
 
+  // Filing a large batch (a full statement's worth of pending rows — seen in
+  // production at 117 items) is several sequential DB round trips PER item,
+  // and used to run entirely inline in this one request: at scale that
+  // reliably exceeded the production request-timeout path and came back as a
+  // raw 502 with no feedback at all, even though the work kept running
+  // server-side and mostly succeeded. The route now just enqueues a batch
+  // and returns its id immediately; `bulkConfirmBatchQuery` below polls it
+  // until it's actually done, the same pattern `ImportPanel`'s PDF-statement
+  // upload already uses.
+  const [bulkConfirmBatchId, setBulkConfirmBatchId] = useState<string | null>(null);
+
   const bulkConfirm = useMutation({
     mutationFn: (ids: string[]) =>
-      apiFetch<BulkConfirmResult>("/pending-transactions/bulk-confirm", {
+      apiFetch<BulkConfirmEnqueuedResult>("/pending-transactions/bulk-confirm", {
         method: "POST",
         body: JSON.stringify({ ids }),
       }),
-    onSuccess: (result) => {
-      invalidate();
-      // Only the rows that actually got filed leave the selection — anything
-      // skipped (needs an account, looked like a duplicate) stays selected
-      // so it's still visibly picked out once the list re-renders with just
-      // that leftover handful, ready for the person to resolve individually.
-      setSelected(new Set(result.skipped.map((s) => s.id)));
-
-      if (result.skipped.length === 0) {
-        setBulkSkipNotice(null);
-        showToast(`Filed ${result.confirmedIds.length}`, "success");
-        return;
-      }
-      // A toast alone said this and then vanished — the banner below stays
-      // until the person dismisses it or fixes what it's pointing at, which
-      // is what actually answers "why didn't this one file."
-      setBulkSkipNotice({
-        needsAccount: result.skipped.filter((s) => s.reason === "account_required").length,
-        duplicates: result.skipped.filter((s) => s.reason === "possible_duplicate").length,
-      });
-      showToast(
-        result.confirmedIds.length > 0
-          ? `Filed ${result.confirmedIds.length}, ${result.skipped.length} still need${result.skipped.length === 1 ? "s" : ""} attention`
-          : `${result.skipped.length} still need${result.skipped.length === 1 ? "s" : ""} attention before they can be filed`
-      );
-    },
+    onSuccess: (result) => setBulkConfirmBatchId(result.batchId),
     onError: () => showToast("Could not file those", "error"),
   });
 
-  const bulkBusy = bulkReject.isPending || bulkConfirm.isPending;
+  const bulkConfirmBatchQuery = useQuery({
+    queryKey: ["bulk-confirm-batch", bulkConfirmBatchId],
+    queryFn: () => apiFetch<BulkConfirmBatchResult>(`/pending-transactions/bulk-confirm/${bulkConfirmBatchId}`),
+    enabled: bulkConfirmBatchId !== null,
+    refetchInterval: (query) => (query.state.data?.status === "processing" ? 1000 : false),
+  });
+
+  const bulkConfirmBatch = bulkConfirmBatchQuery.data;
+  const bulkConfirmProcessing = bulkConfirmBatchId !== null && (!bulkConfirmBatch || bulkConfirmBatch.status === "processing");
+
+  // Runs once, the moment a batch actually finishes — everything the old
+  // synchronous mutation's own onSuccess used to do inline, now driven off
+  // the poll instead of the enqueue response.
+  const notifiedBulkConfirmBatchId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!bulkConfirmBatch || bulkConfirmBatch.status === "processing") return;
+    if (notifiedBulkConfirmBatchId.current === bulkConfirmBatch._id) return;
+    notifiedBulkConfirmBatchId.current = bulkConfirmBatch._id;
+
+    if (bulkConfirmBatch.status === "failed") {
+      showToast(bulkConfirmBatch.error || "Could not file those", "error");
+      return;
+    }
+
+    invalidate();
+    const skipped = bulkConfirmBatch.results.filter((r) => r.status === "skipped");
+    const confirmedCount = bulkConfirmBatch.results.length - skipped.length;
+
+    // Only the rows that actually got filed leave the selection — anything
+    // skipped (needs an account, looked like a duplicate) stays selected
+    // so it's still visibly picked out once the list re-renders with just
+    // that leftover handful, ready for the person to resolve individually.
+    setSelected(new Set(skipped.map((s) => s.id)));
+
+    if (skipped.length === 0) {
+      setBulkSkipNotice(null);
+      showToast(`Filed ${confirmedCount}`, "success");
+      return;
+    }
+    // A toast alone said this and then vanished — the banner below stays
+    // until the person dismisses it or fixes what it's pointing at, which
+    // is what actually answers "why didn't this one file."
+    setBulkSkipNotice({
+      needsAccount: skipped.filter((s) => s.reason === "account_required").length,
+      duplicates: skipped.filter((s) => s.reason === "possible_duplicate").length,
+    });
+    showToast(
+      confirmedCount > 0
+        ? `Filed ${confirmedCount}, ${skipped.length} still need${skipped.length === 1 ? "s" : ""} attention`
+        : `${skipped.length} still need${skipped.length === 1 ? "s" : ""} attention before they can be filed`
+    );
+    // `invalidate`/`showToast` are recreated every render; the ref guard above
+    // is what actually makes this run once per finished batch, not this
+    // dependency array — same pattern as `ImportPanel`'s analogous effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bulkConfirmBatch]);
+
+  const bulkBusy = bulkReject.isPending || bulkConfirm.isPending || bulkConfirmProcessing;
 
   return (
     <Panel>
@@ -870,7 +909,7 @@ function PendingPanel({
               >
                 Discard {selected.size}
               </button>
-              <Button size="sm" busy={bulkConfirm.isPending} onClick={() => bulkConfirm.mutate([...selected])}>
+              <Button size="sm" busy={bulkConfirm.isPending || bulkConfirmProcessing} onClick={() => bulkConfirm.mutate([...selected])}>
                 File {selected.size}
               </Button>
             </div>

@@ -129,7 +129,12 @@ transactionsRouter.patch("/:id", async (req, res, next) => {
     });
     if (!transaction) return res.status(404).json({ error: "Not found" });
 
-    if (data.amount !== undefined && data.amount !== existing.amount) {
+    // A transaction confirmed from a reconciled statement import (or an
+    // email-balance reconciliation) never had its `amount` applied as a
+    // delta in the first place — see `balanceDeltaApplied` on the
+    // `Transaction` model — so adjusting the balance here would be applying
+    // a delta that was never there to begin with.
+    if (data.amount !== undefined && data.amount !== existing.amount && existing.balanceDeltaApplied !== false) {
       await applyBalanceDelta(userId, existing.accountId, data.amount - existing.amount);
     }
 
@@ -153,7 +158,13 @@ transactionsRouter.delete("/:id", async (req, res, next) => {
     if (!transaction) return res.status(404).json({ error: "Not found" });
 
     await Transaction.deleteOne({ _id: req.params.id, userId });
-    await applyBalanceDelta(userId, transaction.accountId, -transaction.amount);
+    // See `balanceDeltaApplied`'s doc comment on the Transaction model: only
+    // reverse a delta that was actually applied when this transaction was
+    // created. Reversing unconditionally used to move a reconciled account's
+    // balance in the WRONG direction, since there was no delta to undo.
+    if (transaction.balanceDeltaApplied !== false) {
+      await applyBalanceDelta(userId, transaction.accountId, -transaction.amount);
+    }
     await invalidateDashboardCache(userId);
     res.status(204).send();
   } catch (err) {

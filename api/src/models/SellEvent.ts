@@ -12,6 +12,14 @@ const sellEventSchema = new Schema({
   gainAmount: { type: Number, required: true },
   classification: { type: String, enum: ["STCG", "LTCG"], required: true },
   financialYear: { type: String, required: true },
+  // True when this sale's STCG/LTCG classification used the built-in
+  // statutory default (see `DEFAULT_EQUITY_CAPITAL_GAINS` in
+  // tax-slab.service.ts) because no `TaxSlabConfig` existed for
+  // `financialYear` at sell time, rather than a config someone explicitly
+  // confirmed via POST /tax/slab-config. Worth surfacing wherever capital
+  // gains are reported — the classification is very likely still correct
+  // (the holding-period rule is stable law), but hasn't been confirmed.
+  usedDefaultCapitalGainsConfig: { type: Boolean, default: false },
 });
 
 export const SellEvent = model("SellEvent", sellEventSchema);

@@ -193,6 +193,12 @@ export async function reconcileBalance(
  * synchronous, user-facing confirm request that has already created the real
  * `Transaction`, so failing the whole request over this side effect would be worse
  * than silently skipping it.
+ *
+ * Returns whether an incremental DELTA was applied (the third bullet above) as
+ * opposed to a reconciliation or nothing at all — the caller stamps this onto
+ * the new `Transaction`'s own `balanceDeltaApplied` field, so a later
+ * delete/amount-edit of that same transaction knows whether reversing/
+ * adjusting the balance by its `amount` is even correct.
  */
 export async function applyConfirmedTransactionBalanceEffect(
   userId: string,
@@ -201,12 +207,12 @@ export async function applyConfirmedTransactionBalanceEffect(
   emailBalance: number | null,
   asOf: Date,
   alreadyReconciledAtImport = false
-): Promise<void> {
-  if (alreadyReconciledAtImport) return;
+): Promise<boolean> {
+  if (alreadyReconciledAtImport) return false;
 
   if (emailBalance === null) {
     await applyBalanceDelta(userId, accountId, amount);
-    return;
+    return true;
   }
 
   try {
@@ -214,4 +220,5 @@ export async function applyConfirmedTransactionBalanceEffect(
   } catch (err) {
     if (!isCastError(err)) throw err;
   }
+  return false;
 }

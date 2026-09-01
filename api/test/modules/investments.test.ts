@@ -856,6 +856,130 @@ HCLTECH,03/08/2026,buy,2,1200
         const res = await request(app).post("/holdings/sell").send({});
         expect(res.status).toBe(401);
       });
+
+      // Regression: this used to 400 with a raw "No tax slab config..." error
+      // and no way to proceed, because nothing ever seeds a TaxSlabConfig for
+      // the current FY and there's no UI to create one — a hard production
+      // blocker on selling anything at all. Deliberately does NOT call
+      // seedCapitalGainsConfig().
+      it("still succeeds (using the statutory default) when no tax slab config exists for the FY, and flags usedDefaultConfig", async () => {
+        const userId = "user-sell-no-config";
+        const cookie = authCookie(userId);
+        await HoldingLot.create({
+          userId,
+          symbol: "SBIN",
+          platform: "zerodha",
+          instrumentType: "stock",
+          buyDate: new Date("2025-01-01"),
+          buyPrice: 500,
+          units: 10,
+          remainingUnits: 10,
+        });
+
+        const res = await request(app)
+          .post("/holdings/sell")
+          .set("Cookie", cookie)
+          .send({ symbol: "SBIN", instrumentType: "stock", sellDate: "2026-08-15", sellPrice: 600, unitsSold: 4 });
+
+        expect(res.status).toBe(201);
+        expect(res.body.usedDefaultConfig).toBe(true);
+        expect(res.body.events).toHaveLength(1);
+
+        const lot = await HoldingLot.findOne({ userId, symbol: "SBIN" });
+        expect(lot!.remainingUnits).toBe(6);
+      });
+    });
+
+    describe("DELETE /holding-lots/:id", () => {
+      it("deletes an untouched lot bought with no funding account", async () => {
+        const userId = "user-delete-lot-noaccount";
+        const cookie = authCookie(userId);
+        const lot = await HoldingLot.create({
+          userId,
+          symbol: "TESTQA",
+          platform: "zerodha",
+          instrumentType: "stock",
+          buyDate: new Date("2026-08-01"),
+          buyPrice: 1000,
+          units: 1,
+          remainingUnits: 1,
+        });
+
+        const res = await request(app).delete(`/holding-lots/${lot._id}`).set("Cookie", cookie);
+        expect(res.status).toBe(204);
+        expect(await HoldingLot.findById(lot._id)).toBeNull();
+      });
+
+      it("also deletes the linked funding Transaction and reverses its balance effect", async () => {
+        const userId = "user-delete-lot-withaccount";
+        const cookie = authCookie(userId);
+        const account = await createAccount(userId, 100000);
+
+        const buyRes = await request(app)
+          .post("/holdings")
+          .set("Cookie", cookie)
+          .send({
+            symbol: "TESTQA",
+            platform: "zerodha",
+            instrumentType: "stock",
+            buyDate: "2026-08-01",
+            buyPrice: 1000,
+            units: 1,
+            accountId: account._id.toString(),
+          });
+        expect((await Account.findById(account._id))!.currentBalance).toBe(99000);
+
+        const delRes = await request(app)
+          .delete(`/holding-lots/${buyRes.body.lot._id}`)
+          .set("Cookie", cookie);
+        expect(delRes.status).toBe(204);
+
+        expect(await HoldingLot.findById(buyRes.body.lot._id)).toBeNull();
+        expect(await Transaction.findById(buyRes.body.transaction._id)).toBeNull();
+        expect((await Account.findById(account._id))!.currentBalance).toBe(100000);
+      });
+
+      it("400s (and deletes nothing) when the lot has been partially sold", async () => {
+        const userId = "user-delete-lot-sold";
+        const cookie = authCookie(userId);
+        const lot = await HoldingLot.create({
+          userId,
+          symbol: "SBIN",
+          platform: "zerodha",
+          instrumentType: "stock",
+          buyDate: new Date("2025-01-01"),
+          buyPrice: 500,
+          units: 10,
+          remainingUnits: 6, // 4 already sold
+        });
+
+        const res = await request(app).delete(`/holding-lots/${lot._id}`).set("Cookie", cookie);
+        expect(res.status).toBe(400);
+        expect(await HoldingLot.findById(lot._id)).not.toBeNull();
+      });
+
+      it("404s for a nonexistent or another user's lot", async () => {
+        const attackerCookie = authCookie("delete-lot-attacker");
+        const lot = await HoldingLot.create({
+          userId: "delete-lot-owner",
+          symbol: "SBIN",
+          platform: "zerodha",
+          instrumentType: "stock",
+          buyDate: new Date("2026-08-01"),
+          buyPrice: 500,
+          units: 1,
+          remainingUnits: 1,
+        });
+
+        const res = await request(app).delete(`/holding-lots/${lot._id}`).set("Cookie", attackerCookie);
+        expect(res.status).toBe(404);
+        expect(await HoldingLot.findById(lot._id)).not.toBeNull();
+      });
+
+      it("401s without auth", async () => {
+        const res = await request(app).delete("/holding-lots/000000000000000000000000");
+        expect(res.status).toBe(401);
+      });
     });
   });
 

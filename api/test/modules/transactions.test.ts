@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { app } from "../../src/app.js";
 import { CategorizationRule } from "../../src/models/CategorizationRule.js";
 import { Account } from "../../src/models/Account.js";
+import { PendingTransaction } from "../../src/models/PendingTransaction.js";
 
 function authCookie(userId = "user-1") {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET as string);
@@ -372,6 +373,80 @@ describe("transactions", () => {
 
     const updated = await Account.findById(accountId);
     expect(updated!.currentBalance).toBe(1000);
+  });
+
+  // Regression: a statement import reconciles the account balance ONCE, from
+  // the statement's own printed closing balance — confirming an individual
+  // row from that import deliberately does NOT also apply its amount as a
+  // delta (see `balanceReconciledAtImport` on PendingTransaction and
+  // `applyConfirmedTransactionBalanceEffect`), to avoid double-counting.
+  // DELETE and the amount-PATCH used to be unaware of this and would
+  // unconditionally reverse/adjust by the transaction's amount anyway —
+  // wrongly un-applying a delta that was never applied in the first place,
+  // and moving the balance in the WRONG direction. Verified live against
+  // production: bulk-deleting statement-derived transactions pushed one
+  // account's balance UP by ~₹6.9L instead of down to zero.
+  it("does NOT reverse a balance delta on delete for a transaction confirmed from a reconciled statement import", async () => {
+    const userId = "user-balance-delete-reconciled";
+    const cookie = authCookie(userId);
+    const accountId = await createAccount(userId, 1000);
+
+    const pending = await PendingTransaction.create({
+      userId,
+      accountId,
+      amount: -300,
+      date: new Date("2026-08-10"),
+      merchant: "STATEMENT ROW",
+      source: "pdf_statement_parsed",
+      balanceReconciledAtImport: true,
+    });
+
+    const confirmRes = await request(app)
+      .post(`/pending-transactions/${pending._id}/confirm`)
+      .set("Cookie", cookie)
+      .send({});
+    expect(confirmRes.status).toBe(200);
+    // Confirming must not touch the balance — it was already reconciled at import.
+    expect((await Account.findById(accountId))!.currentBalance).toBe(1000);
+
+    const delRes = await request(app)
+      .delete(`/transactions/${confirmRes.body._id}`)
+      .set("Cookie", cookie);
+    expect(delRes.status).toBe(204);
+
+    // Bug: this used to become 1300 (applyBalanceDelta(-(-300)) = +300 applied
+    // to a delta that was never there), not the correct "unchanged" 1000.
+    expect((await Account.findById(accountId))!.currentBalance).toBe(1000);
+  });
+
+  it("does NOT adjust the balance on an amount-PATCH for a transaction confirmed from a reconciled statement import", async () => {
+    const userId = "user-balance-patch-reconciled";
+    const cookie = authCookie(userId);
+    const accountId = await createAccount(userId, 1000);
+
+    const pending = await PendingTransaction.create({
+      userId,
+      accountId,
+      amount: -300,
+      date: new Date("2026-08-10"),
+      merchant: "STATEMENT ROW",
+      source: "pdf_statement_parsed",
+      balanceReconciledAtImport: true,
+    });
+
+    const confirmRes = await request(app)
+      .post(`/pending-transactions/${pending._id}/confirm`)
+      .set("Cookie", cookie)
+      .send({});
+    expect(confirmRes.status).toBe(200);
+
+    const patchRes = await request(app)
+      .patch(`/transactions/${confirmRes.body._id}`)
+      .set("Cookie", cookie)
+      .send({ amount: -450 });
+    expect(patchRes.status).toBe(200);
+
+    expect((await Account.findById(accountId))!.currentBalance).toBe(1000);
   });
 
   it("returns 404 when deleting a nonexistent or another user's transaction", async () => {

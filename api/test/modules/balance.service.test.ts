@@ -189,9 +189,9 @@ describe("reconcileBalance", () => {
 });
 
 describe("applyConfirmedTransactionBalanceEffect", () => {
-  it("applies a plain delta when there is no emailBalance", async () => {
+  it("applies a plain delta when there is no emailBalance, and reports that a delta was applied", async () => {
     const account = await createAccount("user-effect-delta", "bank", 1000);
-    await applyConfirmedTransactionBalanceEffect(
+    const balanceDeltaApplied = await applyConfirmedTransactionBalanceEffect(
       "user-effect-delta",
       account._id.toString(),
       -300,
@@ -199,13 +199,14 @@ describe("applyConfirmedTransactionBalanceEffect", () => {
       new Date("2026-08-16")
     );
     expect((await Account.findById(account._id))!.currentBalance).toBe(700);
+    expect(balanceDeltaApplied).toBe(true);
   });
 
-  it("reconciles (SET, staleness-guarded) instead of applying a delta when emailBalance is present", async () => {
+  it("reconciles (SET, staleness-guarded) instead of applying a delta when emailBalance is present, and reports no delta was applied", async () => {
     const account = await createAccount("user-effect-reconcile", "bank", 1000);
     // If this were (incorrectly) treated as a plain delta, the result would be
     // 1000 + (-300) = 700, not the reconciled figure below.
-    await applyConfirmedTransactionBalanceEffect(
+    const balanceDeltaApplied = await applyConfirmedTransactionBalanceEffect(
       "user-effect-reconcile",
       account._id.toString(),
       -300,
@@ -213,13 +214,14 @@ describe("applyConfirmedTransactionBalanceEffect", () => {
       new Date("2026-08-16")
     );
     expect((await Account.findById(account._id))!.currentBalance).toBe(9500);
+    expect(balanceDeltaApplied).toBe(false);
   });
 
-  it("does NOT fall back to a plain delta when the emailBalance reconciliation is rejected as stale", async () => {
+  it("does NOT fall back to a plain delta when the emailBalance reconciliation is rejected as stale, and still reports no delta was applied", async () => {
     const account = await createAccount("user-effect-stale", "bank", 1000);
     await reconcileBalance("user-effect-stale", account._id.toString(), 9500, new Date("2026-08-20"), "statement_closing_balance");
 
-    await applyConfirmedTransactionBalanceEffect(
+    const balanceDeltaApplied = await applyConfirmedTransactionBalanceEffect(
       "user-effect-stale",
       account._id.toString(),
       -300,
@@ -229,11 +231,26 @@ describe("applyConfirmedTransactionBalanceEffect", () => {
     // Must remain exactly 9500 — not 9500-300=9200 (a fallback delta) and not 8000
     // (the stale reconciliation).
     expect((await Account.findById(account._id))!.currentBalance).toBe(9500);
+    expect(balanceDeltaApplied).toBe(false);
   });
 
-  it("tolerates a malformed accountId without throwing, even on the emailBalance path", async () => {
+  it("reports no delta was applied when alreadyReconciledAtImport is true, without touching the balance", async () => {
+    const account = await createAccount("user-effect-already-reconciled", "bank", 1000);
+    const balanceDeltaApplied = await applyConfirmedTransactionBalanceEffect(
+      "user-effect-already-reconciled",
+      account._id.toString(),
+      -300,
+      null,
+      new Date("2026-08-16"),
+      true
+    );
+    expect((await Account.findById(account._id))!.currentBalance).toBe(1000);
+    expect(balanceDeltaApplied).toBe(false);
+  });
+
+  it("tolerates a malformed accountId without throwing, even on the emailBalance path, and reports no delta was applied", async () => {
     await expect(
       applyConfirmedTransactionBalanceEffect("some-user", "not-a-valid-object-id", -300, 8000, new Date())
-    ).resolves.toBeUndefined();
+    ).resolves.toBe(false);
   });
 });

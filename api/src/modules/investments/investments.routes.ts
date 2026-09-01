@@ -83,18 +83,6 @@ investmentsRouter.post("/holdings", async (req, res, next) => {
     const buyDate = new Date(data.buyDate);
     const cost = Math.round(data.buyPrice * data.units * 100) / 100;
 
-    const lot = await HoldingLot.create({
-      userId,
-      symbol,
-      platform: data.platform,
-      instrumentType: data.instrumentType,
-      buyDate,
-      buyPrice: data.buyPrice,
-      units: data.units,
-      remainingUnits: data.units,
-      isElss: data.isElss ?? false,
-    });
-
     let transaction = null;
     if (data.accountId) {
       transaction = await Transaction.create({
@@ -110,6 +98,19 @@ investmentsRouter.post("/holdings", async (req, res, next) => {
       });
       await applyBalanceDelta(userId, data.accountId, -cost);
     }
+
+    const lot = await HoldingLot.create({
+      userId,
+      symbol,
+      platform: data.platform,
+      instrumentType: data.instrumentType,
+      buyDate,
+      buyPrice: data.buyPrice,
+      units: data.units,
+      remainingUnits: data.units,
+      isElss: data.isElss ?? false,
+      transactionId: transaction ? transaction._id.toString() : null,
+    });
 
     await invalidateDashboardCache(userId);
     res.status(201).json({ lot, transaction });
@@ -179,7 +180,57 @@ investmentsRouter.post("/holdings/sell", async (req, res, next) => {
     }
 
     await invalidateDashboardCache(userId);
-    res.status(201).json({ events, transaction });
+    res.status(201).json({
+      events,
+      transaction,
+      // See `usedDefaultCapitalGainsConfig` on SellEvent — surfaced here too
+      // so the UI can flag it immediately, not only on a later Tax-page visit.
+      usedDefaultConfig: events.some((e) => e.usedDefaultCapitalGainsConfig),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Deletes a HoldingLot the user never should have created (a mis-entered
+ * Buy) — and, if it was bought with a funding account, its linked expense
+ * `Transaction` too, reversing that account's balance the same way a plain
+ * transaction delete does.
+ *
+ * Only allowed while the lot is completely untouched by any sale
+ * (`remainingUnits === units`): once FIFO has matched units from it, one or
+ * more `SellEvent`s reference its `lotId` for capital-gains reporting —
+ * deleting it out from under those would leave orphaned/unexplainable
+ * records. There's no supported way to undo a sell in this app today, so a
+ * (partially) sold lot simply can't be deleted; only a completely unsold one.
+ */
+investmentsRouter.delete("/holding-lots/:id", async (req, res, next) => {
+  try {
+    const userId = (req as any).userId;
+    const lot = await HoldingLot.findOne({ _id: req.params.id, userId });
+    if (!lot) return res.status(404).json({ error: "Not found" });
+
+    if (lot.remainingUnits !== lot.units) {
+      return res.status(400).json({
+        error: "This holding has been sold (in full or in part) and can't be deleted — it has capital-gains history linked to it.",
+      });
+    }
+
+    await HoldingLot.deleteOne({ _id: lot._id });
+
+    if (lot.transactionId) {
+      const transaction = await Transaction.findOne({ _id: lot.transactionId, userId });
+      if (transaction) {
+        await Transaction.deleteOne({ _id: transaction._id });
+        if (transaction.balanceDeltaApplied !== false) {
+          await applyBalanceDelta(userId, transaction.accountId, -transaction.amount);
+        }
+      }
+    }
+
+    await invalidateDashboardCache(userId);
+    res.status(204).send();
   } catch (err) {
     next(err);
   }

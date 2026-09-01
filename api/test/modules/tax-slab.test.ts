@@ -19,17 +19,26 @@ function configFor(financialYear: string, regime: "old" | "new", equity: typeof 
 }
 
 describe("getCapitalGainsConfig", () => {
-  it("throws a 404-flagged error when no config exists for the FY at all", async () => {
-    await expect(getCapitalGainsConfig("2098-99")).rejects.toMatchObject({ status: 404 });
+  // Regression: this used to throw a 404 with no UI anywhere to create the
+  // config it was demanding, hard-blocking every sale for any FY nobody had
+  // manually seeded — see DEFAULT_EQUITY_CAPITAL_GAINS's doc comment.
+  it("falls back to the statutory default (flagged isDefault) when no config exists for the FY at all", async () => {
+    const cg = await getCapitalGainsConfig("2098-99");
+    expect(cg.isDefault).toBe(true);
+    expect(cg.stcgHoldingDays).toBe(365);
+    expect(cg.stcgRate).toBe(0.2);
+    expect(cg.ltcgRate).toBe(0.125);
+    expect(cg.ltcgExemptionLimit).toBe(125000);
   });
 
-  it("resolves from whichever single regime document exists (capital gains rules are regime-independent)", async () => {
+  it("resolves from whichever single regime document exists (capital gains rules are regime-independent), NOT flagged as default", async () => {
     // Only the "old" regime document exists — classification must still work rather
     // than hard-depending on the "new" document happening to be present.
     await TaxSlabConfig.create(configFor("2090-91", "old", EQUITY));
     const cg = await getCapitalGainsConfig("2090-91");
     expect(cg.stcgHoldingDays).toBe(365);
     expect(cg.ltcgExemptionLimit).toBe(125000);
+    expect(cg.isDefault).toBe(false);
   });
 
   it("returns the shared block when both regimes agree", async () => {
@@ -37,6 +46,7 @@ describe("getCapitalGainsConfig", () => {
     await TaxSlabConfig.create(configFor("2091-92", "new", EQUITY));
     const cg = await getCapitalGainsConfig("2091-92");
     expect(cg.stcgHoldingDays).toBe(365);
+    expect(cg.isDefault).toBe(false);
   });
 
   it("throws when the two regimes' capitalGains.equity blocks have drifted apart", async () => {

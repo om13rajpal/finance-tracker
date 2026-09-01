@@ -22,6 +22,7 @@ import {
   schedulePriceRetention,
 } from "./workers/priceRetention.worker.js";
 import { startStatementProcessWorker } from "./workers/statementProcess.worker.js";
+import { startBulkConfirmPendingWorker } from "./workers/bulkConfirmPending.worker.js";
 
 /**
  * The subset of BullMQ's `Worker<T>` interface callers of
@@ -72,10 +73,10 @@ async function startOne<T>(
 }
 
 /**
- * Starts all 8 background BullMQ workers (price-refresh, price-refresh-fanout,
+ * Starts all 9 background BullMQ workers (price-refresh, price-refresh-fanout,
  * recurring-due, gmail-watch-renewal, gmail-email-parse, monthly-rollup,
- * price-retention, statement-process) and registers the repeatable schedules
- * for the 5 of them that have one. Each worker's own `start*Worker()` factory
+ * price-retention, statement-process, bulk-confirm-pending) and registers the
+ * repeatable schedules for the 5 of them that have one. Each worker's own `start*Worker()` factory
  * is deliberately lazy (see each worker file's doc comment) so this is the
  * single place in the running app that actually calls them.
  *
@@ -92,6 +93,7 @@ export async function startBackgroundWorkers(): Promise<ManagedWorker[]> {
     startOne("monthly-rollup", startMonthlyRollupWorker, scheduleMonthlyRollup),
     startOne("price-retention", startPriceRetentionWorker, schedulePriceRetention),
     startOne("statement-process", startStatementProcessWorker),
+    startOne("bulk-confirm-pending", startBulkConfirmPendingWorker),
   ]);
 
   return workers.filter((w): w is ManagedWorker => w !== undefined);

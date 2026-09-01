@@ -80,30 +80,46 @@ describe("recordSale", () => {
     expect(stored).toHaveLength(2);
   });
 
-  it("leaves HoldingLot.remainingUnits untouched when no tax slab config exists for the sell's FY", async () => {
-    // Deliberately does NOT seed a TaxSlabConfig — getCapitalGainsConfig will throw.
+  // Regression: recording a sale used to hard-fail (and, per the old version of
+  // this test, leave the lot untouched) whenever no TaxSlabConfig existed for
+  // the sell's FY — with no UI anywhere to create one. It now succeeds using
+  // the built-in statutory default and flags the resulting event(s) as such.
+  it("succeeds using the statutory default (flagged) when no tax slab config exists for the sell's FY", async () => {
+    // Deliberately does NOT seed a TaxSlabConfig.
     const userId = "user-cg-4";
     const lot = await HoldingLot.create({
       userId, symbol: "NOCONFIG", platform: "zerodha", instrumentType: "stock",
       buyDate: new Date("2024-01-01"), buyPrice: 100, units: 10, remainingUnits: 10,
     });
 
-    await expect(
-      recordSale(userId, {
-        symbol: "NOCONFIG", instrumentType: "stock",
-        sellDate: new Date("2025-06-01"), sellPrice: 150, unitsSold: 4,
-      })
-    ).rejects.toThrow(/No tax slab config/);
+    const events = await recordSale(userId, {
+      symbol: "NOCONFIG", instrumentType: "stock",
+      sellDate: new Date("2025-06-01"), sellPrice: 150, unitsSold: 4,
+    });
 
-    // holdings-fifo.ts documents that a failed sell must have zero side effects —
-    // applySellFifo persists its deduction via lot.save() as it goes, so if
-    // recordSale calls it before validating the tax slab config exists, a missing
-    // config would leave remainingUnits partially deducted despite the sell having
-    // been reported as failed.
+    expect(events).toHaveLength(1);
+    // Bought 2024-01-01, sold 2025-06-01: well past the 365-day default STCG
+    // threshold, so this is LTCG under the fallback rule.
+    expect(events[0].classification).toBe("LTCG");
+    expect(events[0].usedDefaultCapitalGainsConfig).toBe(true);
+
     const reloaded = await HoldingLot.findById(lot._id);
-    expect(reloaded!.remainingUnits).toBe(10);
+    expect(reloaded!.remainingUnits).toBe(6);
+  });
 
-    const events = await SellEvent.find({ userId, symbol: "NOCONFIG" });
-    expect(events).toHaveLength(0);
+  it("does NOT flag usedDefaultCapitalGainsConfig when a real config exists for the FY", async () => {
+    await seedSlabConfig();
+    const userId = "user-cg-5";
+    await HoldingLot.create({
+      userId, symbol: "CONFIGURED", platform: "zerodha", instrumentType: "stock",
+      buyDate: new Date("2025-05-01"), buyPrice: 100, units: 10, remainingUnits: 10,
+    });
+
+    const events = await recordSale(userId, {
+      symbol: "CONFIGURED", instrumentType: "stock",
+      sellDate: new Date("2025-06-01"), sellPrice: 120, unitsSold: 10,
+    });
+
+    expect(events[0].usedDefaultCapitalGainsConfig).toBe(false);
   });
 });

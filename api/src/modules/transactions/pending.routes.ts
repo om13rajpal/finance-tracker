@@ -8,6 +8,8 @@ import { maybeCreateRuleFromCorrection } from "./transactions.service.js";
 import { applyCategorizationRules } from "../categorization/categorization.engine.js";
 import { invalidateDashboardCache } from "../dashboard/dashboard.service.js";
 import { applyConfirmedTransactionBalanceEffect } from "../accounts/balance.service.js";
+import { BulkConfirmBatch } from "../../models/BulkConfirmBatch.js";
+import { bulkConfirmPendingQueue } from "../../jobs/workers/bulkConfirmPending.worker.js";
 
 export const pendingTransactionsRouter = Router();
 pendingTransactionsRouter.use(requireAuth);
@@ -103,6 +105,22 @@ pendingTransactionsRouter.post("/:id/confirm", async (req, res, next) => {
       }
     }
 
+    const balanceDeltaApplied = await applyConfirmedTransactionBalanceEffect(
+      userId,
+      merged.accountId,
+      merged.amount,
+      merged.emailBalance ?? null,
+      merged.date,
+      // Only honor the "already reconciled" flag if this confirm didn't
+      // redirect the transaction to a DIFFERENT account than the one its
+      // import actually reconciled — the reconciliation's assumption (this
+      // money left THAT account) no longer holds if it didn't, in the end,
+      // stay on that account, and the rare case of editing a PDF-statement
+      // row's account during confirm needs its normal delta applied like any
+      // other transaction.
+      pending.balanceReconciledAtImport === true && merged.accountId === pending.accountId
+    );
+
     const transaction = await Transaction.create({
       userId,
       accountId: merged.accountId,
@@ -119,23 +137,8 @@ pendingTransactionsRouter.post("/:id/confirm", async (req, res, next) => {
       // bug once `pdf_statement_parsed` existed too.
       source: pending.source,
       status: "confirmed",
+      balanceDeltaApplied,
     });
-
-    await applyConfirmedTransactionBalanceEffect(
-      userId,
-      merged.accountId,
-      merged.amount,
-      merged.emailBalance ?? null,
-      merged.date,
-      // Only honor the "already reconciled" flag if this confirm didn't
-      // redirect the transaction to a DIFFERENT account than the one its
-      // import actually reconciled — the reconciliation's assumption (this
-      // money left THAT account) no longer holds if it didn't, in the end,
-      // stay on that account, and the rare case of editing a PDF-statement
-      // row's account during confirm needs its normal delta applied like any
-      // other transaction.
-      pending.balanceReconciledAtImport === true && merged.accountId === pending.accountId
-    );
 
     // `matchValue` is optional on this route: the pending transaction's own
     // (possibly edited) `merchant` is already known here, so the caller
@@ -195,89 +198,59 @@ pendingTransactionsRouter.post("/bulk-reject", async (req, res, next) => {
 });
 
 /**
- * Confirms every listed pending transaction using ONLY its own already-known
- * values — no per-item edits, unlike `/:id/confirm`. That's a deliberate,
- * scoped difference: a bulk action over a review queue with dozens of rows
- * (e.g. after a large PDF statement import) has no per-row edit UI to source
- * edits from, so this route mirrors `/:id/confirm`'s categorization-fallback
- * and duplicate-detection logic exactly, but can't accept `accountId`,
- * `categoryId`, etc. — only the ids to confirm as-is.
+ * Enqueues a background confirm of every listed pending transaction, using
+ * ONLY each one's own already-known values — no per-item edits, unlike
+ * `/:id/confirm`. That's a deliberate, scoped difference: a bulk action over
+ * a review queue with dozens of rows (e.g. after a large PDF statement
+ * import) has no per-row edit UI to source edits from, so the worker mirrors
+ * `/:id/confirm`'s categorization-fallback and duplicate-detection logic
+ * exactly, but can't accept `accountId`, `categoryId`, etc. — only the ids
+ * to confirm as-is.
+ *
+ * Async, not synchronous: confirming each pending transaction is several
+ * sequential DB round trips, and running all of that inline for a large
+ * batch (117 items, in production) reliably exceeded the request-timeout
+ * path and returned a raw 502 with zero user-facing feedback — even though
+ * the work kept running server-side and mostly succeeded. This returns
+ * `202` immediately with a `batchId` for `GET /bulk-confirm/:batchId` to
+ * poll — see `bulkConfirmPending.worker.ts`.
  *
  * A pending transaction that can't be confirmed as-is (no `accountId` yet —
  * e.g. an email-parsed row nobody has assigned an account to; a likely
  * duplicate of an existing confirmed `Transaction`; or an id that doesn't
  * exist / isn't this user's) is skipped, not failed — same "one bad item
  * doesn't corrupt the rest of the batch" philosophy used throughout this
- * codebase's background workers. The response reports both what succeeded
- * and, for anything skipped, why, so the caller can tell the person exactly
- * which rows still need individual attention.
+ * codebase's background workers. The batch's `results` report both what
+ * succeeded and, for anything skipped, why, so the caller can tell the
+ * person exactly which rows still need individual attention.
  */
 pendingTransactionsRouter.post("/bulk-confirm", async (req, res, next) => {
   try {
     const { ids } = bulkIdsSchema.parse(req.body);
     const userId = (req as any).userId;
 
-    const confirmedIds: string[] = [];
-    const skipped: { id: string; reason: "not_found" | "account_required" | "possible_duplicate" }[] = [];
+    const batch = await BulkConfirmBatch.create({ userId, status: "processing", total: ids.length, results: [] });
+    await bulkConfirmPendingQueue.add("confirm", { batchId: batch._id.toString(), userId, ids });
 
-    for (const id of ids) {
-      const pending = await PendingTransaction.findOne({ _id: id, userId });
-      if (!pending) {
-        skipped.push({ id, reason: "not_found" });
-        continue;
-      }
-      if (!pending.accountId) {
-        skipped.push({ id, reason: "account_required" });
-        continue;
-      }
+    res.status(202).json({ batchId: batch._id, status: "processing" });
+  } catch (err) {
+    next(err);
+  }
+});
 
-      let categoryId: string | null = pending.categoryId ?? null;
-      if (!categoryId) {
-        categoryId = await applyCategorizationRules(userId, {
-          merchant: pending.merchant,
-          note: pending.note,
-        });
-      }
-
-      const duplicate = await findLikelyDuplicate(userId, {
-        accountId: pending.accountId,
-        amount: pending.amount,
-        date: pending.date,
-      });
-      if (duplicate) {
-        skipped.push({ id, reason: "possible_duplicate" });
-        continue;
-      }
-
-      await Transaction.create({
-        userId,
-        accountId: pending.accountId,
-        categoryId,
-        amount: pending.amount,
-        date: pending.date,
-        note: pending.note,
-        merchant: pending.merchant,
-        source: pending.source,
-        status: "confirmed",
-      });
-      await applyConfirmedTransactionBalanceEffect(
-        userId,
-        pending.accountId,
-        pending.amount,
-        pending.emailBalance ?? null,
-        pending.date,
-        // Bulk-confirm never redirects a row to a different account (no
-        // per-item edits at all — see this route's own doc comment), so
-        // unlike the single-confirm route above there's no account-match
-        // check needed here.
-        pending.balanceReconciledAtImport === true
-      );
-      await PendingTransaction.deleteOne({ _id: pending._id });
-      confirmedIds.push(id);
-    }
-
-    if (confirmedIds.length > 0) await invalidateDashboardCache(userId);
-    res.json({ confirmedIds, skipped });
+/**
+ * Polled by the frontend after the `202` above to watch a bulk-confirm run's
+ * async progress until it reaches a terminal `status`
+ * (`"completed"`/`"failed"`). Scoped to `req.userId` — a batch that exists
+ * but belongs to someone else 404s exactly like one that doesn't exist at
+ * all, same as the equivalent PDF-import poll route.
+ */
+pendingTransactionsRouter.get("/bulk-confirm/:batchId", async (req, res, next) => {
+  try {
+    const userId = (req as any).userId;
+    const batch = await BulkConfirmBatch.findOne({ _id: req.params.batchId, userId });
+    if (!batch) return res.status(404).json({ error: "Bulk-confirm batch not found" });
+    res.status(200).json(batch);
   } catch (err) {
     next(err);
   }
