@@ -354,4 +354,190 @@ describe("pending transactions", () => {
     expect(res.status).toBe(200);
     expect(res.body.categoryId).toBe("cat-dining");
   });
+
+  describe("bulk actions", () => {
+    it("requires auth for bulk-reject and bulk-confirm", async () => {
+      const rejectRes = await request(app).post("/pending-transactions/bulk-reject").send({ ids: ["x"] });
+      expect(rejectRes.status).toBe(401);
+
+      const confirmRes = await request(app).post("/pending-transactions/bulk-confirm").send({ ids: ["x"] });
+      expect(confirmRes.status).toBe(401);
+    });
+
+    it("rejects an empty ids array as a validation error", async () => {
+      const res = await request(app)
+        .post("/pending-transactions/bulk-reject")
+        .set("Cookie", authCookie("user-bulk-empty"))
+        .send({ ids: [] });
+      expect(res.status).toBe(400);
+    });
+
+    it("bulk-rejects several of this user's own pending transactions in one request, ignoring ids that aren't theirs", async () => {
+      const userId = "user-bulk-reject";
+      const cookie = authCookie(userId);
+      const mine1 = await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        amount: -100,
+        date: new Date("2026-08-16"),
+        merchant: "ONE",
+        source: "email_parsed",
+      });
+      const mine2 = await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        amount: -200,
+        date: new Date("2026-08-16"),
+        merchant: "TWO",
+        source: "pdf_statement_parsed",
+      });
+      const someoneElses = await PendingTransaction.create({
+        userId: "user-bulk-reject-other",
+        accountId: "acc-1",
+        amount: -300,
+        date: new Date("2026-08-16"),
+        merchant: "NOT MINE",
+        source: "email_parsed",
+      });
+
+      const res = await request(app)
+        .post("/pending-transactions/bulk-reject")
+        .set("Cookie", cookie)
+        .send({ ids: [mine1._id.toString(), mine2._id.toString(), someoneElses._id.toString()] });
+
+      expect(res.status).toBe(200);
+      expect(res.body.deletedCount).toBe(2);
+
+      expect(await PendingTransaction.findById(mine1._id)).toBeNull();
+      expect(await PendingTransaction.findById(mine2._id)).toBeNull();
+      // Untouched — not this user's to delete.
+      expect(await PendingTransaction.findById(someoneElses._id)).not.toBeNull();
+    });
+
+    it("bulk-confirms several pending transactions at once, applying categorization fallback per item", async () => {
+      const userId = "user-bulk-confirm";
+      const cookie = authCookie(userId);
+
+      await CategorizationRule.create({
+        userId,
+        matchField: "merchant",
+        matchType: "contains",
+        matchValue: "ZOMATO",
+        categoryId: "cat-dining",
+        priority: 100,
+      });
+
+      const a = await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        amount: -450,
+        date: new Date("2026-08-16"),
+        merchant: "ZOMATO ORDER #1",
+        source: "email_parsed",
+      });
+      const b = await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        amount: -120,
+        date: new Date("2026-08-17"),
+        merchant: "SOME OTHER MERCHANT",
+        source: "pdf_statement_parsed",
+      });
+
+      const res = await request(app)
+        .post("/pending-transactions/bulk-confirm")
+        .set("Cookie", cookie)
+        .send({ ids: [a._id.toString(), b._id.toString()] });
+
+      expect(res.status).toBe(200);
+      expect(res.body.confirmedIds.sort()).toEqual([a._id.toString(), b._id.toString()].sort());
+      expect(res.body.skipped).toEqual([]);
+
+      expect(await PendingTransaction.countDocuments({ userId })).toBe(0);
+      expect(await Transaction.countDocuments({ userId })).toBe(2);
+
+      const confirmedA = await Transaction.findOne({ userId, merchant: "ZOMATO ORDER #1" });
+      expect(confirmedA!.categoryId).toBe("cat-dining");
+    });
+
+    it("skips (not fails) a row that still needs an account, a likely duplicate, and an id that isn't this user's — reporting why for each", async () => {
+      const userId = "user-bulk-skip";
+      const cookie = authCookie(userId);
+
+      const needsAccount = await PendingTransaction.create({
+        userId,
+        accountId: null,
+        amount: -500,
+        date: new Date("2026-08-16"),
+        merchant: "NO ACCOUNT YET",
+        source: "email_parsed",
+      });
+
+      await Transaction.create({
+        userId,
+        accountId: "acc-1",
+        amount: -750,
+        date: new Date("2026-08-16"),
+        source: "manual",
+        status: "confirmed",
+      });
+      const duplicate = await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        amount: -750,
+        date: new Date("2026-08-16"),
+        merchant: "DUP STORE",
+        source: "email_parsed",
+      });
+
+      const notMine = await PendingTransaction.create({
+        userId: "user-bulk-skip-other",
+        accountId: "acc-1",
+        amount: -900,
+        date: new Date("2026-08-16"),
+        merchant: "INTRUDER",
+        source: "email_parsed",
+      });
+
+      const fine = await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        amount: -50,
+        date: new Date("2026-08-16"),
+        merchant: "PERFECTLY FINE",
+        source: "email_parsed",
+      });
+
+      const res = await request(app)
+        .post("/pending-transactions/bulk-confirm")
+        .set("Cookie", cookie)
+        .send({
+          ids: [
+            needsAccount._id.toString(),
+            duplicate._id.toString(),
+            notMine._id.toString(),
+            fine._id.toString(),
+          ],
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.confirmedIds).toEqual([fine._id.toString()]);
+
+      const skippedByReason = Object.fromEntries(
+        res.body.skipped.map((s: { id: string; reason: string }) => [s.id, s.reason])
+      );
+      expect(skippedByReason[needsAccount._id.toString()]).toBe("account_required");
+      expect(skippedByReason[duplicate._id.toString()]).toBe("possible_duplicate");
+      expect(skippedByReason[notMine._id.toString()]).toBe("not_found");
+
+      // The skipped ones are untouched — still pending (or, for `notMine`, still
+      // owned by its real owner).
+      expect(await PendingTransaction.findById(needsAccount._id)).not.toBeNull();
+      expect(await PendingTransaction.findById(duplicate._id)).not.toBeNull();
+      expect(await PendingTransaction.findById(notMine._id)).not.toBeNull();
+      // Only the one clean row was actually confirmed.
+      expect(await PendingTransaction.findById(fine._id)).toBeNull();
+      expect(await Transaction.countDocuments({ userId, merchant: "PERFECTLY FINE" })).toBe(1);
+    });
+  });
 });

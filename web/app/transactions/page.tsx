@@ -533,6 +533,12 @@ function TransactionRow({
 // The parser's queue
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** Response shape of `POST /pending-transactions/bulk-confirm`. */
+interface BulkConfirmResult {
+  confirmedIds: string[];
+  skipped: { id: string; reason: "not_found" | "account_required" | "possible_duplicate" }[];
+}
+
 function PendingPanel({
   items,
   accounts,
@@ -545,12 +551,33 @@ function PendingPanel({
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [accountChoice, setAccountChoice] = useState<Record<string, string>>({});
+  // Selection lives outside `items` on purpose: a bulk action's own success
+  // handler clears it explicitly (see below), and a row that disappears from
+  // `items` on its own (e.g. someone else's tab confirmed it, or the list
+  // just refetched) should silently drop out of a stale selection rather
+  // than keep counting toward "N selected" for a row that no longer exists.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const selectedItems = items.filter((item) => selected.has(item._id));
+  const allSelected = items.length > 0 && selectedItems.length === items.length;
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["pending-transactions"] });
     queryClient.invalidateQueries({ queryKey: ["transactions"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   };
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected(allSelected ? new Set() : new Set(items.map((item) => item._id)));
+  }
 
   const confirm = useMutation({
     mutationFn: ({ id, accountId, force }: { id: string; accountId?: string; force?: boolean }) =>
@@ -583,6 +610,53 @@ function PendingPanel({
     onError: () => showToast("Could not discard that one", "error"),
   });
 
+  const bulkReject = useMutation({
+    mutationFn: (ids: string[]) =>
+      apiFetch<{ deletedCount: number }>("/pending-transactions/bulk-reject", {
+        method: "POST",
+        body: JSON.stringify({ ids }),
+      }),
+    onSuccess: (result) => {
+      invalidate();
+      setSelected(new Set());
+      showToast(`Discarded ${result.deletedCount}`, "success");
+    },
+    onError: () => showToast("Could not discard those", "error"),
+  });
+
+  const bulkConfirm = useMutation({
+    mutationFn: (ids: string[]) =>
+      apiFetch<BulkConfirmResult>("/pending-transactions/bulk-confirm", {
+        method: "POST",
+        body: JSON.stringify({ ids }),
+      }),
+    onSuccess: (result) => {
+      invalidate();
+      // Only the rows that actually got filed leave the selection — anything
+      // skipped (needs an account, looked like a duplicate) stays selected
+      // so it's still visibly picked out once the list re-renders with just
+      // that leftover handful, ready for the person to resolve individually.
+      setSelected(new Set(result.skipped.map((s) => s.id)));
+
+      if (result.skipped.length === 0) {
+        showToast(`Filed ${result.confirmedIds.length}`, "success");
+        return;
+      }
+      const needsAccount = result.skipped.filter((s) => s.reason === "account_required").length;
+      const duplicates = result.skipped.filter((s) => s.reason === "possible_duplicate").length;
+      const parts = [
+        needsAccount > 0 ? `${needsAccount} need an account first` : null,
+        duplicates > 0 ? `${duplicates} looked like duplicates` : null,
+      ].filter(Boolean);
+      showToast(
+        `Filed ${result.confirmedIds.length}${parts.length > 0 ? ` — ${parts.join(", ")}` : ""}`
+      );
+    },
+    onError: () => showToast("Could not file those", "error"),
+  });
+
+  const bulkBusy = bulkReject.isPending || bulkConfirm.isPending;
+
   return (
     <Panel>
       <PanelHeader title="§ From your inbox" meta={`${items.length} waiting`} />
@@ -590,6 +664,32 @@ function PendingPanel({
         Read out of your bank email and held here until you say so. Nothing below has touched your
         balances yet.
       </Helper>
+
+      {items.length > 1 ? (
+        <div className="mb-14 flex flex-wrap items-center justify-between gap-12 border-b border-rule pb-14">
+          <Checkbox
+            id="pending-select-all"
+            label={selected.size > 0 ? `${selected.size} selected` : "Select all"}
+            checked={allSelected}
+            onChange={toggleAll}
+          />
+          {selected.size > 0 ? (
+            <div className="flex flex-none items-center gap-14">
+              <button
+                type="button"
+                onClick={() => bulkReject.mutate([...selected])}
+                disabled={bulkBusy}
+                className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink disabled:opacity-[.55]"
+              >
+                Discard {selected.size}
+              </button>
+              <Button size="sm" busy={bulkConfirm.isPending} onClick={() => bulkConfirm.mutate([...selected])}>
+                File {selected.size}
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {items.map((item) => {
         const needsAccount = !item.accountId;
@@ -605,6 +705,15 @@ function PendingPanel({
                 one thing that earns a second line, and only on the rows that
                 actually need one. */}
             <div className="flex flex-wrap items-center gap-14">
+              {items.length > 1 ? (
+                <Checkbox
+                  id={`pending-select-${item._id}`}
+                  label={<span className="sr-only">Select {item.merchant || item.note || "this row"}</span>}
+                  checked={selected.has(item._id)}
+                  onChange={() => toggleOne(item._id)}
+                  className="flex-none"
+                />
+              ) : null}
               <div className="grid min-w-[260px] flex-1 grid-cols-row-tether items-center">
                 <Tether label="Filed automatically from a bank email" />
                 <Chip spec={spec} labelled />

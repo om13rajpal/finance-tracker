@@ -126,3 +126,102 @@ pendingTransactionsRouter.post("/:id/reject", async (req, res, next) => {
     next(err);
   }
 });
+
+const bulkIdsSchema = z.object({ ids: z.array(z.string()).min(1) });
+
+/**
+ * Discards every listed pending transaction belonging to this user in one
+ * request — the review-queue equivalent of a multi-select "delete". Ids that
+ * don't exist or belong to someone else are silently excluded from the
+ * delete rather than failing the whole batch (same `$in` + userId scoping
+ * `/:id/reject` uses per-item, just batched); the response's `deletedCount`
+ * tells the caller how many of the requested ids actually existed to
+ * discard.
+ */
+pendingTransactionsRouter.post("/bulk-reject", async (req, res, next) => {
+  try {
+    const { ids } = bulkIdsSchema.parse(req.body);
+    const userId = (req as any).userId;
+    const result = await PendingTransaction.deleteMany({ _id: { $in: ids }, userId });
+    res.json({ deletedCount: result.deletedCount });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Confirms every listed pending transaction using ONLY its own already-known
+ * values — no per-item edits, unlike `/:id/confirm`. That's a deliberate,
+ * scoped difference: a bulk action over a review queue with dozens of rows
+ * (e.g. after a large PDF statement import) has no per-row edit UI to source
+ * edits from, so this route mirrors `/:id/confirm`'s categorization-fallback
+ * and duplicate-detection logic exactly, but can't accept `accountId`,
+ * `categoryId`, etc. — only the ids to confirm as-is.
+ *
+ * A pending transaction that can't be confirmed as-is (no `accountId` yet —
+ * e.g. an email-parsed row nobody has assigned an account to; a likely
+ * duplicate of an existing confirmed `Transaction`; or an id that doesn't
+ * exist / isn't this user's) is skipped, not failed — same "one bad item
+ * doesn't corrupt the rest of the batch" philosophy used throughout this
+ * codebase's background workers. The response reports both what succeeded
+ * and, for anything skipped, why, so the caller can tell the person exactly
+ * which rows still need individual attention.
+ */
+pendingTransactionsRouter.post("/bulk-confirm", async (req, res, next) => {
+  try {
+    const { ids } = bulkIdsSchema.parse(req.body);
+    const userId = (req as any).userId;
+
+    const confirmedIds: string[] = [];
+    const skipped: { id: string; reason: "not_found" | "account_required" | "possible_duplicate" }[] = [];
+
+    for (const id of ids) {
+      const pending = await PendingTransaction.findOne({ _id: id, userId });
+      if (!pending) {
+        skipped.push({ id, reason: "not_found" });
+        continue;
+      }
+      if (!pending.accountId) {
+        skipped.push({ id, reason: "account_required" });
+        continue;
+      }
+
+      let categoryId: string | null = pending.categoryId ?? null;
+      if (!categoryId) {
+        categoryId = await applyCategorizationRules(userId, {
+          merchant: pending.merchant,
+          note: pending.note,
+        });
+      }
+
+      const duplicate = await findLikelyDuplicate(userId, {
+        accountId: pending.accountId,
+        amount: pending.amount,
+        date: pending.date,
+      });
+      if (duplicate) {
+        skipped.push({ id, reason: "possible_duplicate" });
+        continue;
+      }
+
+      await Transaction.create({
+        userId,
+        accountId: pending.accountId,
+        categoryId,
+        amount: pending.amount,
+        date: pending.date,
+        note: pending.note,
+        merchant: pending.merchant,
+        source: pending.source,
+        status: "confirmed",
+      });
+      await PendingTransaction.deleteOne({ _id: pending._id });
+      confirmedIds.push(id);
+    }
+
+    if (confirmedIds.length > 0) await invalidateDashboardCache(userId);
+    res.json({ confirmedIds, skipped });
+  } catch (err) {
+    next(err);
+  }
+});
