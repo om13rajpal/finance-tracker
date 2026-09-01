@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tansta
 
 import { ApiError, apiFetch } from "@/lib/api-client";
 import type {
+  CapitalGainsBucket,
   CapitalGainsResponse,
   DeductionSource,
   IncomeSourceRow,
@@ -12,6 +13,7 @@ import type {
   TaxDeductionRow,
   TaxEstimateResponse,
   TaxEstimateResult,
+  TaxSlabConfig,
 } from "@/lib/api-types";
 import {
   financialYearFromDate,
@@ -37,12 +39,14 @@ import {
   Bar,
   EmptyState,
   Helper,
+  IconButton,
   Notice,
   PageHeader,
   Panel,
   PanelFooter,
   PanelHeader,
   Readout,
+  RowName,
   ScrollableTable,
   SectionLabel,
   Skeleton,
@@ -129,7 +133,10 @@ export default function TaxPage() {
             <CapitalGains fy={fy} />
             <IncomeSources fy={fy} />
           </div>
-          <Deductions fy={fy} />
+          <div className="flex min-w-0 flex-col gap-22">
+            <Deductions fy={fy} />
+            <SlabConfigPanel defaultFy={fy} />
+          </div>
         </div>
       </div>
     </ProtectedLayout>
@@ -176,6 +183,16 @@ function RegimeComparison({ fy }: { fy: string }) {
           missingConfig
             ? "The comparison needs a slab configuration for both regimes before it can be computed. Everything else on this screen still works."
             : "Please try again shortly. The figures below are unaffected."
+        }
+        action={
+          missingConfig ? (
+            <a
+              href="#tax-slab-config"
+              className="rounded-xs bg-transparent p-0 font-sans text-caption text-ink underline underline-offset-[3px]"
+            >
+              Add a slab configuration
+            </a>
+          ) : undefined
         }
       />
     );
@@ -803,6 +820,383 @@ function IncomeSources({ fy }: { fy: string }) {
         <FormActions className="mt-0 border-t-0 pt-0">
           <Button type="submit" size="sm" busy={create.isPending}>
             Add Income Source
+          </Button>
+        </FormActions>
+      </form>
+    </Panel>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Tax slab configuration
+// ═══════════════════════════════════════════════════════════════════════════
+
+type SlabRowForm = { upTo: string; rate: string };
+type CapitalGainsBucketForm = {
+  stcgHoldingDays: string;
+  stcgRate: string;
+  ltcgRate: string;
+  ltcgExemptionLimit: string;
+};
+type SlabConfigForm = {
+  financialYear: string;
+  regime: "old" | "new";
+  standardDeduction: string;
+  section87ARebateLimit: string;
+  section87ARebateMaxTax: string;
+  section80CLimit: string;
+  slabs: SlabRowForm[];
+  equity: CapitalGainsBucketForm;
+  debt: CapitalGainsBucketForm;
+};
+
+function emptyForm(fy: string): SlabConfigForm {
+  return {
+    financialYear: fy,
+    regime: "new",
+    standardDeduction: "",
+    section87ARebateLimit: "",
+    section87ARebateMaxTax: "",
+    section80CLimit: "",
+    slabs: [{ upTo: "", rate: "" }],
+    equity: { stcgHoldingDays: "365", stcgRate: "", ltcgRate: "", ltcgExemptionLimit: "" },
+    debt: { stcgHoldingDays: "0", stcgRate: "", ltcgRate: "", ltcgExemptionLimit: "" },
+  };
+}
+
+// Slab and capital-gains rates are stored server-side as fractions (0.2 = 20%,
+// matching the seed script and the rest of this codebase) but entered here as
+// plain percentages — nobody thinks in fractions when reading a Budget
+// notification. Converted at the form/API boundary in both directions, never
+// stored as a percentage anywhere.
+function bucketToForm(bucket: CapitalGainsBucket): CapitalGainsBucketForm {
+  return {
+    stcgHoldingDays: String(bucket.stcgHoldingDays),
+    stcgRate: bucket.stcgRate === null ? "" : String(bucket.stcgRate * 100),
+    ltcgRate: bucket.ltcgRate === null ? "" : String(bucket.ltcgRate * 100),
+    ltcgExemptionLimit: String(bucket.ltcgExemptionLimit),
+  };
+}
+
+function configToForm(config: TaxSlabConfig): SlabConfigForm {
+  return {
+    financialYear: config.financialYear,
+    regime: config.regime,
+    standardDeduction: String(config.standardDeduction),
+    section87ARebateLimit: String(config.section87ARebateLimit),
+    section87ARebateMaxTax: String(config.section87ARebateMaxTax),
+    section80CLimit: String(config.section80CLimit),
+    slabs: config.slabs.map((s) => ({ upTo: s.upTo === null ? "" : String(s.upTo), rate: String(s.rate * 100) })),
+    equity: bucketToForm(config.capitalGains.equity),
+    debt: bucketToForm(config.capitalGains.debt),
+  };
+}
+
+function bucketToPayload(bucket: CapitalGainsBucketForm) {
+  return {
+    stcgHoldingDays: Number(bucket.stcgHoldingDays),
+    stcgRate: bucket.stcgRate.trim() === "" ? null : Number(bucket.stcgRate) / 100,
+    ltcgRate: bucket.ltcgRate.trim() === "" ? null : Number(bucket.ltcgRate) / 100,
+    ltcgExemptionLimit: Number(bucket.ltcgExemptionLimit || 0),
+  };
+}
+
+/** `null` (not a thrown error) when any required field doesn't parse — the
+ * caller shows one toast naming the problem rather than this function trying
+ * to enumerate every possible mistake itself. */
+function buildPayload(form: SlabConfigForm): { payload: Record<string, unknown>; error?: string } {
+  if (!form.financialYear.trim()) return { payload: {}, error: "Enter a financial year, for example 2026-27" };
+
+  const numericFields: [string, string][] = [
+    ["Standard deduction", form.standardDeduction],
+    ["87A rebate income limit", form.section87ARebateLimit],
+    ["87A rebate max tax", form.section87ARebateMaxTax],
+    ["80C limit", form.section80CLimit],
+  ];
+  for (const [label, value] of numericFields) {
+    if (value.trim() === "" || Number.isNaN(Number(value))) return { payload: {}, error: `Enter a valid ${label}` };
+  }
+
+  if (form.slabs.length === 0) return { payload: {}, error: "Add at least one slab" };
+  for (const slab of form.slabs) {
+    if (slab.rate.trim() === "" || Number.isNaN(Number(slab.rate))) {
+      return { payload: {}, error: "Every slab needs a rate" };
+    }
+    if (slab.upTo.trim() !== "" && Number.isNaN(Number(slab.upTo))) {
+      return { payload: {}, error: "A slab's \"up to\" must be a number, or left blank for no upper bound" };
+    }
+  }
+
+  return {
+    payload: {
+      financialYear: form.financialYear.trim(),
+      regime: form.regime,
+      standardDeduction: Number(form.standardDeduction),
+      slabs: form.slabs.map((s) => ({
+        upTo: s.upTo.trim() === "" ? null : Number(s.upTo),
+        rate: Number(s.rate) / 100,
+      })),
+      section87ARebateLimit: Number(form.section87ARebateLimit),
+      section87ARebateMaxTax: Number(form.section87ARebateMaxTax),
+      section80CLimit: Number(form.section80CLimit),
+      capitalGains: { equity: bucketToPayload(form.equity), debt: bucketToPayload(form.debt) },
+    },
+  };
+}
+
+function SlabConfigPanel({ defaultFy }: { defaultFy: string }) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  const configs = useQuery({
+    queryKey: ["tax-slab-configs"],
+    queryFn: () => apiFetch<TaxSlabConfig[]>("/tax/slab-config"),
+  });
+
+  const [form, setForm] = useState<SlabConfigForm>(() => emptyForm(defaultFy));
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const upsert = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiFetch<TaxSlabConfig>("/tax/slab-config", { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: (saved) => {
+      queryClient.invalidateQueries({ queryKey: ["tax-slab-configs"] });
+      // This config might be exactly what the comparison at the top of this
+      // page was missing — refetch it rather than leave the "no slabs on
+      // file" notice sitting there stale.
+      queryClient.invalidateQueries({ queryKey: ["estimate", saved.financialYear] });
+      setForm(emptyForm(defaultFy));
+      setEditingId(null);
+      showToast(`Saved FY ${saved.financialYear} · ${saved.regime === "old" ? "old" : "new"} regime`, "success");
+    },
+    onError: () => showToast("Could not save that configuration", "error"),
+  });
+
+  const rows = configs.data ?? [];
+
+  function updateSlab(index: number, patch: Partial<SlabRowForm>) {
+    setForm((f) => ({ ...f, slabs: f.slabs.map((s, i) => (i === index ? { ...s, ...patch } : s)) }));
+  }
+
+  function startEdit(config: TaxSlabConfig) {
+    setEditingId(config._id);
+    setForm(configToForm(config));
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(emptyForm(defaultFy));
+  }
+
+  return (
+    <Panel id="tax-slab-config">
+      <PanelHeader title="§ Tax slab configuration" meta={rows.length > 0 ? `${rows.length}` : undefined} />
+      <Helper className="-mt-8 mb-18 max-w-[56ch]">
+        Every figure the comparison and estimates on this screen are computed from — income slabs,
+        rebate limits, capital-gains rules. These change with the Union Budget, so verify against
+        the actual notification for the year before saving; nothing here is guessed.
+      </Helper>
+
+      {configs.isLoading ? (
+        <div className="flex flex-col gap-12">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-[22px] w-full rounded-sm opacity-40" />
+          ))}
+        </div>
+      ) : configs.isError ? (
+        <Notice title="Could not load saved configurations." body="Please try again shortly." />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title="No configurations on file."
+          body="Add one below for each regime you want the comparison to cover — both old and new are needed."
+        />
+      ) : (
+        <div>
+          {rows.map((config) => (
+            <div
+              key={config._id}
+              className="flex items-center justify-between gap-14 border-b border-rule py-12 last:border-b-0"
+            >
+              <RowName
+                name={`FY ${config.financialYear} · ${config.regime === "old" ? "Old regime" : "New regime"}`}
+                sub={`Std. deduction ${formatInr(config.standardDeduction)} · 87A up to ${formatInr(
+                  config.section87ARebateLimit
+                )}`}
+              />
+              <button
+                type="button"
+                onClick={() => startEdit(config)}
+                className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink"
+              >
+                Edit
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form
+        noValidate
+        className="mt-18 flex flex-col gap-18 border-t border-rule pt-18"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const { payload, error } = buildPayload(form);
+          if (error) {
+            showToast(error);
+            return;
+          }
+          upsert.mutate(payload);
+        }}
+      >
+        <SectionLabel>
+          {editingId ? `§ Editing FY ${form.financialYear} · ${form.regime === "old" ? "old" : "new"} regime` : "§ Add a configuration"}
+        </SectionLabel>
+        {editingId ? (
+          <Helper className="-mt-8">
+            Saving under a different financial year adds a NEW configuration rather than
+            overwriting this one — the quickest way to carry a year&rsquo;s figures forward.
+          </Helper>
+        ) : null}
+
+        <FieldGrid>
+          <Field id="slab-fy" label="Financial year" hint="e.g. 2026-27">
+            <Input
+              id="slab-fy"
+              value={form.financialYear}
+              onChange={(e) => setForm({ ...form, financialYear: e.target.value })}
+            />
+          </Field>
+          <Field id="slab-regime" label="Regime">
+            <Segmented
+              name="slab-regime"
+              ariaLabel="Regime"
+              value={form.regime}
+              onChange={(regime) => setForm({ ...form, regime })}
+              options={[
+                { value: "old", label: "Old" },
+                { value: "new", label: "New" },
+              ]}
+            />
+          </Field>
+        </FieldGrid>
+
+        <FieldGrid>
+          <Field id="slab-std-deduction" label="Standard deduction">
+            <MoneyInput
+              id="slab-std-deduction"
+              value={form.standardDeduction}
+              onChange={(e) => setForm({ ...form, standardDeduction: e.target.value })}
+            />
+          </Field>
+          <Field id="slab-80c-limit" label="Section 80C limit" hint="0 for new regime">
+            <MoneyInput
+              id="slab-80c-limit"
+              value={form.section80CLimit}
+              onChange={(e) => setForm({ ...form, section80CLimit: e.target.value })}
+            />
+          </Field>
+        </FieldGrid>
+
+        <FieldGrid>
+          <Field id="slab-87a-limit" label="87A rebate — income up to">
+            <MoneyInput
+              id="slab-87a-limit"
+              value={form.section87ARebateLimit}
+              onChange={(e) => setForm({ ...form, section87ARebateLimit: e.target.value })}
+            />
+          </Field>
+          <Field id="slab-87a-max" label="87A rebate — max tax">
+            <MoneyInput
+              id="slab-87a-max"
+              value={form.section87ARebateMaxTax}
+              onChange={(e) => setForm({ ...form, section87ARebateMaxTax: e.target.value })}
+            />
+          </Field>
+        </FieldGrid>
+
+        <div>
+          <div className="flex items-baseline justify-between gap-14">
+            <SectionLabel>§ Slabs</SectionLabel>
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, slabs: [...f.slabs, { upTo: "", rate: "" }] }))}
+              className="rounded-xs bg-transparent p-0 font-sans text-caption text-ink underline underline-offset-[3px]"
+            >
+              Add slab
+            </button>
+          </div>
+          <Helper className="mt-4 mb-10">
+            Ordered lowest first. Leave &ldquo;Up to&rdquo; blank on the top slab — no upper bound.
+          </Helper>
+          <div className="flex flex-col gap-10">
+            {form.slabs.map((slab, i) => (
+              <div key={i} className="grid grid-cols-[1fr_1fr_auto] items-end gap-10">
+                <Field id={`slab-upto-${i}`} label="Up to" hint="Optional">
+                  <MoneyInput id={`slab-upto-${i}`} value={slab.upTo} onChange={(e) => updateSlab(i, { upTo: e.target.value })} />
+                </Field>
+                <Field id={`slab-rate-${i}`} label="Rate %">
+                  <MoneyInput id={`slab-rate-${i}`} value={slab.rate} onChange={(e) => updateSlab(i, { rate: e.target.value })} />
+                </Field>
+                <IconButton
+                  icon="trash"
+                  label={`Remove slab ${i + 1}`}
+                  disabled={form.slabs.length <= 1}
+                  className="mb-[3px] h-[52px] w-[52px] border-panel border-ink text-dim hover:text-alert"
+                  onClick={() => setForm((f) => ({ ...f, slabs: f.slabs.filter((_, idx) => idx !== i) }))}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {(["equity", "debt"] as const).map((asset) => (
+          <div key={asset}>
+            <SectionLabel>§ Capital gains — {asset === "equity" ? "Equity" : "Debt"}</SectionLabel>
+            <FieldGrid cols={3} className="mt-10">
+              <Field id={`slab-${asset}-days`} label="STCG up to (days)">
+                <MoneyInput
+                  id={`slab-${asset}-days`}
+                  value={form[asset].stcgHoldingDays}
+                  onChange={(e) => setForm({ ...form, [asset]: { ...form[asset], stcgHoldingDays: e.target.value } })}
+                />
+              </Field>
+              <Field id={`slab-${asset}-stcg-rate`} label="STCG rate %" hint="Blank = slab rate">
+                <MoneyInput
+                  id={`slab-${asset}-stcg-rate`}
+                  value={form[asset].stcgRate}
+                  onChange={(e) => setForm({ ...form, [asset]: { ...form[asset], stcgRate: e.target.value } })}
+                />
+              </Field>
+              <Field id={`slab-${asset}-ltcg-rate`} label="LTCG rate %" hint="Blank = slab rate">
+                <MoneyInput
+                  id={`slab-${asset}-ltcg-rate`}
+                  value={form[asset].ltcgRate}
+                  onChange={(e) => setForm({ ...form, [asset]: { ...form[asset], ltcgRate: e.target.value } })}
+                />
+              </Field>
+            </FieldGrid>
+            <Field id={`slab-${asset}-exemption`} label="LTCG exemption per FY" className="mt-14">
+              <MoneyInput
+                id={`slab-${asset}-exemption`}
+                value={form[asset].ltcgExemptionLimit}
+                onChange={(e) => setForm({ ...form, [asset]: { ...form[asset], ltcgExemptionLimit: e.target.value } })}
+              />
+            </Field>
+          </div>
+        ))}
+
+        <FormActions className="mt-0 border-t-0 pt-0">
+          {editingId ? (
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px]"
+            >
+              Cancel
+            </button>
+          ) : null}
+          <Button type="submit" size="sm" busy={upsert.isPending}>
+            {editingId ? "Save Changes" : "Save Configuration"}
           </Button>
         </FormActions>
       </form>

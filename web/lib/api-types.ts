@@ -375,6 +375,13 @@ export interface TaxEstimateResponse {
   recommendation: "old" | "new";
 }
 
+export interface CapitalGainsBucket {
+  stcgHoldingDays: number;
+  stcgRate: number | null;
+  ltcgRate: number | null;
+  ltcgExemptionLimit: number;
+}
+
 export interface TaxSlabConfig {
   _id: string;
   financialYear: string;
@@ -384,6 +391,7 @@ export interface TaxSlabConfig {
   section87ARebateLimit: number;
   section87ARebateMaxTax: number;
   section80CLimit: number;
+  capitalGains: { equity: CapitalGainsBucket; debt: CapitalGainsBucket };
 }
 
 // ── gmail ──────────────────────────────────────────────────────────────────
