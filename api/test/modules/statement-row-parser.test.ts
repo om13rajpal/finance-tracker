@@ -294,4 +294,72 @@ describe("parseStatementRows — hdfc_statement", () => {
       expect(rows[1].merchant).not.toContain("FIRST");
     }
   });
+
+  // Some real HDFC statement exports (confirmed against an actual HDFC PPF
+  // e-statement, not committed anywhere) omit the empty side of
+  // Withdrawal/Deposit from the row entirely instead of zero-padding it —
+  // only ONE trailing amount token is printed, not the two every fixture
+  // above uses. These tests cover that shape directly.
+  const SUMMARY_LINES = (openingBalance: string, crCount: number, credits: string, closingBal: string) => [
+    ["STATEMENT", "SUMMARY", ":-"],
+    ["Opening", "Balance", "Dr", "Count", "Cr", "Count", "Debits", "Credits", "Closing", "Bal"],
+    [openingBalance, "0", String(crCount), "0.00", credits, closingBal],
+  ];
+
+  it("infers a deposit from a single-amount-column row using this statement's own Opening Balance", () => {
+    const pages = onePage([
+      HEADER_ROW,
+      ["06/06/2026", "NB", "Subscription", "Transfer", "-", "06/06/2026", "5,000.00", "5,000.00"],
+      ...SUMMARY_LINES("0.00", 1, "5,000.00", "5,000.00"),
+    ]);
+    const rows = parseStatementRows(pages, "hdfc_statement");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ date: "2026-06-06", amount: 5000 });
+    if (!("error" in rows[0])) {
+      // The summary block's own header/value lines must not leak into the
+      // last (and only) real row's narration.
+      expect(rows[0].merchant).not.toMatch(/summary|opening|closing|bal/i);
+    }
+  });
+
+  it("infers direction for a single-amount-column row from the PREVIOUS row's own balance, without needing the opening-balance summary", () => {
+    const pages = onePage([
+      HEADER_ROW,
+      // Row 1: ordinary two-amount-column row, establishes balance = 40,000.
+      ["01/08/2026", "NB", "Subscription", "-", "01/08/2026", "0.00", "40,000.00", "40,000.00"],
+      // Row 2: single-amount-column row where the balance goes DOWN — must
+      // resolve as a withdrawal (negative), not a deposit.
+      ["05/08/2026", "Some", "Debit", "-", "05/08/2026", "15,000.00", "25,000.00"],
+    ]);
+    const rows = parseStatementRows(pages, "hdfc_statement");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ amount: 40000 });
+    expect(rows[1]).toMatchObject({ amount: -15000 });
+  });
+
+  it("carries the running balance across MULTIPLE consecutive single-amount-column rows correctly (mirrors the real PPF statement this fix was built for)", () => {
+    const pages = onePage([
+      HEADER_ROW,
+      ["30/07/2026", "NB", "Subscription", "Transfer", "-", "30/07/2026", "5,000.00", "5,000.00"],
+      ["01/08/2026", "NB", "Subscription", "-", "01/08/2026", "35,000.00", "40,000.00"],
+      ["14/08/2026", "NB", "Subscription", "-", "14/08/2026", "20,000.00", "60,000.00"],
+      ...SUMMARY_LINES("0.00", 3, "60,000.00", "60,000.00"),
+    ]);
+    const rows = parseStatementRows(pages, "hdfc_statement");
+    expect(rows).toHaveLength(3);
+    expect(rows.map((r) => ("error" in r ? r.error : r.amount))).toEqual([5000, 35000, 20000]);
+    expect(rows.map((r) => ("error" in r ? r.error : r.date))).toEqual(["2026-07-30", "2026-08-01", "2026-08-14"]);
+  });
+
+  it("reports a single-amount-column row as an error rather than guessing a sign, when there's no reference balance at all", () => {
+    const pages = onePage([
+      HEADER_ROW,
+      // No prior row and no STATEMENT SUMMARY block in this document, so
+      // there's genuinely nothing to compare this row's balance against.
+      ["06/06/2026", "Mystery", "Row", "-", "06/06/2026", "5,000.00", "5,000.00"],
+    ]);
+    const rows = parseStatementRows(pages, "hdfc_statement");
+    expect(rows).toHaveLength(1);
+    expect("error" in rows[0]).toBe(true);
+  });
 });
