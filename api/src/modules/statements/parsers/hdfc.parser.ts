@@ -1,7 +1,7 @@
 import type { PDFExtractPage } from "pdf.js-extract";
 import type { StatementRowResult } from "../types.js";
 import { linesFromPages } from "../line-builder.js";
-import { isDateToken, isMoneyToken, toIsoDate } from "./utils.js";
+import { isMoneyToken, toIsoDate } from "./utils.js";
 
 /**
  * HDFC's row structure is genuinely different from SBI's, confirmed via
@@ -53,8 +53,34 @@ import { isDateToken, isMoneyToken, toIsoDate } from "./utils.js";
  * just a page-number footer like SBI), so page-boilerplate filtering here is
  * broader than SBI's, including a generic "looks like a `Label : value`
  * account-detail line" pattern rather than an exhaustive phrase list.
+ *
+ * Confirmed against a real, newer HDFC savings-account e-statement (a later
+ * date range than the PPF statement above, same underlying account): its
+ * transaction AND value-date columns print `DD/MM/YY` (2-digit year, e.g.
+ * `31/05/26`) instead of `DD/MM/YYYY`. Every other real/synthetic HDFC
+ * statement seen so far uses 4-digit years, so both have to be accepted —
+ * `ANCHOR_RE` and `isHdfcDateToken`/`normalizeHdfcDateToken` below all treat
+ * a 2-digit year as `20YY` (this is a personal India banking app in 2026;
+ * no windowing scheme is needed). Deliberately NOT changed in the shared
+ * `isDateToken`/`toIsoDate` (`./utils.ts`), which SBI's parser also uses
+ * with 4-digit-year-only statements — this ambiguity is HDFC-specific.
  */
-const ANCHOR_RE = /^(\d{2}\/\d{2}\/\d{4})\s+(.*)$/;
+const ANCHOR_RE = /^(\d{2}\/\d{2}\/(?:\d{4}|\d{2}))\s+(.*)$/;
+
+/** Matches `DD/MM/YYYY` or `DD/MM/YY`, for the `Value Date` column — see `ANCHOR_RE`'s doc comment. */
+const HDFC_DATE_TOKEN_RE = /^\d{2}\/\d{2}\/(?:\d{4}|\d{2})$/;
+
+function isHdfcDateToken(token: string): boolean {
+  return HDFC_DATE_TOKEN_RE.test(token);
+}
+
+/** `DD/MM/YY` -> `DD/MM/20YY`, passing a already-4-digit-year token through unchanged. */
+function normalizeHdfcDateToken(token: string): string {
+  const m = /^(\d{2}\/\d{2}\/)(\d{2}|\d{4})$/.exec(token);
+  if (!m) return token;
+  const [, dayMonth, year] = m;
+  return year.length === 2 ? `${dayMonth}20${year}` : token;
+}
 
 const BOILERPLATE_RES: RegExp[] = [
   /^page\s+\d+\s+of\s+\d+$/i,
@@ -152,7 +178,7 @@ function findAnchors(lines: string[]): Anchor[] {
     if (amountStart === balanceIdx) continue; // no amount token at all — not a real anchor line
 
     const valueDateIdx = amountStart - 1;
-    if (valueDateIdx < 0 || !isDateToken(tokens[valueDateIdx])) continue;
+    if (valueDateIdx < 0 || !isHdfcDateToken(tokens[valueDateIdx])) continue;
 
     const amountTokens = tokens.slice(amountStart, balanceIdx).map((t) => parseFloat(t.replace(/,/g, "")));
 
@@ -165,7 +191,7 @@ function findAnchors(lines: string[]): Anchor[] {
 
     anchors.push({
       index: i,
-      date: m[1],
+      date: normalizeHdfcDateToken(m[1]),
       onLineNarration,
       amountTokens,
       balance: parseFloat(balanceTok.replace(/,/g, "")),
@@ -319,6 +345,26 @@ function findOpeningBalance(lines: string[]): number | null {
 }
 
 /**
+ * Finds this statement's own printed "Closing Bal" — the LAST token on the
+ * same STATEMENT SUMMARY value line `findOpeningBalance` reads the FIRST
+ * token of ("Opening Balance | Dr Count | Cr Count | Debits | Credits |
+ * Closing Bal", six space-separated tokens in that order on every real
+ * statement seen). Used only as `parseHdfcStatementFull`'s fallback for a
+ * statement with zero parsed transaction rows — see its call site's doc
+ * comment for why that fallback must not simply reuse `findOpeningBalance`.
+ * Returns `null` if this document has no summary block at all.
+ */
+function findSummaryClosingBalance(lines: string[]): number | null {
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (!SUMMARY_HEADER_RE.test(lines[i])) continue;
+    const tokens = lines[i + 1].trim().split(/\s+/).filter(Boolean);
+    const lastToken = tokens[tokens.length - 1];
+    if (lastToken && isMoneyToken(lastToken)) return parseFloat(lastToken.replace(/,/g, ""));
+  }
+  return null;
+}
+
+/**
  * The shared work behind both `parseHdfcStatement` (rows, for actually
  * filing transactions) and `findHdfcClosingBalance` (just the final number,
  * for offering to reconcile the account's own balance after import — see
@@ -331,7 +377,8 @@ function parseHdfcStatementFull(pages: PDFExtractPage[]): {
   closingBalance: number | null;
 } {
   const allPageLines = linesFromPages(pages);
-  let carriedBalance = findOpeningBalance(allPageLines.flat());
+  const flatLines = allPageLines.flat();
+  let carriedBalance = findOpeningBalance(flatLines);
 
   const results: StatementRowResult[] = [];
   for (const pageLines of allPageLines) {
@@ -357,7 +404,29 @@ function parseHdfcStatementFull(pages: PDFExtractPage[]): {
     results.push(...rows);
     carriedBalance = endingBalance;
   }
-  return { rows: results, closingBalance: carriedBalance };
+
+  // `carriedBalance` is seeded from the statement's own OPENING balance and
+  // only ever advanced by an anchor's own stated balance (see
+  // `parseHdfcPage`'s `endingBalance`) — when zero anchors are found on
+  // EVERY page (`results.length === 0`), it's never advanced at all, so it's
+  // still just the opening balance verbatim. Returning it as-is here used to
+  // silently mean "closing balance == opening balance" any time the
+  // per-anchor parsing failed to find a single row on the whole document —
+  // which is correct for a genuinely empty statement (nothing moved the
+  // balance), but was WRONG the one time this was seen for real: a real
+  // statement whose transaction rows exist but used a 2-digit year
+  // (`ANCHOR_RE` didn't match, a since-fixed bug) parsed zero rows despite
+  // covering ~117 real transactions, and this fallback reported the
+  // statement's OPENING balance as its closing balance — a real,
+  // production-reachable wrong-balance bug, not just a hypothetical one.
+  // Preferring the STATEMENT SUMMARY block's own explicitly-labeled "Closing
+  // Bal" figure here (when the document has one) fixes that case outright
+  // and is strictly safer than the old fallback even for a genuinely empty
+  // statement, where Closing Bal and Opening Balance are the same number
+  // anyway.
+  const closingBalance = results.length > 0 ? carriedBalance : (findSummaryClosingBalance(flatLines) ?? carriedBalance);
+
+  return { rows: results, closingBalance };
 }
 
 export function parseHdfcStatement(pages: PDFExtractPage[]): StatementRowResult[] {
@@ -366,12 +435,22 @@ export function parseHdfcStatement(pages: PDFExtractPage[]): StatementRowResult[
 
 /**
  * The statement's own final closing balance — the last transaction row's
- * stated balance (or, if the statement has no transaction rows at all, its
- * "Opening Balance" summary value, since nothing moved it), used to offer
- * reconciling the linked `Account.currentBalance` after a successful import
- * instead of leaving that as one more thing to type in by hand. `null` if
- * this document never established a balance at all (no summary block AND no
- * transaction rows — effectively not a real statement).
+ * stated balance, or (if the statement parsed zero transaction rows at all)
+ * the STATEMENT SUMMARY block's own explicitly-labeled "Closing Bal" figure
+ * (see `findSummaryClosingBalance`), or `null` if this document never
+ * established a balance at all (no summary block AND no transaction rows —
+ * effectively not a real statement). Used to offer reconciling the linked
+ * `Account.currentBalance` after a successful import instead of leaving that
+ * as one more thing to type in by hand.
+ *
+ * The zero-rows fallback reads "Closing Bal" specifically, NOT "Opening
+ * Balance" — those two are only the same number for a genuinely empty
+ * statement (nothing ever moved the balance). Falling back to Opening
+ * Balance would silently under/over-state the real closing balance any time
+ * zero rows is actually a PARSING FAILURE on a statement that has real
+ * transactions (confirmed against a real HDFC statement whose 2-digit-year
+ * dates weren't recognized at all — see `ANCHOR_RE`'s doc comment — which
+ * made this exact mistake before it was fixed).
  *
  * Deliberately independent of whether every row in the statement parsed
  * cleanly: this number comes straight from the statement's own printed
@@ -380,4 +459,20 @@ export function parseHdfcStatement(pages: PDFExtractPage[]): StatementRowResult[
  */
 export function findHdfcClosingBalance(pages: PDFExtractPage[]): number | null {
   return parseHdfcStatementFull(pages).closingBalance;
+}
+
+/**
+ * The statement's own printed "Opening Balance" (from the STATEMENT SUMMARY
+ * block — see `findOpeningBalance`'s doc comment for the exact layout), exposed
+ * for the same reason `findHdfcClosingBalance` is: a data-quality cross-check,
+ * not a reconciliation target on its own. `statementProcess.worker.ts` uses this
+ * ALONGSIDE `findHdfcClosingBalance` to verify `openingBalance + sum(every
+ * successfully-parsed row's amount) ≈ closingBalance` — a mismatch means some
+ * row(s) on this statement were missed or misparsed, even though the closing
+ * balance itself (read straight off the document, independent of which rows this
+ * parser managed to extract) is still trusted for reconciling the account.
+ * `null` if this document has no STATEMENT SUMMARY block at all.
+ */
+export function findHdfcOpeningBalance(pages: PDFExtractPage[]): number | null {
+  return findOpeningBalance(linesFromPages(pages).flat());
 }

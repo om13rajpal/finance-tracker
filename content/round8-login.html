@@ -1,0 +1,1685 @@
+<!-- @moodforge
+schema: 1.0
+round: 8
+phase: all-screens
+worker: moodforge-screen-designer
+theme: sorted
+version: v1
+created_at: 2026-08-29T21:48:43Z
+sha256: 5e24a3e5109b281d62f3d21c535845dd632c2330334f0fbe4078f3595aced0ad
+palette: [#FAF5F2, #1A1A1A, #E2D8D0, #7D7169, #6B5F57, #F1E8E2, #FCE4CA, #F9ACCE, #F1A007, #23B471, #5483D3, #8A4BD1, #C43C63, #14199C, #A61B2B]
+fonts: [Bricolage Grotesque 800, Geist 400/500/600, Geist Mono 500]
+tokens_used: [--bg, --ink, --rule, --dim, --dim-2, --ink-wash, --hero-field, --food, --bills, --invest, --transport, --shop, --health, --focus, --alert, --disp, --ui, --num, --tracking-disp, --tracking-label, --tracking-micro, --type-micro, --type-label, --type-meta, --type-caption, --type-body-s, --type-body, --type-input, --type-h1, --type-h2, --type-h3, --leading-body, --leading-snug, --leading-tight, --sp-8, --sp-10, --sp-12, --sp-14, --sp-18, --sp-22, --sp-26, --sp-32, --sp-44, --sp-64, --stroke-hair, --stroke-panel, --stroke-tether, --stroke-focus, --stroke-display, --stroke-core, --dash-tether, --r-xs, --r-sm, --r-otp, --r-notice, --r-panel, --r-card, --r-pill, --stamp, --stamp-pressed, --stamp-offset, --focus-ring, --focus-offset, --ease-out, --ease-in-out, --dur-press, --dur-hover, --dur-skeleton]
+screen: login
+summary: Sorted login at 1440x900 and 390x844 — two-stage email OTP, all eight required states drawn, chip-constellation hero inlined with a once-only GSAP entrance, the resend affordance redesigned as a clock that becomes a button, and a corrected outward focus ring.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorted · Login · round 8</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Geist:wght@400;500;600&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   TOKENS · verbatim copy of docs/design/brand-kit/tokens.css
+   Inlined only so this review file is portable. In web/ these come from
+   the one import in app/layout.tsx. Nothing here was invented.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#FAF5F2; --ink:#1A1A1A; --rule:#E2D8D0; --ink-wash:#F1E8E2; --hero-field:#FCE4CA;
+  --dim:#7D7169; --dim-2:#6B5F57;
+  --food:#F9ACCE; --bills:#F1A007; --invest:#23B471;
+  --transport:#5483D3; --shop:#8A4BD1; --health:#C43C63;
+  --focus:#14199C; --alert:#A61B2B;
+
+  --disp:"Bricolage Grotesque","Geist",system-ui,sans-serif;
+  --ui:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --num:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --tracking-disp:-.035em; --tracking-num:-.02em;
+  --tracking-label:.16em;  --tracking-micro:.13em;
+  --weight-disp:800; --weight-strong:600; --weight-num:500; --weight-body:400;
+
+  --type-micro:9.5px; --type-label:10px; --type-meta:11px; --type-caption:13.5px;
+  --type-body-s:14.5px; --type-body:15px; --type-input:16px;
+  --type-h3:22px; --type-h2:26px; --type-h1:40px;
+  --type-figure-2:52px; --type-figure-1:108px;
+
+  --leading-tight:1.05; --leading-snug:1.25; --leading-body:1.55;
+
+  --sp-2:2px; --sp-4:4px; --sp-6:6px; --sp-8:8px; --sp-10:10px; --sp-12:12px;
+  --sp-14:14px; --sp-18:18px; --sp-22:22px; --sp-26:26px; --sp-32:32px;
+  --sp-44:44px; --sp-64:64px; --sp-96:96px;
+
+  --stroke-hair:1px; --stroke-panel:1.5px; --stroke-tether:1.6px;
+  --stroke-icon:2px; --stroke-focus:2.5px; --stroke-display:4px; --stroke-core:4.5px;
+  --dash-tether:4 6;
+
+  --r-xs:4px; --r-sm:14px; --r-otp:16px; --r-notice:18px;
+  --r-panel:22px; --r-card:26px; --r-pill:999px;
+
+  --stamp:0 2px 0 var(--ink); --stamp-pressed:0 0 0 var(--ink); --stamp-offset:2px;
+  --focus-ring:var(--stroke-focus) solid var(--focus); --focus-offset:3px;
+
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ease-in-out:cubic-bezier(.77,0,.175,1);
+  --ease-drawer:cubic-bezier(.32,.72,0,1);
+
+  --dur-press:110ms; --dur-hover:150ms; --dur-tooltip:160ms;
+  --dur-dropdown:200ms; --dur-drawer:320ms; --dur-modal:400ms; --dur-skeleton:1150ms;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PRODUCT COMPONENTS · everything below ships in web/
+   ═══════════════════════════════════════════════════════════════════════ */
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);
+  -webkit-font-smoothing:antialiased;font-size:var(--type-body)}
+
+:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-offset);border-radius:var(--r-xs)}
+::selection{background:var(--food);color:var(--ink)}
+
+/* — the stamp press · LOCKED ————————————————————————————————————— */
+.stamp{
+  box-shadow:var(--stamp);
+  transition:transform var(--dur-press) var(--ease-out),
+             box-shadow var(--dur-press) var(--ease-out);
+}
+.stamp:active:not([disabled]):not([aria-disabled="true"]){
+  transform:translateY(var(--stamp-offset));
+  box-shadow:var(--stamp-pressed);
+}
+
+/* — pill CTA ————————————————————————————————————————————————— */
+.pill{
+  appearance:none;border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);
+  background:var(--ink);color:var(--bg);font-family:var(--ui);font-weight:var(--weight-strong);
+  font-size:var(--type-body);padding:15px 30px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  line-height:1;text-decoration:none;
+}
+.pill svg{width:17px;height:17px;flex:none}
+.pill.ghost{background:transparent;color:var(--ink)}
+.pill.sm{font-size:var(--type-caption);padding:11px 20px}
+.pill.wide{width:100%}
+
+/* Busy is NOT dimmed. The button you are waiting on is the button you are
+   reading. It holds itself pressed instead — translated the full stamp
+   offset with the shadow collapsed — so the silhouette is unmistakably
+   different from idle at a glance, at full 16.08:1 contrast. */
+.pill.busy{
+  transform:translateY(var(--stamp-offset));
+  box-shadow:var(--stamp-pressed);
+  cursor:default;
+}
+.pill.busy .dots{display:inline-flex;gap:4px;align-items:center}
+.pill.busy .dots i{width:5px;height:5px;border-radius:50%;background:var(--bg);display:block;
+  opacity:.34;animation:sk var(--dur-skeleton) var(--ease-in-out) infinite}
+.pill.busy .dots i:nth-child(2){animation-delay:140ms}
+.pill.busy .dots i:nth-child(3){animation-delay:280ms}
+
+/* — field ————————————————————————————————————————————————————— */
+.fld{
+  border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);background:transparent;
+  padding:15px 22px;font-family:var(--ui);font-size:var(--type-input);color:var(--ink);
+  width:100%;line-height:1.2;
+}
+.fld::placeholder{color:var(--dim)}
+/* Ring drawn OUTWARD, always. See § 07 for why the round-3 box-shadow ring
+   reproduced the 1.37:1 adjacency the locked rule forbids. */
+.fld:focus{outline:var(--focus-ring);outline-offset:var(--focus-offset)}
+.fld.locked{background:var(--ink-wash);cursor:default}
+.fld-lab{display:block;font-family:var(--num);font-weight:var(--weight-num);
+  font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;
+  color:var(--dim);margin-bottom:9px}
+
+/* — notice · the only error surface —————————————————————————————— */
+.notice{display:flex;gap:12px;align-items:flex-start;
+  border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-notice);
+  padding:14px 17px;background:transparent}
+.notice .bang{width:22px;height:22px;border-radius:50%;
+  border:var(--stroke-panel) solid var(--ink);background:var(--alert);color:var(--bg);
+  font-family:var(--disp);font-weight:var(--weight-disp);font-size:13px;
+  display:grid;place-items:center;flex:none;margin-top:1px}
+.notice p{margin:0;font-size:var(--type-caption);line-height:1.45}
+.notice .h{font-weight:var(--weight-strong);display:block}
+.notice .d{color:var(--dim-2);display:block;margin-top:3px}
+
+/* — OTP ——————————————————————————————————————————————————————— */
+.otp{display:flex;gap:10px;border-radius:var(--r-otp)}
+.otp i{width:52px;height:60px;border:var(--stroke-panel) solid var(--ink);
+  border-radius:var(--r-otp);display:grid;place-items:center;
+  font-family:var(--num);font-weight:var(--weight-num);font-size:24px;font-style:normal;
+  letter-spacing:var(--tracking-num)}
+.otp i.cur{outline:var(--focus-ring);outline-offset:var(--focus-offset)}
+.otp i.locked{background:var(--ink-wash)}
+.otp-wrap{display:inline-block;border-radius:var(--r-otp)}
+/* One alert ring around the group, not six. The notice carries the words;
+   the ring only says "here". */
+.otp-wrap.err{outline:var(--stroke-focus) solid var(--alert);outline-offset:var(--focus-offset)}
+
+/* — the resend clock ————————————————————————————————————————————
+   Before expiry this is NOT a button. It has no border, no fill, no stamp
+   and nothing to press — because pressing it would void the code already
+   sitting in the inbox. It is a clock. At expiry it becomes a ghost pill.
+   The affordance appears exactly when it becomes safe. */
+.resend-clock{display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);
+  padding:11px 0}
+.resend-clock svg{width:14px;height:14px;flex:none;opacity:.85}
+
+.helper{font-size:var(--type-caption);line-height:1.5;color:var(--dim-2);margin:0}
+.sec{display:block;font-family:var(--num);font-weight:var(--weight-num);
+  font-size:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;
+  color:var(--dim)}
+.h1{font-family:var(--disp);font-weight:var(--weight-disp);font-size:var(--type-h1);
+  letter-spacing:var(--tracking-disp);line-height:var(--leading-tight);margin:0}
+.sub{font-size:var(--type-body);line-height:var(--leading-body);color:var(--dim-2);margin:0}
+
+@keyframes sk{0%,100%{opacity:.34}50%{opacity:.72}}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE LOGIN SCREEN
+   ═══════════════════════════════════════════════════════════════════════ */
+.screen{width:1440px;height:900px;background:var(--bg);padding:26px;display:flex;flex:none}
+.screen-inner{flex:1;display:grid;grid-template-columns:762px 1fr;
+  border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-card);overflow:hidden}
+
+/* left · the hero field */
+.hero-col{background:var(--hero-field);border-right:var(--stroke-panel) solid var(--ink);
+  padding:44px;display:flex;flex-direction:column}
+.mark{display:flex;align-items:center;gap:12px}
+.mark .dots{display:flex}
+.mark .dots i{width:16px;height:16px;border-radius:50%;
+  border:var(--stroke-panel) solid var(--ink);display:block}
+.mark .dots i+i{margin-left:-6px}
+.mark .dots i:nth-child(1){background:var(--food)}
+.mark .dots i:nth-child(2){background:var(--bills)}
+.mark .dots i:nth-child(3){background:var(--invest)}
+.mark b{font-family:var(--disp);font-weight:var(--weight-disp);font-size:var(--type-h3);
+  letter-spacing:var(--tracking-disp)}
+.hero-stage{flex:1;display:grid;place-items:center}
+.hero-stage svg.constellation{display:block;width:520px;height:470px}
+.hero-foot{display:flex;align-items:baseline;justify-content:space-between;gap:22px}
+.hero-foot .sec{color:var(--dim-2)}
+.hero-foot .cap{font-size:var(--type-caption);color:var(--dim-2);max-width:330px;
+  line-height:var(--leading-body);margin:0;text-align:right}
+
+/* right · the form column */
+.form-col{background:var(--bg);padding:44px 64px;display:flex;flex-direction:column;
+  justify-content:center;gap:26px}
+.form-col .head{display:flex;flex-direction:column;gap:14px}
+.form-col .head .sec{margin-bottom:4px}
+.form-col form{display:flex;flex-direction:column;gap:22px;margin:0}
+.form-foot{border-top:var(--stroke-hair) solid var(--rule);padding-top:18px;
+  display:flex;align-items:center;justify-content:space-between;gap:18px}
+.form-foot .sec{color:var(--dim)}
+
+/* SVG transform origins for the entrance */
+.hc,#hero-core{transform-box:fill-box;transform-origin:center}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   MOBILE · 390 x 844
+   ═══════════════════════════════════════════════════════════════════════ */
+.phone{width:390px;height:844px;background:var(--bg);flex:none;display:flex;flex-direction:column;
+  border:var(--stroke-panel) solid var(--ink);border-radius:38px;overflow:hidden}
+.phone .status{height:44px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 26px;font-family:var(--num);font-size:var(--type-meta);font-weight:var(--weight-num);
+  flex:none}
+.phone .status .bars{display:flex;gap:3px;align-items:flex-end}
+.phone .status .bars i{width:3px;background:var(--ink);border-radius:1px;display:block}
+.phone-body{flex:1;padding:0 20px 26px;display:flex;flex-direction:column;gap:20px;overflow:hidden}
+.phone .hero-block{background:var(--hero-field);border:var(--stroke-panel) solid var(--ink);
+  border-radius:var(--r-card);padding:16px 18px 6px;flex:none}
+.phone .hero-block .mark b{font-size:var(--type-body)}
+.phone .hero-block .mark .dots i{width:13px;height:13px}
+.phone .hero-block svg.constellation{display:block;width:100%;height:186px;margin-top:-6px}
+.phone .h1{font-size:30px}
+.phone .otp i{width:48px;height:56px;font-size:22px}
+.phone .otp{gap:8px}
+.phone .fld{font-size:var(--type-input)}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   REVIEW DOCUMENT CHROME · none of this ships
+   ═══════════════════════════════════════════════════════════════════════ */
+.doc{max-width:1300px;margin:0 auto;padding:64px 26px 120px}
+.doc-head{border-bottom:var(--stroke-panel) solid var(--ink);padding-bottom:26px;margin-bottom:44px}
+.doc-head h1{font-family:var(--disp);font-weight:var(--weight-disp);font-size:64px;
+  letter-spacing:var(--tracking-disp);line-height:.98;margin:14px 0 0}
+.doc-head .meta{display:flex;gap:26px;flex-wrap:wrap;margin-top:18px;
+  font-family:var(--num);font-size:var(--type-meta);color:var(--dim-2)}
+.doc-head .meta b{color:var(--ink);font-weight:var(--weight-num)}
+.doc-head .lede{font-size:17px;line-height:var(--leading-body);color:var(--dim-2);
+  max-width:74ch;margin:22px 0 0}
+
+section{margin-top:96px;scroll-margin-top:26px}
+.s-head{display:flex;align-items:baseline;gap:18px;flex-wrap:wrap;
+  border-bottom:var(--stroke-hair) solid var(--rule);padding-bottom:14px;margin-bottom:26px}
+.s-head h2{font-family:var(--disp);font-weight:var(--weight-disp);font-size:var(--type-h2);
+  letter-spacing:var(--tracking-disp);margin:0}
+.s-head .n{font-family:var(--num);font-size:var(--type-label);letter-spacing:var(--tracking-label);
+  text-transform:uppercase;color:var(--dim);flex:none}
+.s-head p{margin:0;font-size:var(--type-body-s);color:var(--dim-2);max-width:62ch;
+  line-height:var(--leading-body);flex:1;min-width:280px}
+.note{font-size:var(--type-body-s);line-height:var(--leading-body);color:var(--dim-2);
+  max-width:78ch;margin:0 0 22px}
+.note strong{color:var(--ink);font-weight:var(--weight-strong)}
+.note code,.inline{font-family:var(--num);font-size:.9em;background:var(--ink-wash);
+  padding:1px 6px;border-radius:var(--r-xs);color:var(--ink)}
+
+.scroller{overflow-x:auto;padding-bottom:14px;
+  border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-card);background:var(--ink-wash)}
+.scroller > *{margin:0 auto}
+.cap{display:flex;align-items:baseline;justify-content:space-between;gap:18px;flex-wrap:wrap;
+  padding:12px 22px;border-bottom:var(--stroke-hair) solid var(--rule);background:var(--bg)}
+.cap b{font-size:var(--type-body-s);font-weight:var(--weight-strong)}
+.cap span{font-family:var(--num);font-size:var(--type-micro);letter-spacing:var(--tracking-micro);
+  text-transform:uppercase;color:var(--dim)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.state-card{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-card);
+  overflow:hidden;background:var(--bg)}
+.state-card .body{padding:0;background:var(--bg)}
+
+/* a form column rendered 1:1, standalone */
+.col-only{width:624px;height:520px;background:var(--bg);flex:none}
+.col-only .form-col{height:100%;padding:36px 44px}
+
+.kv{width:100%;border-collapse:collapse;font-size:var(--type-body-s)}
+.kv th{text-align:left;font-family:var(--num);font-weight:var(--weight-num);
+  font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;
+  color:var(--dim);padding:0 18px 9px 0;border-bottom:var(--stroke-panel) solid var(--ink);
+  vertical-align:bottom}
+.kv td{padding:12px 18px 12px 0;border-bottom:var(--stroke-hair) solid var(--rule);
+  vertical-align:top;line-height:var(--leading-body)}
+.kv td:first-child{font-weight:var(--weight-strong);white-space:nowrap}
+.kv td.d{color:var(--dim-2)}
+.kv code{font-family:var(--num);font-size:12.5px}
+
+pre{margin:0;padding:22px;background:var(--ink);color:var(--bg);border-radius:var(--r-panel);
+  overflow-x:auto;font-family:var(--num);font-size:12.5px;line-height:1.7;
+  border:var(--stroke-panel) solid var(--ink)}
+pre .c{color:#A8988E}
+pre .k{color:var(--food)}
+pre .s{color:var(--bills)}
+
+.callout{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);
+  padding:22px 24px;background:var(--bg)}
+.callout h3{font-family:var(--disp);font-weight:var(--weight-disp);font-size:var(--type-h3);
+  letter-spacing:var(--tracking-disp);margin:0 0 10px}
+.callout p{margin:0 0 10px;font-size:var(--type-body-s);line-height:var(--leading-body);
+  color:var(--dim-2)}
+.callout p:last-child{margin-bottom:0}
+.callout p strong{color:var(--ink);font-weight:var(--weight-strong)}
+.callout.warn{background:var(--ink-wash)}
+
+.ratio{display:inline-flex;align-items:center;gap:7px;font-family:var(--num);
+  font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;
+  border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);padding:3px 10px;
+  color:var(--ink);background:var(--bg)}
+.ratio.bad{background:var(--alert);color:var(--bg);border-color:var(--ink)}
+.ratio.good{background:var(--invest);color:var(--ink)}
+
+.focus-demo{display:grid;place-items:center;height:150px;background:var(--bg);
+  border-bottom:var(--stroke-hair) solid var(--rule)}
+.focus-demo.on-ink{background:var(--ink)}
+.forced .fld,.forced .pill,.forced .otp i.cur{}
+.forced-ring{outline:var(--focus-ring);outline-offset:var(--focus-offset)}
+.forced-ring-inset{box-shadow:inset 0 0 0 var(--stroke-focus) var(--focus)}
+
+.replay{display:inline-flex;align-items:center;gap:8px;font-family:var(--num);
+  font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;
+  border:var(--stroke-panel) solid var(--ink);background:var(--bg);color:var(--ink);
+  border-radius:var(--r-pill);padding:7px 14px;cursor:pointer}
+.replay:active{transform:translateY(1px)}
+
+@media (prefers-reduced-motion:reduce){
+  :root{--dur-press:1ms;--dur-tooltip:1ms;--dur-dropdown:1ms;--dur-drawer:1ms;--dur-modal:1ms}
+  .stamp:active:not([disabled]){transform:none;box-shadow:var(--stamp-pressed)}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}
+  .pill.busy .dots i{opacity:.72;animation:none!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ── icon sprite · <g> in 24-space. Every consumer <svg> carries viewBox. ── -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="i-arrow" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4.5 12h14"/><path d="M13 6.5 18.5 12 13 17.5"/>
+    </g>
+    <g id="i-clock" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="8.4"/><path d="M12 7.4V12l3.2 2.1"/>
+    </g>
+    <g id="i-mail" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3.2" y="5.6" width="17.6" height="12.8" rx="3"/><path d="m4.4 8 7.6 5.2L19.6 8"/>
+    </g>
+    <g id="i-back" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19.5 12h-14"/><path d="M11 6.5 5.5 12 11 17.5"/>
+    </g>
+  </defs>
+</svg>
+
+
+<div class="doc">
+
+<header class="doc-head">
+  <span class="sec">Sorted · round 8 · phase all-screens · screen 1 of 2</span>
+  <h1>Login.</h1>
+  <p class="lede">Passwordless, two stages, one seat. This is the definitive design for
+    <span class="inline">web/app/login/page.tsx</span> — every state drawn rather than described,
+    at 1440&#215;900 and at 390&#215;844. It carries the one big illustrative moment in the whole
+    product, and it carries the double-submit guard, which is the least glamorous and most
+    load-bearing thing on the screen.</p>
+  <div class="meta">
+    <span>THEME <b>sorted</b></span>
+    <span>VERSION <b>v1</b></span>
+    <span>STATES DRAWN <b>8</b></span>
+    <span>GSAP DEPENDENCIES <b>1</b></span>
+    <span>SHADOWS USED <b>1 · the stamp</b></span>
+    <span>BARE &lt;svg&gt;&lt;use&gt; <b>0</b></span>
+  </div>
+</header>
+
+
+<!-- ═══════════════════════ 01 · STAGE 1 IDLE ═══════════════════════ -->
+<section id="s01">
+  <div class="s-head">
+    <span class="n">§ 01</span>
+    <h2>Stage 1 · idle</h2>
+    <p>The hero moment. Split at 762px so the constellation gets a genuine field to sit in and
+      the form still gets a comfortable 624px column. One ink frame, one interior rule, no
+      floating cards.</p>
+  </div>
+
+  <p class="note">The register question this screen had to answer: <strong>a private tool for one
+    person is allowed to say hello.</strong> Nothing here is written for a signup funnel — there is
+    no value proposition, no “trusted by”, no second CTA. There is a door, a key, and one sentence
+    telling you what the key does. The warmth is carried by the illustration and the cream field;
+    the copy stays plain because the owner will read it every single morning.</p>
+
+  <div class="scroller">
+    <div class="cap">
+      <b>1440 &#215; 900 · stage 1 · idle</b>
+      <span>hero plays once on load · <button class="replay" id="replay">replay entrance</button></span>
+    </div>
+    <div class="screen">
+      <div class="screen-inner">
+
+        <!-- ── HERO COLUMN ─────────────────────────────────────────── -->
+        <div class="hero-col">
+          <div class="mark">
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <b>Sorted</b>
+          </div>
+
+          <div class="hero-stage">
+            <!-- Inlined verbatim from docs/design/brand-kit/assets/hero/constellation.svg.
+                 Authored complete: no element starts hidden in CSS, so with JS off this is
+                 already the final frame. GSAP only paints a from-state on top. -->
+            <svg class="constellation" id="hero" viewBox="0 0 420 380" fill="none"
+                 role="img" aria-labelledby="hero-title hero-desc">
+              <title id="hero-title">Sorted</title>
+              <desc id="hero-desc">Six category chips — food, investments, bills, transport, health
+                and shopping — arranged around a rupee symbol and joined to it by dotted connector
+                lines.</desc>
+
+              <g id="hero-links" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6"
+                 stroke-linecap="round">
+                <path d="M208 126 L206 82"/>
+                <path d="M267 161 L325 132"/>
+                <path d="M266 221 L324 253"/>
+                <path d="M212 254 L213 306"/>
+                <path d="M156 224 L91 266"/>
+                <path d="M153 162 L85 129"/>
+              </g>
+
+              <g id="hero-core">
+                <circle cx="210" cy="190" r="64" fill="#FAF5F2" stroke="#1A1A1A" stroke-width="4.5"/>
+                <text x="210" y="215" text-anchor="middle"
+                      font-family="Bricolage Grotesque, Geist, system-ui, sans-serif"
+                      font-weight="800" font-size="66" fill="#1A1A1A">&#8377;</text>
+              </g>
+
+              <g id="hero-chips" fill="none" stroke="#1A1A1A" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+                <g class="hc" data-cat="food">
+                  <circle cx="206" cy="52" r="30" fill="#F9ACCE" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(194 40)">
+                    <path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/><path d="M17 10a2.9 2.9 0 0 1 0 4.5"/>
+                    <path d="M9 5.6V4.2M12.6 5.6V4.2"/>
+                  </g>
+                </g>
+                <g class="hc" data-cat="invest">
+                  <circle cx="352" cy="118" r="30" fill="#23B471" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(340 106)">
+                    <path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/><path d="M14.8 5h4.8v4.8"/>
+                  </g>
+                </g>
+                <g class="hc" data-cat="bills">
+                  <circle cx="350" cy="268" r="30" fill="#F1A007" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(338 256)">
+                    <path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/>
+                  </g>
+                </g>
+                <g class="hc" data-cat="transport">
+                  <circle cx="214" cy="336" r="30" fill="#5483D3" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(202 324)">
+                    <path d="M3.6 15.6V9.4h8.8l3.9 6.2"/><path d="M3.6 15.6h13.9"/>
+                    <circle cx="7.4" cy="17.8" r="2.1"/><circle cx="16.2" cy="17.8" r="2.1"/>
+                  </g>
+                </g>
+                <g class="hc" data-cat="health">
+                  <circle cx="66" cy="282" r="30" fill="#C43C63" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(54 270)">
+                    <g transform="rotate(-40 12 12)"><rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g>
+                  </g>
+                </g>
+                <g class="hc" data-cat="shopping">
+                  <circle cx="64" cy="112" r="30" fill="#8A4BD1" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(52 100)">
+                    <path d="M5.2 8h13.6l-1.3 12H6.5z"/><path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/>
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+
+          <div class="hero-foot">
+            <span class="sec">§ Six chips, one rupee</span>
+            <p class="cap">Every rupee that lands in Sorted ends up inside one of these six. The
+              door teaches the taxonomy before you have seen a single transaction.</p>
+          </div>
+        </div>
+
+        <!-- ── FORM COLUMN ─────────────────────────────────────────── -->
+        <div class="form-col">
+          <div class="head">
+            <span class="sec">§ 01 · The door</span>
+            <h2 class="h1">Hello again.</h2>
+            <p class="sub">Sorted has exactly one seat and it is yours. Put your email in and a
+              six-digit code lands in your inbox in about ten seconds.</p>
+          </div>
+
+          <form>
+            <div>
+              <label class="fld-lab" for="e1">Email</label>
+              <input class="fld" id="e1" type="email" inputmode="email" autocomplete="email"
+                     placeholder="you@omrajpal.in" value="om@omrajpal.in">
+            </div>
+            <button class="pill stamp wide" type="submit">
+              Send code
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </button>
+          </form>
+
+          <div class="form-foot">
+            <p class="helper" style="max-width:38ch">The code lives ten minutes. Asking for a
+              second one kills the first — so give the inbox a beat before you press again.</p>
+            <span class="sec" style="text-align:right;flex:none">No password<br>No sign-up</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 02 · THE HERO'S ROLE ═══════════════════════ -->
+<section id="s02">
+  <div class="s-head">
+    <span class="n">§ 02</span>
+    <h2>What the hero does at stage 2 — the position, and the argument</h2>
+    <p>The brief asked for a call. Here it is, with the reasoning, because this is the only
+      genuinely interesting motion decision on the screen.</p>
+  </div>
+
+  <div class="grid2" style="align-items:start">
+    <div class="callout">
+      <h3>It persists. It does not transform.</h3>
+      <p><strong>The illustration holds its exact position and geometry across the stage change.</strong>
+        No chip moves, nothing scales, nothing fades, no colour changes, and the hero does not
+        replay. The stage change is carried entirely by the form column.</p>
+      <p>The reason is the moment itself. At stage 2 the owner is holding a phone in one hand,
+        reading six digits off a mail app, and typing them with the other. That is the highest
+        attention cost in the whole product. Moving the largest object on screen at precisely that
+        moment is the worst possible place to spend motion budget. Rule&nbsp;1 — <em>anything seen a
+        hundred times a day gets no animation</em> — bites here harder than anywhere.</p>
+      <p>A transforming hero would also fight rule&nbsp;14. A hero that re-animates on a state
+        change has, from the user's seat, played twice; the second play arrives while they are
+        waiting for an email, which is exactly when a moving illustration starts reading as a
+        spinner and implying the app is stuck.</p>
+    </div>
+
+    <div class="callout">
+      <h3>Except for one gesture, which is free.</h3>
+      <p>The hero makes a single response: <strong>the six dotted connectors advance their dash
+        pattern inward by exactly one dash cycle</strong> — 10 user units, <span class="inline">stroke-dashoffset: -=10</span>
+        — over 320ms on <span class="inline">--ease-in-out</span>, staggered 30ms, once, and stop.
+        Nothing else in the SVG is touched.</p>
+      <p>It reads as the dotted line having <em>travelled</em>: a code left, and came back. That
+        meaning is already loaded into this exact stroke — the same 1.6px, dash <span class="inline">4 6</span>,
+        round-capped line is the tether, whose whole job in the product is to say
+        <em>“a connection did this, not you.”</em></p>
+      <p><strong>The reason it is safe is arithmetic.</strong> The dash pattern is periodic with a
+        cycle of 10. Advancing by exactly one full cycle means the end frame is pixel-identical to
+        the start frame. So the gesture has no state: skip it under reduced motion, skip it with
+        JS off, skip it on a slow first paint — the screen is byte-for-byte correct either way. A
+        motion whose final frame equals its first frame can never become a dependency, and can
+        never leave the illustration stranded mid-flight if the tab is backgrounded.</p>
+      <p>Precedent: <span class="inline">stroke-dashoffset</span> is already the sanctioned
+        exception to rule&nbsp;5 in this system — the brand-kit README specifies “a dashoffset draw
+        that must land in order” as part of the hero entrance. It is paint-only on an SVG and
+        triggers no layout.</p>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:22px">
+    <h3>Rejected alternatives, and why</h3>
+    <table class="kv" style="margin-top:14px">
+      <thead><tr><th style="width:34%">Considered</th><th>Rejected because</th></tr></thead>
+      <tbody>
+        <tr><td>Hero recedes — fades to 40%, form takes focus</td>
+            <td class="d">Dimming the only warm thing on the screen at the moment the user is most
+              likely to get stuck is the wrong emotional direction, and a persistent 40% illustration
+              looks like a rendering failure rather than a decision.</td></tr>
+        <tr><td>Chips collapse into the six OTP boxes</td>
+            <td class="d">Genuinely lovely, genuinely wrong. It is a Flip animation across a
+              762px gap — expensive, hard to interrupt, impossible to degrade, and it would have to
+              reverse correctly on “use a different address”. It also puts illustration directly on
+              top of an input the user is about to type into, which the register rule forbids in
+              spirit: playfulness at the edges, never on the live control.</td></tr>
+        <tr><td>Core rupee swaps to a mail glyph</td>
+            <td class="d">Turns the brand mark into a status icon. The core is the one element that
+              must be constant — it is the thing the six chips are orbiting.</td></tr>
+        <tr><td>Hero does absolutely nothing</td>
+            <td class="d">Defensible, and the fallback if the dash gesture ever misbehaves. It was
+              rejected only because the dash gesture costs nothing to skip, so the safe version and
+              the interesting version are the same version.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 03 · STAGE 1 STATES ═══════════════════════ -->
+<section id="s03">
+  <div class="s-head">
+    <span class="n">§ 03</span>
+    <h2>Stage 1 · submitting and error</h2>
+    <p>Form column at 1:1. The hero is unchanged in all of these, which is the point — cropping to
+      the column is itself the argument.</p>
+  </div>
+
+  <p class="note"><strong>The submitting button is not dimmed.</strong> The house
+    <span class="inline">.pill[disabled]{opacity:.55}</span> was dropped here on purpose: the
+    button you are waiting on is the button you are reading, and dropping cream-on-ink to 55% takes
+    16.08:1 down to roughly 4:1 at exactly the wrong moment. Instead the button <em>holds itself
+    pressed</em> — translated the full <span class="inline">--stamp-offset</span> with the shadow
+    collapsed to zero. The silhouette is 2px shorter and flat against the paper. That reads as
+    “held down” from across the room, at full contrast, and it reuses the press vocabulary the user
+    just triggered rather than inventing a disabled vocabulary.</p>
+
+  <div class="grid2">
+
+    <!-- stage 1 submitting -->
+    <div class="state-card">
+      <div class="cap"><b>Stage 1 · submitting</b><span>field locked · button held · form inert</span></div>
+      <div class="body"><div class="col-only">
+        <div class="form-col">
+          <div class="head">
+            <span class="sec">§ 01 · The door</span>
+            <h2 class="h1">Hello again.</h2>
+            <p class="sub">Sorted has exactly one seat and it is yours. Put your email in and a
+              six-digit code lands in your inbox in about ten seconds.</p>
+          </div>
+          <form>
+            <div>
+              <label class="fld-lab" for="e2">Email</label>
+              <input class="fld locked" id="e2" type="email" value="om@omrajpal.in" readonly>
+            </div>
+            <button class="pill wide busy" type="button" aria-disabled="true" aria-live="polite">
+              <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              Sending&#8230;
+            </button>
+          </form>
+          <div class="form-foot">
+            <p class="helper" style="max-width:38ch">Writing to om@omrajpal.in. Don't press again —
+              a second request cancels this one before it arrives.</p>
+            <span class="sec" style="text-align:right;flex:none">Sent<br>21:04:31</span>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- stage 1 error -->
+    <div class="state-card">
+      <div class="cap"><b>Stage 1 · error · send failed</b><span>ink-bordered notice · names the fix</span></div>
+      <div class="body"><div class="col-only">
+        <div class="form-col">
+          <div class="head">
+            <span class="sec">§ 01 · The door</span>
+            <h2 class="h1">Hello again.</h2>
+            <div class="notice" role="alert">
+              <span class="bang" aria-hidden="true">!</span>
+              <p><span class="h">The code didn't leave the building.</span>
+                 <span class="d">The mail service refused the message, so nothing reached your
+                 inbox — there is no code to wait for. Press Send code again; it usually goes
+                 through on the second try.</span></p>
+            </div>
+          </div>
+          <form>
+            <div>
+              <label class="fld-lab" for="e3">Email</label>
+              <input class="fld" id="e3" type="email" value="om@omrajpal.in">
+            </div>
+            <button class="pill stamp wide" type="submit">
+              Send code
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </button>
+          </form>
+          <div class="form-foot">
+            <p class="helper" style="max-width:38ch">Still nothing after two tries? The sender is
+              finance@omrajpal.in — check it hasn't been filed as spam.</p>
+            <span class="sec" style="text-align:right;flex:none">Attempt<br>1 of &#8734;</span>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+
+  <p class="note" style="margin-top:26px"><strong>The second stage-1 error is real, not
+    hypothetical.</strong> The repo raised the OTP rate limit from 5 to 30 requests per 15 minutes,
+    which means a human can actually hit it — and when they do, the useful information is
+    <em>when the counter clears</em>, not that a limit exists. The notice states the wall and the
+    time, and the button below it goes quiet rather than staying pressable into a guaranteed
+    failure.</p>
+
+  <div class="grid2">
+    <div class="state-card">
+      <div class="cap"><b>Stage 1 · error · rate limited</b><span>the wall, and the time it clears</span></div>
+      <div class="body"><div class="col-only" style="height:440px">
+        <div class="form-col">
+          <div class="head">
+            <span class="sec">§ 01 · The door</span>
+            <div class="notice" role="alert">
+              <span class="bang" aria-hidden="true">!</span>
+              <p><span class="h">Too many codes, too fast.</span>
+                 <span class="d">Sorted allows 30 requests every 15 minutes and you've used them.
+                 The counter clears at 9:19 PM — a code sent before then wouldn't arrive
+                 anyway.</span></p>
+            </div>
+          </div>
+          <form>
+            <div>
+              <label class="fld-lab" for="e4">Email</label>
+              <input class="fld locked" id="e4" type="email" value="om@omrajpal.in" readonly>
+            </div>
+            <div class="resend-clock">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-clock"/></svg>
+              Send code again in 3:47
+            </div>
+          </form>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="callout">
+      <h3>Why the button disappears instead of dimming</h3>
+      <p>A greyed-out button is still a button. It still invites a click, still gets clicked, and
+        still teaches nothing about why the click failed. When an action is genuinely unavailable
+        for a known duration, <strong>Sorted stops drawing a button and draws a clock</strong> —
+        mono, uppercase, <span class="inline">--dim</span>, no border, no fill, no stamp, nothing
+        to press.</p>
+      <p>This is the same component that governs resend at stage 2, and it is the single most
+        important design decision on this screen. The countdown is a live string, so it uses
+        <span class="inline">--dim</span> legitimately: mono micro-label, uppercase, 0.13em
+        tracking, glanced rather than read. The sentence above it — which contains verbs — is
+        <span class="inline">--dim-2</span> at 5.71:1. That split is the shipped test.</p>
+      <p>Note the rate-limit copy names a wall the user cannot see and a time they can act on.
+        “Please try again later” would have been the same information with the useful half
+        removed.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 04 · STAGE 2 IDLE ═══════════════════════ -->
+<section id="s04">
+  <div class="s-head">
+    <span class="n">§ 04</span>
+    <h2>Stage 2 · idle</h2>
+    <p>Full screen, so the hero holding its ground is visible rather than asserted. Press the
+      control in the caption to run the one gesture the illustration makes.</p>
+  </div>
+
+  <p class="note">Six boxes at 52&#215;60, <span class="inline">--r-otp</span> 16px, mono 24px,
+    ink 1.5px, transparent fill. The active slot takes the focus ring drawn <em>outward</em> — it
+    does not take a fill, because a filled active slot competes with the digits either side of it.
+    Behind them sits a <strong>single input</strong>: that is what keeps paste, iOS SMS autofill,
+    and screen readers working, and it is exactly what shadcn's <span class="inline">input-otp</span>
+    gives you for free.</p>
+
+  <div class="scroller">
+    <div class="cap">
+      <b>1440 &#215; 900 · stage 2 · idle · four digits entered</b>
+      <span>hero holds · <button class="replay" id="dash">play the stage-change gesture</button></span>
+    </div>
+    <div class="screen">
+      <div class="screen-inner">
+
+        <div class="hero-col">
+          <div class="mark">
+            <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+            <b>Sorted</b>
+          </div>
+          <div class="hero-stage">
+            <svg class="constellation" id="hero2" viewBox="0 0 420 380" fill="none" role="img"
+                 aria-labelledby="hero2-title">
+              <title id="hero2-title">Sorted</title>
+              <g id="hero-links-2" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6"
+                 stroke-linecap="round">
+                <path d="M208 126 L206 82"/>
+                <path d="M267 161 L325 132"/>
+                <path d="M266 221 L324 253"/>
+                <path d="M212 254 L213 306"/>
+                <path d="M156 224 L91 266"/>
+                <path d="M153 162 L85 129"/>
+              </g>
+              <g>
+                <circle cx="210" cy="190" r="64" fill="#FAF5F2" stroke="#1A1A1A" stroke-width="4.5"/>
+                <text x="210" y="215" text-anchor="middle"
+                      font-family="Bricolage Grotesque, Geist, system-ui, sans-serif"
+                      font-weight="800" font-size="66" fill="#1A1A1A">&#8377;</text>
+              </g>
+              <g fill="none" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <g><circle cx="206" cy="52" r="30" fill="#F9ACCE" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(194 40)"><path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/>
+                  <path d="M17 10a2.9 2.9 0 0 1 0 4.5"/><path d="M9 5.6V4.2M12.6 5.6V4.2"/></g></g>
+                <g><circle cx="352" cy="118" r="30" fill="#23B471" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(340 106)"><path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/>
+                  <path d="M14.8 5h4.8v4.8"/></g></g>
+                <g><circle cx="350" cy="268" r="30" fill="#F1A007" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(338 256)"><path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/></g></g>
+                <g><circle cx="214" cy="336" r="30" fill="#5483D3" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(202 324)"><path d="M3.6 15.6V9.4h8.8l3.9 6.2"/>
+                  <path d="M3.6 15.6h13.9"/><circle cx="7.4" cy="17.8" r="2.1"/>
+                  <circle cx="16.2" cy="17.8" r="2.1"/></g></g>
+                <g><circle cx="66" cy="282" r="30" fill="#C43C63" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(54 270)"><g transform="rotate(-40 12 12)">
+                  <rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g></g></g>
+                <g><circle cx="64" cy="112" r="30" fill="#8A4BD1" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(52 100)"><path d="M5.2 8h13.6l-1.3 12H6.5z"/>
+                  <path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/></g></g>
+              </g>
+            </svg>
+          </div>
+          <div class="hero-foot">
+            <span class="sec">§ Six chips, one rupee</span>
+            <p class="cap">Every rupee that lands in Sorted ends up inside one of these six. The
+              door teaches the taxonomy before you have seen a single transaction.</p>
+          </div>
+        </div>
+
+        <div class="form-col">
+          <div class="head">
+            <span class="sec">§ 02 · The code</span>
+            <h2 class="h1">Six digits,<br>then you're in.</h2>
+            <p class="sub">Sent to <strong style="color:var(--ink);font-weight:600">om@omrajpal.in</strong>
+              at 9:04 PM. Good until 9:14.</p>
+          </div>
+
+          <form>
+            <div>
+              <span class="fld-lab" id="lab-otp">Code</span>
+              <div class="otp-wrap">
+                <div class="otp" role="group" aria-labelledby="lab-otp">
+                  <i>4</i><i>0</i><i>2</i><i>8</i><i class="cur"></i><i></i>
+                </div>
+              </div>
+            </div>
+            <button class="pill stamp wide" type="submit">
+              Verify
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </button>
+          </form>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:18px;
+                      border-top:var(--stroke-hair) solid var(--rule);padding-top:12px">
+            <div class="resend-clock">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-clock"/></svg>
+              New code in 9:12
+            </div>
+            <button class="pill ghost sm stamp" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-back"/></svg>
+              Different address
+            </button>
+          </div>
+
+          <p class="helper" style="max-width:44ch">Only the newest email works. Asking for a fresh
+            code right now would quietly void the one already sitting in your inbox — so the option
+            unlocks when this one expires.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="callout warn" style="margin-top:26px">
+    <h3>The double-submit guard, designed rather than disabled</h3>
+    <p>A second OTP request invalidates the code already in the inbox. To the owner that does not
+      read as “I requested twice” — it reads as <em>“Sorted emailed me a broken code.”</em> The
+      guard exists to prevent a bug report about a bug that isn't there.</p>
+    <p>Three separate moves defend it, in order of how early they catch the mistake:</p>
+    <table class="kv" style="margin-top:14px">
+      <thead><tr><th style="width:26%">Move</th><th style="width:34%">What it does</th><th>Why it's placed there</th></tr></thead>
+      <tbody>
+        <tr><td>The warning is up front</td>
+            <td class="d">Stage 1 idle already says “asking for a second one kills the first”.</td>
+            <td class="d">Cheapest possible intervention: the user learns the rule before they can
+              break it, at a moment when they have nothing else to read.</td></tr>
+        <tr><td>Resend is a clock, not a button</td>
+            <td class="d">Until the code expires there is no pressable element at all — just
+              <span class="inline">NEW CODE IN 9:12</span> beside a clock glyph.</td>
+            <td class="d">You cannot double-submit an affordance that hasn't been drawn. A disabled
+              button would still be clicked, and a disabled button with a tooltip is a design
+              apologising for itself.</td></tr>
+        <tr><td>Submit holds itself pressed</td>
+            <td class="d">During <span class="inline">Sending…</span> / <span class="inline">Verifying…</span>
+              the pill sits translated 2px with the shadow flat, and the surrounding fieldset is
+              <span class="inline">inert</span>.</td>
+            <td class="d">Covers the impatient double-click on the primary action, which is the
+              other way to fire two requests. Full contrast retained — see § 03.</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:14px"><strong>“Different address” stays live throughout.</strong> It is
+      the one escape hatch that is never dangerous — it abandons the current code rather than
+      racing it — and without it the clock would be a trap for the one case that matters: a typo in
+      the email.</p>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 05 · STAGE 2 STATES ═══════════════════════ -->
+<section id="s05">
+  <div class="s-head">
+    <span class="n">§ 05</span>
+    <h2>Stage 2 · submitting, wrong code, expired code</h2>
+    <p>The expired case is the one the guard exists to prevent, so it is the one that gets the
+      most design: it is the moment the clock finally turns back into a button.</p>
+  </div>
+
+  <div class="grid2">
+
+    <!-- stage 2 submitting -->
+    <div class="state-card">
+      <div class="cap"><b>Stage 2 · submitting</b><span>all six locked · no ring · button held</span></div>
+      <div class="body"><div class="col-only" style="height:540px">
+        <div class="form-col">
+          <div class="head">
+            <span class="sec">§ 02 · The code</span>
+            <h2 class="h1">Six digits,<br>then you're in.</h2>
+            <p class="sub">Checking 402851 against the code sent at 9:04 PM.</p>
+          </div>
+          <form>
+            <div>
+              <span class="fld-lab" id="lab-otp2">Code</span>
+              <div class="otp-wrap">
+                <div class="otp" role="group" aria-labelledby="lab-otp2">
+                  <i class="locked">4</i><i class="locked">0</i><i class="locked">2</i>
+                  <i class="locked">8</i><i class="locked">5</i><i class="locked">1</i>
+                </div>
+              </div>
+            </div>
+            <button class="pill wide busy" type="button" aria-disabled="true" aria-live="polite">
+              <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              Verifying&#8230;
+            </button>
+          </form>
+          <p class="helper" style="max-width:44ch">Hold on — you'll land on the dashboard in a
+            second.</p>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- stage 2 wrong code -->
+    <div class="state-card">
+      <div class="cap"><b>Stage 2 · error · wrong code</b><span>one alert ring on the group, not six</span></div>
+      <div class="body"><div class="col-only" style="height:540px">
+        <div class="form-col">
+          <div class="head">
+            <span class="sec">§ 02 · The code</span>
+            <div class="notice" role="alert">
+              <span class="bang" aria-hidden="true">!</span>
+              <p><span class="h">That code didn't match.</span>
+                 <span class="d">Only the newest email works — if there are two in your inbox, the
+                 older one will always fail. Two attempts left before this code locks.</span></p>
+            </div>
+          </div>
+          <form>
+            <div>
+              <span class="fld-lab" id="lab-otp3">Code</span>
+              <div class="otp-wrap err">
+                <div class="otp" role="group" aria-labelledby="lab-otp3" aria-invalid="true">
+                  <i>4</i><i>0</i><i>2</i><i>8</i><i>5</i><i class="cur">1</i>
+                </div>
+              </div>
+            </div>
+            <button class="pill stamp wide" type="submit">
+              Verify
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </button>
+          </form>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:18px;
+                      border-top:var(--stroke-hair) solid var(--rule);padding-top:12px">
+            <div class="resend-clock">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-clock"/></svg>
+              New code in 7:38
+            </div>
+            <button class="pill ghost sm stamp" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-back"/></svg>
+              Different address
+            </button>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+  </div>
+
+  <p class="note" style="margin-top:26px"><strong>Expiry is where the screen changes shape.</strong>
+    The clock is gone. In its place is a real ghost pill carrying the stamp, and it is now the most
+    prominent control in the column — Verify has stepped down to a quiet outline, because verifying
+    a dead code is the one thing that definitely will not work. The hierarchy inverts exactly once,
+    at exactly the moment the safe action and the useful action become the same action.</p>
+
+  <div class="grid2">
+    <div class="state-card">
+      <div class="cap"><b>Stage 2 · error · code expired</b><span>the clock becomes a button</span></div>
+      <div class="body"><div class="col-only" style="height:540px">
+        <div class="form-col">
+          <div class="head">
+            <span class="sec">§ 02 · The code</span>
+            <div class="notice" role="alert">
+              <span class="bang" aria-hidden="true">!</span>
+              <p><span class="h">That code expired at 9:14 PM.</span>
+                 <span class="d">Codes last ten minutes. Send a fresh one — and use only the newest
+                 email when it lands, the old one is dead for good.</span></p>
+            </div>
+          </div>
+          <form>
+            <div>
+              <span class="fld-lab" id="lab-otp4">Code</span>
+              <div class="otp-wrap">
+                <div class="otp" role="group" aria-labelledby="lab-otp4">
+                  <i class="locked">4</i><i class="locked">0</i><i class="locked">2</i>
+                  <i class="locked">8</i><i class="locked">5</i><i class="locked">1</i>
+                </div>
+              </div>
+            </div>
+            <button class="pill stamp wide" type="submit">
+              Send a new code
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-mail"/></svg>
+            </button>
+          </form>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:18px;
+                      border-top:var(--stroke-hair) solid var(--rule);padding-top:12px">
+            <span class="sec">§ Sent 9:04 · died 9:14</span>
+            <button class="pill ghost sm stamp" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-back"/></svg>
+              Different address
+            </button>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="callout">
+      <h3>Copy notes</h3>
+      <table class="kv">
+        <thead><tr><th style="width:38%">Instead of</th><th>Sorted says</th></tr></thead>
+        <tbody>
+          <tr><td class="d">“Invalid verification code”</td>
+              <td>That code didn't match. <em>Only the newest email works.</em></td></tr>
+          <tr><td class="d">“Your code has expired”</td>
+              <td>That code expired at 9:14 PM.</td></tr>
+          <tr><td class="d">“Please try again later”</td>
+              <td>The counter clears at 9:19 PM.</td></tr>
+          <tr><td class="d">“An error occurred”</td>
+              <td>The code didn't leave the building. <em>Nothing reached your inbox.</em></td></tr>
+          <tr><td class="d">“Welcome to Sorted”</td>
+              <td>Hello again.</td></tr>
+        </tbody>
+      </table>
+      <p style="margin-top:14px">Every error names a time, a cause, or a next press. None of them
+        apologise, none of them say “oops”, and none of them are red text on a red background —
+        the alert colour appears exactly once per notice, as a 22px filled bang, at 6.90:1.</p>
+      <p>Attempt counts are stated, not hidden. “Two attempts left before this code locks” is the
+        difference between a user who retypes carefully and a user who mashes the same wrong digits
+        until they're locked out.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 06 · FOCUS ═══════════════════════ -->
+<section id="s06">
+  <div class="s-head">
+    <span class="n">§ 06</span>
+    <h2>Keyboard focus — and a finding</h2>
+    <p>Every focusable thing on this screen, with its ring drawn where it is actually drawn. One
+      correction to the round-3 field CSS is folded in here.</p>
+  </div>
+
+  <div class="callout warn" style="margin-bottom:26px">
+    <h3>Finding: the round-3 field ring reproduced the forbidden adjacency</h3>
+    <p>Round 3 shipped <span class="inline">.fld:focus{box-shadow:0 0 0 2.5px var(--focus)}</span>.
+      That ring has <strong>zero offset</strong>, so 2.5px of <span class="inline">#14199C</span>
+      sits flush against the field's own 1.5px <span class="inline">#1A1A1A</span> border. The
+      locked measurement for that pair is <strong>1.37:1</strong> — the exact adjacency the
+      focus-ring rule was written to forbid. It passed review because the field is transparent
+      rather than ink-filled, so the letter of the rule ("never box-shadow-as-ring on a filled
+      control") did not catch it. The border is the filled part.</p>
+    <p><strong>Corrected everywhere on this screen:</strong>
+      <span class="inline">outline: 2.5px solid var(--focus); outline-offset: 3px</span>. The ring
+      clears the ink border by 3px of cream and measures 11.77:1. Outlines follow
+      <span class="inline">border-radius</span> in every browser this app targets, so it wraps the
+      999px pill correctly. This also applies to the OTP slots, which round 3 gave the same
+      zero-offset treatment.</p>
+  </div>
+
+  <div class="grid3">
+
+    <div class="state-card">
+      <div class="cap"><b>Email field</b><span>outline-offset 3px</span></div>
+      <div class="focus-demo" style="padding:0 32px">
+        <div style="width:100%">
+          <label class="fld-lab">Email</label>
+          <input class="fld forced-ring" type="email" value="om@omrajpal.in" readonly tabindex="-1">
+        </div>
+      </div>
+      <div style="padding:14px 22px"><span class="ratio good">11.77:1 · on cream</span></div>
+    </div>
+
+    <div class="state-card">
+      <div class="cap"><b>Primary pill · correct</b><span>ring outside the ink fill</span></div>
+      <div class="focus-demo">
+        <button class="pill stamp forced-ring" type="button" tabindex="-1">
+          Send code <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"/></svg>
+        </button>
+      </div>
+      <div style="padding:14px 22px"><span class="ratio good">11.77:1 · on cream</span></div>
+    </div>
+
+    <div class="state-card">
+      <div class="cap"><b>Primary pill · forbidden</b><span>inset ring on the ink fill</span></div>
+      <div class="focus-demo">
+        <button class="pill forced-ring-inset" type="button" tabindex="-1" style="box-shadow:inset 0 0 0 2.5px var(--focus)">
+          Send code <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"/></svg>
+        </button>
+      </div>
+      <div style="padding:14px 22px"><span class="ratio bad">1.37:1 · effectively invisible</span></div>
+    </div>
+
+    <div class="state-card">
+      <div class="cap"><b>OTP slot · active</b><span>ring, never a fill</span></div>
+      <div class="focus-demo">
+        <div class="otp"><i>4</i><i>0</i><i class="cur"></i><i></i></div>
+      </div>
+      <div style="padding:14px 22px"><span class="ratio good">11.77:1 · on cream</span></div>
+    </div>
+
+    <div class="state-card">
+      <div class="cap"><b>Ghost pill</b><span>transparent fill, ink border</span></div>
+      <div class="focus-demo">
+        <button class="pill ghost sm stamp forced-ring" type="button" tabindex="-1">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-back"/></svg> Different address
+        </button>
+      </div>
+      <div style="padding:14px 22px"><span class="ratio good">11.77:1 · on cream</span></div>
+    </div>
+
+    <div class="callout">
+      <h3>Tab order</h3>
+      <p><strong>Stage 1:</strong> email &rarr; Send code. Two stops. There is nothing else on the
+        column and nothing focusable in the hero — the illustration is
+        <span class="inline">role="img"</span> with a title and desc, not a set of tabbable nodes.</p>
+      <p><strong>Stage 2:</strong> the OTP group (one stop — one real input behind six slots)
+        &rarr; Verify &rarr; Different address. The resend clock is not in the order while it is a
+        clock, and enters it as a normal button the instant it becomes one.</p>
+      <p>Focus moves to the OTP input automatically on the stage change, and to the notice on
+        error. Rings do not animate — rule 1, applied to keyboard traversal.</p>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 07 · NO JS ═══════════════════════ -->
+<section id="s07">
+  <div class="s-head">
+    <span class="n">§ 07</span>
+    <h2>JavaScript disabled</h2>
+    <p>Rule 15, tested rather than promised. This is the same markup with GSAP removed and every
+      script blocked.</p>
+  </div>
+
+  <p class="note">Nothing on this screen starts hidden in CSS. There is no
+    <span class="inline">opacity:0</span> waiting for a hydration flag, no
+    <span class="inline">data-mounted</span> gate, no <span class="inline">visibility:hidden</span>
+    on the hero group. The entrance is built entirely with <span class="inline">gsap.from()</span>,
+    which reads the final state off the DOM and paints a temporary from-state on top of it — so if
+    the script never runs, the browser has already drawn the finished illustration. The hero SVG
+    is a complete asset that happens to be animatable, in that order.</p>
+
+  <div class="scroller">
+    <div class="cap"><b>1440 &#215; 900 · no JavaScript · stage 1</b><span>identical to the final frame of § 01</span></div>
+    <div class="screen">
+      <div class="screen-inner">
+        <div class="hero-col">
+          <div class="mark"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><b>Sorted</b></div>
+          <div class="hero-stage">
+            <svg class="constellation" viewBox="0 0 420 380" fill="none" role="img" aria-label="Sorted">
+              <g stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round">
+                <path d="M208 126 L206 82"/><path d="M267 161 L325 132"/><path d="M266 221 L324 253"/>
+                <path d="M212 254 L213 306"/><path d="M156 224 L91 266"/><path d="M153 162 L85 129"/>
+              </g>
+              <g><circle cx="210" cy="190" r="64" fill="#FAF5F2" stroke="#1A1A1A" stroke-width="4.5"/>
+                <text x="210" y="215" text-anchor="middle"
+                      font-family="Bricolage Grotesque, Geist, system-ui, sans-serif"
+                      font-weight="800" font-size="66" fill="#1A1A1A">&#8377;</text></g>
+              <g fill="none" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <g><circle cx="206" cy="52" r="30" fill="#F9ACCE" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(194 40)"><path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/>
+                  <path d="M17 10a2.9 2.9 0 0 1 0 4.5"/><path d="M9 5.6V4.2M12.6 5.6V4.2"/></g></g>
+                <g><circle cx="352" cy="118" r="30" fill="#23B471" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(340 106)"><path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/>
+                  <path d="M14.8 5h4.8v4.8"/></g></g>
+                <g><circle cx="350" cy="268" r="30" fill="#F1A007" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(338 256)"><path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/></g></g>
+                <g><circle cx="214" cy="336" r="30" fill="#5483D3" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(202 324)"><path d="M3.6 15.6V9.4h8.8l3.9 6.2"/>
+                  <path d="M3.6 15.6h13.9"/><circle cx="7.4" cy="17.8" r="2.1"/>
+                  <circle cx="16.2" cy="17.8" r="2.1"/></g></g>
+                <g><circle cx="66" cy="282" r="30" fill="#C43C63" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(54 270)"><g transform="rotate(-40 12 12)">
+                  <rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g></g></g>
+                <g><circle cx="64" cy="112" r="30" fill="#8A4BD1" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(52 100)"><path d="M5.2 8h13.6l-1.3 12H6.5z"/>
+                  <path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/></g></g>
+              </g>
+            </svg>
+          </div>
+          <div class="hero-foot">
+            <span class="sec">§ Six chips, one rupee</span>
+            <p class="cap">Every rupee that lands in Sorted ends up inside one of these six. The
+              door teaches the taxonomy before you have seen a single transaction.</p>
+          </div>
+        </div>
+        <div class="form-col">
+          <div class="head">
+            <span class="sec">§ 01 · The door</span>
+            <h2 class="h1">Hello again.</h2>
+            <p class="sub">Sorted has exactly one seat and it is yours. Put your email in and a
+              six-digit code lands in your inbox in about ten seconds.</p>
+          </div>
+          <form method="post" action="/login/send">
+            <div>
+              <label class="fld-lab" for="e9">Email</label>
+              <input class="fld" id="e9" name="email" type="email" required
+                     autocomplete="email" placeholder="you@omrajpal.in">
+            </div>
+            <button class="pill stamp wide" type="submit">
+              Send code <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </button>
+          </form>
+          <div class="form-foot">
+            <p class="helper" style="max-width:38ch">The code lives ten minutes. Asking for a
+              second one kills the first — so give the inbox a beat before you press again.</p>
+            <span class="sec" style="text-align:right;flex:none">No password<br>No sign-up</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:26px">
+    <div class="callout">
+      <h3>What survives without JS</h3>
+      <p>The hero, in full. The layout, the type, the focus rings, the stamp press (CSS
+        <span class="inline">:active</span>), the skeleton pulse, and every error notice that was
+        server-rendered.</p>
+      <p>Both stages are real <span class="inline">&lt;form&gt;</span> elements with
+        <span class="inline">method</span> and <span class="inline">action</span> set, so the
+        recommendation is to drive them with a <strong>server action</strong> rather than a
+        <span class="inline">fetch</span> in an <span class="inline">onSubmit</span>. Stage 2 then
+        becomes a fresh server render of the same route, errors arrive as props, and the whole
+        screen works with scripting off.</p>
+    </div>
+    <div class="callout">
+      <h3>What doesn't, and why that's acceptable</h3>
+      <p>The live countdown freezes at whatever the server rendered. That is fine — the copy states
+        an absolute time (“good until 9:14”) alongside the relative one, so the absolute figure
+        carries the meaning on its own.</p>
+      <p>The dash gesture and the entrance don't play. Both were designed to be droppable: the
+        entrance because <span class="inline">gsap.from()</span> leaves the final frame in place,
+        the gesture because its final frame equals its first.</p>
+      <p>OTP paste-detection and iOS SMS autofill degrade to typing six digits. Nothing is
+        unreachable.</p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════ 08 · MOBILE ═══════════════════════ -->
+<section id="s08">
+  <div class="s-head">
+    <span class="n">§ 08</span>
+    <h2>Mobile · 390 &#215; 844</h2>
+    <p>The owner will open this on a phone more often than on a desktop, because the code arrives
+      on the phone. This is not a scaled-down desktop.</p>
+  </div>
+
+  <p class="note">Three changes, all forced by the device rather than chosen. <strong>The split
+    becomes a stack</strong> — the hero-field panel keeps its ink border and 26px radius but sits
+    as a block at the top, with the constellation cropped to 186px tall so the form clears the
+    keyboard. <strong>The OTP slots shrink to 48&#215;56 with an 8px gap</strong>: six at 52 plus
+    five 10px gaps is 362px, which does not fit inside 390 minus two 20px margins; 48/8 gives
+    328px and 11px of air either side. <strong>The field stays at 16px</strong> —
+    <span class="inline">--type-input</span> exists precisely so iOS never zooms the viewport on
+    focus, which is the single most common mobile login defect.</p>
+
+  <div class="scroller">
+    <div class="cap"><b>390 &#215; 844 · stage 1 idle and stage 2 idle</b><span>1:1 · safe-area top respected</span></div>
+    <div style="display:flex;gap:26px;padding:26px;width:max-content">
+
+      <!-- mobile stage 1 -->
+      <div class="phone">
+        <div class="status"><span>9:04</span>
+          <span class="bars" aria-hidden="true"><i style="height:5px"></i><i style="height:8px"></i>
+            <i style="height:11px"></i><i style="height:14px"></i></span></div>
+        <div class="phone-body">
+          <div class="hero-block">
+            <div class="mark"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><b>Sorted</b></div>
+            <svg class="constellation" viewBox="20 12 380 356" fill="none" role="img" aria-label="Sorted">
+              <g stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round">
+                <path d="M208 126 L206 82"/><path d="M267 161 L325 132"/><path d="M266 221 L324 253"/>
+                <path d="M212 254 L213 306"/><path d="M156 224 L91 266"/><path d="M153 162 L85 129"/>
+              </g>
+              <g><circle cx="210" cy="190" r="64" fill="#FCE4CA" stroke="#1A1A1A" stroke-width="4.5"/>
+                <text x="210" y="215" text-anchor="middle"
+                      font-family="Bricolage Grotesque, Geist, system-ui, sans-serif"
+                      font-weight="800" font-size="66" fill="#1A1A1A">&#8377;</text></g>
+              <g fill="none" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <g><circle cx="206" cy="52" r="30" fill="#F9ACCE" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(194 40)"><path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/>
+                  <path d="M17 10a2.9 2.9 0 0 1 0 4.5"/><path d="M9 5.6V4.2M12.6 5.6V4.2"/></g></g>
+                <g><circle cx="352" cy="118" r="30" fill="#23B471" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(340 106)"><path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/>
+                  <path d="M14.8 5h4.8v4.8"/></g></g>
+                <g><circle cx="350" cy="268" r="30" fill="#F1A007" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(338 256)"><path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/></g></g>
+                <g><circle cx="214" cy="336" r="30" fill="#5483D3" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(202 324)"><path d="M3.6 15.6V9.4h8.8l3.9 6.2"/>
+                  <path d="M3.6 15.6h13.9"/><circle cx="7.4" cy="17.8" r="2.1"/>
+                  <circle cx="16.2" cy="17.8" r="2.1"/></g></g>
+                <g><circle cx="66" cy="282" r="30" fill="#C43C63" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(54 270)"><g transform="rotate(-40 12 12)">
+                  <rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g></g></g>
+                <g><circle cx="64" cy="112" r="30" fill="#8A4BD1" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(52 100)"><path d="M5.2 8h13.6l-1.3 12H6.5z"/>
+                  <path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/></g></g>
+              </g>
+            </svg>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <span class="sec">§ 01 · The door</span>
+            <h2 class="h1">Hello again.</h2>
+            <p class="sub" style="font-size:var(--type-body-s)">One seat, and it's yours. Email in,
+              six digits back.</p>
+          </div>
+
+          <form style="display:flex;flex-direction:column;gap:16px;margin:0">
+            <div>
+              <label class="fld-lab" for="m1">Email</label>
+              <input class="fld" id="m1" type="email" inputmode="email" autocomplete="email"
+                     placeholder="you@omrajpal.in">
+            </div>
+            <button class="pill stamp wide" type="submit">
+              Send code <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </button>
+          </form>
+
+          <p class="helper" style="margin-top:auto">The code lives ten minutes. Asking for a second
+            one kills the first.</p>
+        </div>
+      </div>
+
+      <!-- mobile stage 2 -->
+      <div class="phone">
+        <div class="status"><span>9:05</span>
+          <span class="bars" aria-hidden="true"><i style="height:5px"></i><i style="height:8px"></i>
+            <i style="height:11px"></i><i style="height:14px"></i></span></div>
+        <div class="phone-body">
+          <div class="hero-block">
+            <div class="mark"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><b>Sorted</b></div>
+            <svg class="constellation" viewBox="20 12 380 356" fill="none" role="img" aria-label="Sorted">
+              <g stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round">
+                <path d="M208 126 L206 82"/><path d="M267 161 L325 132"/><path d="M266 221 L324 253"/>
+                <path d="M212 254 L213 306"/><path d="M156 224 L91 266"/><path d="M153 162 L85 129"/>
+              </g>
+              <g><circle cx="210" cy="190" r="64" fill="#FCE4CA" stroke="#1A1A1A" stroke-width="4.5"/>
+                <text x="210" y="215" text-anchor="middle"
+                      font-family="Bricolage Grotesque, Geist, system-ui, sans-serif"
+                      font-weight="800" font-size="66" fill="#1A1A1A">&#8377;</text></g>
+              <g fill="none" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <g><circle cx="206" cy="52" r="30" fill="#F9ACCE" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(194 40)"><path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/>
+                  <path d="M17 10a2.9 2.9 0 0 1 0 4.5"/><path d="M9 5.6V4.2M12.6 5.6V4.2"/></g></g>
+                <g><circle cx="352" cy="118" r="30" fill="#23B471" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(340 106)"><path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/>
+                  <path d="M14.8 5h4.8v4.8"/></g></g>
+                <g><circle cx="350" cy="268" r="30" fill="#F1A007" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(338 256)"><path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/></g></g>
+                <g><circle cx="214" cy="336" r="30" fill="#5483D3" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(202 324)"><path d="M3.6 15.6V9.4h8.8l3.9 6.2"/>
+                  <path d="M3.6 15.6h13.9"/><circle cx="7.4" cy="17.8" r="2.1"/>
+                  <circle cx="16.2" cy="17.8" r="2.1"/></g></g>
+                <g><circle cx="66" cy="282" r="30" fill="#C43C63" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(54 270)"><g transform="rotate(-40 12 12)">
+                  <rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g></g></g>
+                <g><circle cx="64" cy="112" r="30" fill="#8A4BD1" stroke="#1A1A1A" stroke-width="4"/>
+                  <g transform="translate(52 100)"><path d="M5.2 8h13.6l-1.3 12H6.5z"/>
+                  <path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/></g></g>
+              </g>
+            </svg>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <span class="sec">§ 02 · The code</span>
+            <h2 class="h1">Six digits.</h2>
+            <p class="sub" style="font-size:var(--type-body-s)">Sent to om@omrajpal.in at 9:04 PM.
+              Good until 9:14.</p>
+          </div>
+
+          <form style="display:flex;flex-direction:column;gap:16px;margin:0">
+            <div>
+              <span class="fld-lab" id="lab-m2">Code</span>
+              <div class="otp-wrap">
+                <div class="otp" role="group" aria-labelledby="lab-m2">
+                  <i>4</i><i>0</i><i>2</i><i class="cur"></i><i></i><i></i>
+                </div>
+              </div>
+            </div>
+            <button class="pill stamp wide" type="submit">
+              Verify <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-arrow"/></svg>
+            </button>
+          </form>
+
+          <div style="margin-top:auto;border-top:var(--stroke-hair) solid var(--rule);
+                      display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div class="resend-clock">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-clock"/></svg>
+              New code in 9:12
+            </div>
+            <button class="pill ghost sm stamp" type="button" style="padding:9px 14px;font-size:12.5px">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-back"/></svg>
+              Change
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <p class="note" style="margin-top:26px">One more mobile-only detail worth naming: the constellation
+    core is filled <span class="inline">--hero-field</span> on mobile rather than
+    <span class="inline">--bg</span>, because on desktop the core sits on the cream field and the
+    two creams differ by 1.12:1 — invisible. On mobile the hero block is
+    <span class="inline">--hero-field</span> edge to edge, so a <span class="inline">--bg</span>
+    core would suddenly become a visible lighter disc. Same asset, one fill swapped, so the core
+    keeps reading as a hole punched in the field rather than a coin sitting on it.</p>
+</section>
+
+
+<!-- ═══════════════════════ 09 · IMPLEMENTATION ═══════════════════════ -->
+<section id="s09">
+  <div class="s-head">
+    <span class="n">§ 09</span>
+    <h2>Implementation</h2>
+    <p>The exact code an engineer writes in the Next.js app, and what shadcn does and does not give
+      you here.</p>
+  </div>
+
+  <h3 style="font-family:var(--disp);font-weight:800;font-size:var(--type-h3);
+             letter-spacing:var(--tracking-disp);margin:0 0 14px">The hero — the one GSAP dependency in v1</h3>
+  <p class="note">Client component, <span class="inline">useGSAP</span> scoped to the container so
+    cleanup is automatic on unmount. Everything is <span class="inline">gsap.from()</span>, never
+    <span class="inline">gsap.set()</span> to zero, so the DOM's own state is the final frame.
+    <span class="inline">matchMedia</span> carries the reduced-motion branch — fewer and gentler,
+    not nothing.</p>
+
+<pre><span class="c">// web/app/login/HeroConstellation.tsx</span>
+<span class="s">'use client'</span>;
+<span class="k">import</span> { useGSAP } <span class="k">from</span> <span class="s">'@gsap/react'</span>;
+<span class="k">import</span> gsap <span class="k">from</span> <span class="s">'gsap'</span>;
+<span class="k">import</span> { useRef } <span class="k">from</span> <span class="s">'react'</span>;
+
+<span class="k">export function</span> HeroConstellation({ stage }: { stage: <span class="s">'email'</span> | <span class="s">'code'</span> }) {
+  <span class="k">const</span> root = useRef&lt;SVGSVGElement&gt;(<span class="k">null</span>);
+
+  <span class="c">/* ── entrance · plays exactly once, on mount ─────────────────────── */</span>
+  useGSAP(() =&gt; {
+    <span class="k">const</span> mm = gsap.matchMedia();
+
+    mm.add(<span class="s">'(prefers-reduced-motion: no-preference)'</span>, () =&gt; {
+      <span class="c">// dashoffset needs a measured length; do it once, here.</span>
+      <span class="k">const</span> links = gsap.utils.toArray&lt;SVGPathElement&gt;(<span class="s">'#hero-links path'</span>);
+      links.forEach(p =&gt; { p.dataset.len = String(p.getTotalLength()); });
+
+      gsap.timeline({ defaults: { ease: <span class="s">'power4.out'</span> } })
+        .from(<span class="s">'#hero-core'</span>, { opacity: 0, scale: .96, duration: .42 })
+        .from(links, {
+          strokeDashoffset: (i) =&gt; Number(links[i].dataset.len),
+          opacity: 0, duration: .38, stagger: .045, ease: <span class="s">'power3.out'</span>,
+        }, <span class="s">'-=.24'</span>)
+        .from(<span class="s">'.hc'</span>, { opacity: 0, scale: .94, duration: .42, stagger: .055 }, <span class="s">'-=.30'</span>);
+    });
+
+    mm.add(<span class="s">'(prefers-reduced-motion: reduce)'</span>, () =&gt; {
+      <span class="c">// gentler, not zero: opacity only, no scale, no draw.</span>
+      gsap.from(<span class="s">'#hero-core, .hc'</span>, { opacity: 0, duration: .2, stagger: .03 });
+    });
+
+    <span class="k">return</span> () =&gt; mm.revert();
+  }, { scope: root });          <span class="c">// no deps — mount only. Rule 14.</span>
+
+  <span class="c">/* ── the stage gesture · one dash cycle, once per transition ──────
+     dasharray is `4 6`, so the cycle is 10. Advancing by exactly -10
+     leaves the final frame identical to the first, which is why this is
+     safe to skip entirely under reduced motion or with JS off.        */</span>
+  useGSAP(() =&gt; {
+    <span class="k">if</span> (stage !== <span class="s">'code'</span>) <span class="k">return</span>;
+    <span class="k">if</span> (window.matchMedia(<span class="s">'(prefers-reduced-motion: reduce)'</span>).matches) <span class="k">return</span>;
+    gsap.to(<span class="s">'#hero-links path'</span>, {
+      strokeDashoffset: <span class="s">'-=10'</span>,
+      duration: .32,               <span class="c">// --dur-drawer</span>
+      ease: <span class="s">'power4.inOut'</span>,       <span class="c">// --ease-in-out</span>
+      stagger: .03,
+      overwrite: <span class="s">'auto'</span>,          <span class="c">// retarget if the user bounces stages</span>
+    });
+  }, { scope: root, dependencies: [stage] });
+
+  <span class="k">return</span> &lt;svg ref={root} viewBox=<span class="s">"0 0 420 380"</span> role=<span class="s">"img"</span> …&gt;{<span class="c">/* the asset, inlined verbatim */</span>}&lt;/svg&gt;;
+}</pre>
+
+  <div class="grid2" style="margin-top:26px">
+    <div class="callout">
+      <h3>Three traps in that file</h3>
+      <p><strong>1 · Never <span class="inline">gsap.set(…, {opacity:0})</span> at module scope or
+        in a layout effect.</strong> It creates a window where the hero is invisible before the
+        timeline starts, and if the timeline throws it stays invisible. <span class="inline">from()</span>
+        is atomic — it writes the start state and the tween in the same tick.</p>
+      <p><strong>2 · <span class="inline">transform-box: fill-box</span> is required</strong> on
+        <span class="inline">.hc</span> and <span class="inline">#hero-core</span> or the scale
+        happens about the SVG viewport origin and every chip flies in from the top-left. One CSS
+        line, easily lost.</p>
+      <p><strong>3 · <span class="inline">getTotalLength()</span> must run after layout.</strong>
+        Inside <span class="inline">useGSAP</span> it does. Called during render it returns 0 and
+        the draw silently no-ops.</p>
+    </div>
+    <div class="callout">
+      <h3>The CSS an engineer actually writes</h3>
+<pre style="font-size:11.5px;padding:16px"><span class="c">/* the whole press — nothing else */</span>
+.pill{ box-shadow:var(--stamp);
+  transition:transform  var(--dur-press) var(--ease-out),
+             box-shadow var(--dur-press) var(--ease-out); }
+.pill:active:not([disabled]){
+  transform:translateY(var(--stamp-offset));
+  box-shadow:var(--stamp-pressed); }
+
+<span class="c">/* busy: held down, NOT dimmed */</span>
+.pill[data-busy]{ transform:translateY(var(--stamp-offset));
+  box-shadow:var(--stamp-pressed); cursor:default; }
+
+<span class="c">/* every ring, outward, always */</span>
+.fld:focus-visible,
+.pill:focus-visible,
+[data-slot=otp][data-active]{
+  outline:var(--focus-ring);
+  outline-offset:var(--focus-offset); }</pre>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--disp);font-weight:800;font-size:var(--type-h3);
+             letter-spacing:var(--tracking-disp);margin:44px 0 14px">shadcn map for this screen</h3>
+
+  <table class="kv">
+    <thead><tr><th style="width:19%">Element</th><th style="width:17%">Primitive</th>
+      <th>What you must override</th></tr></thead>
+    <tbody>
+      <tr><td>Send code / Verify</td><td><code>button</code></td>
+        <td class="d">Add a <code>sorted</code> variant. <strong>Delete
+          <code>active:scale-[0.98]</code></strong> — the locked press is translateY only. Kill
+          <code>hover:bg-primary/90</code>; Sorted buttons have no hover state. Wire the busy state
+          to <code>data-busy</code>, not to <code>disabled</code> + opacity.</td></tr>
+      <tr><td>Different address</td><td><code>button</code> <code>outline</code></td>
+        <td class="d">Transparent fill, ink border, ink text, keeps the stamp. Size <code>sm</code>
+          at 11/20.</td></tr>
+      <tr><td>Email field</td><td><code>input</code></td>
+        <td class="d"><code>rounded-full</code>, 1.5px ink, transparent fill, 16px.
+          <strong>Replace the ring, don't restyle it</strong> — see the next row.</td></tr>
+      <tr><td>Focus ring</td><td>—</td>
+        <td class="d"><strong>shadcn's <code>ring-offset-background</code> assumes a white page and
+          will reintroduce the invisible-ring bug on the ink-filled primary.</strong> Set
+          <code>--ring: var(--focus)</code> and <code>--ring-offset-background: var(--bg)</code>,
+          then prefer plain <code>outline</code> + <code>outline-offset:3px</code> over the
+          <code>ring-*</code> utilities entirely on this screen. A <code>ring</code> is a
+          box-shadow, and a box-shadow ring on the ink pill measures 1.37:1.</td></tr>
+      <tr><td>Labels</td><td><code>label</code>, <code>form</code></td>
+        <td class="d"><code>FormLabel</code> → mono 9.5px, .13em, uppercase, <code>--dim</code>
+          (glanced micro-label — legitimate). <code>FormDescription</code> → <code>--dim-2</code>,
+          never <code>--dim</code>: every helper string on this screen has a verb in it.</td></tr>
+      <tr><td>Six-digit code</td><td><code>input-otp</code></td>
+        <td class="d">The right primitive and the reason not to hand-roll: one real input behind six
+          slots keeps paste, iOS SMS autofill and screen readers working. Restyle slots to 52×60
+          (48×56 under 420px), <code>--r-otp</code>, mono 24px. Active slot takes the
+          <em>ring</em>, never a fill. Drop the default caret.</td></tr>
+      <tr><td>Error notice</td><td>— <strong>bespoke</strong></td>
+        <td class="d"><code>alert</code> is close but ships a coloured background and a left icon
+          rail. Sorted's notice is ink-bordered, transparent, with the alert colour appearing once
+          as a 22px filled bang. Build <code>&lt;Notice&gt;</code>; do not <code>add alert</code>
+          and call it done.</td></tr>
+      <tr><td>Resend clock</td><td>— <strong>bespoke</strong></td>
+        <td class="d">No primitive models “a button that does not exist yet”. It is a mono label
+          with a clock glyph that swaps to a <code>Button</code> at expiry.
+          <strong>Do not implement it as <code>&lt;Button disabled&gt;</code></strong> — that is
+          the exact failure this component was designed to avoid.</td></tr>
+      <tr><td>Hero</td><td>— <strong>bespoke</strong></td>
+        <td class="d">Inline SVG, no primitive, no library. Ships from
+          <code>assets/hero/constellation.svg</code> as a React component so GSAP can address the
+          groups by id.</td></tr>
+      <tr><td>Success → dashboard</td><td><code>sonner</code></td>
+        <td class="d">Nothing toasts on this screen. Verify navigates; a “signed in” toast on the
+          destination would be telling the user something the destination already proves.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout" style="margin-top:26px">
+    <h3>Pre-ship guards for this file</h3>
+    <table class="kv" style="margin-top:14px">
+      <tbody>
+        <tr><td><code>grep '&lt;svg&gt;&lt;use'</code></td><td class="d">Returns zero. Every one of
+          the 19 icon wrappers in this file carries <code>viewBox="0 0 24 24"</code>.</td></tr>
+        <tr><td><code>grep 'scale('</code> in press states</td><td class="d">Returns zero. The stamp
+          press is translateY only.</td></tr>
+        <tr><td><code>grep 'box-shadow'</code></td><td class="d">Two values only —
+          <code>--stamp</code> and <code>--stamp-pressed</code> — plus the one deliberate
+          forbidden-example in § 06. No blur, no spread, no backdrop-blur.</td></tr>
+        <tr><td>Every <code>--dim</code> string</td><td class="d">Verb-free: <em>EMAIL</em>,
+          <em>CODE</em>, <em>NEW CODE IN 9:12</em>, <em>§ 01 · THE DOOR</em>. Every sentence is
+          <code>--dim-2</code>.</td></tr>
+        <tr><td>Rupee figures animated</td><td class="d">Zero. There are none on this screen — rule
+          12 has nothing to bite.</td></tr>
+        <tr><td>JS off</td><td class="d">§ 07 renders complete.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+/* Review-page wiring only. The shipped version is the useGSAP component in § 09. */
+(function () {
+  if (!window.gsap) return;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function entrance() {
+    var links = gsap.utils.toArray('#hero-links path');
+    if (reduce) {
+      gsap.from('#hero-core, #hero .hc', { opacity: 0, duration: .2, stagger: .03 });
+      return;
+    }
+    links.forEach(function (p) { p.dataset.len = p.getTotalLength(); });
+    gsap.timeline({ defaults: { ease: 'power4.out' } })
+      .from('#hero-core', { opacity: 0, scale: .96, duration: .42 })
+      .from(links, {
+        strokeDashoffset: function (i, t) { return Number(t.dataset.len); },
+        opacity: 0, duration: .38, stagger: .045, ease: 'power3.out'
+      }, '-=.24')
+      .from('#hero .hc', { opacity: 0, scale: .94, duration: .42, stagger: .055 }, '-=.30');
+  }
+
+  entrance();
+  document.getElementById('replay').addEventListener('click', entrance);
+
+  document.getElementById('dash').addEventListener('click', function () {
+    if (reduce) return;
+    gsap.to('#hero-links-2 path', {
+      strokeDashoffset: '-=10', duration: .32, ease: 'power4.inOut',
+      stagger: .03, overwrite: 'auto'
+    });
+  });
+})();
+</script>
+</body>
+</html>

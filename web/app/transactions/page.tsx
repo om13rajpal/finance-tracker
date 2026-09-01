@@ -600,6 +600,16 @@ function PendingPanel({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const selectedItems = items.filter((item) => selected.has(item._id));
   const allSelected = items.length > 0 && selectedItems.length === items.length;
+  // What the LAST bulk-file left unresolved, and why — surfaced as a banner
+  // that stays put until dismissed or acted on, not a toast that's gone in a
+  // few seconds. Skipped rows already stay selected (see `bulkConfirm` below)
+  // so they're visibly picked out, but a checked checkbox alone doesn't say
+  // WHY one row didn't file while five others next to it did — without this,
+  // that reads as "some just never get filed" instead of "these specific
+  // ones need one more thing from you."
+  const [bulkSkipNotice, setBulkSkipNotice] = useState<{ needsAccount: number; duplicates: number } | null>(
+    null
+  );
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["pending-transactions"] });
@@ -628,6 +638,10 @@ function PendingPanel({
       }),
     onSuccess: () => {
       invalidate();
+      // Confirming one individually is exactly how someone resolves a row a
+      // bulk-file skipped — once they've done that for at least one, the
+      // banner's already-somewhat-stale count shouldn't keep sitting there.
+      setBulkSkipNotice(null);
       showToast("Filed", "success");
     },
     onError: (err) => {
@@ -660,6 +674,7 @@ function PendingPanel({
     onSuccess: (result) => {
       invalidate();
       setSelected(new Set());
+      setBulkSkipNotice(null);
       showToast(`Discarded ${result.deletedCount}`, "success");
     },
     onError: () => showToast("Could not discard those", "error"),
@@ -680,17 +695,21 @@ function PendingPanel({
       setSelected(new Set(result.skipped.map((s) => s.id)));
 
       if (result.skipped.length === 0) {
+        setBulkSkipNotice(null);
         showToast(`Filed ${result.confirmedIds.length}`, "success");
         return;
       }
-      const needsAccount = result.skipped.filter((s) => s.reason === "account_required").length;
-      const duplicates = result.skipped.filter((s) => s.reason === "possible_duplicate").length;
-      const parts = [
-        needsAccount > 0 ? `${needsAccount} need an account first` : null,
-        duplicates > 0 ? `${duplicates} looked like duplicates` : null,
-      ].filter(Boolean);
+      // A toast alone said this and then vanished — the banner below stays
+      // until the person dismisses it or fixes what it's pointing at, which
+      // is what actually answers "why didn't this one file."
+      setBulkSkipNotice({
+        needsAccount: result.skipped.filter((s) => s.reason === "account_required").length,
+        duplicates: result.skipped.filter((s) => s.reason === "possible_duplicate").length,
+      });
       showToast(
-        `Filed ${result.confirmedIds.length}${parts.length > 0 ? ` — ${parts.join(", ")}` : ""}`
+        result.confirmedIds.length > 0
+          ? `Filed ${result.confirmedIds.length}, ${result.skipped.length} still need${result.skipped.length === 1 ? "s" : ""} attention`
+          : `${result.skipped.length} still need${result.skipped.length === 1 ? "s" : ""} attention before they can be filed`
       );
     },
     onError: () => showToast("Could not file those", "error"),
@@ -730,6 +749,35 @@ function PendingPanel({
             </div>
           ) : null}
         </div>
+      ) : null}
+
+      {bulkSkipNotice ? (
+        <Notice
+          tone="quiet"
+          title={`${bulkSkipNotice.needsAccount + bulkSkipNotice.duplicates} couldn't be filed yet — still selected below`}
+          body={
+            [
+              bulkSkipNotice.needsAccount > 0
+                ? `${bulkSkipNotice.needsAccount} ${bulkSkipNotice.needsAccount === 1 ? "needs" : "need"} an account picked first — you'll see the field on that row.`
+                : null,
+              bulkSkipNotice.duplicates > 0
+                ? `${bulkSkipNotice.duplicates} ${bulkSkipNotice.duplicates === 1 ? "looks" : "look"} like something you already have, so ${bulkSkipNotice.duplicates === 1 ? "it wasn't" : "they weren't"} added again.`
+                : null,
+            ]
+              .filter(Boolean)
+              .join(" ")
+          }
+          action={
+            <button
+              type="button"
+              onClick={() => setBulkSkipNotice(null)}
+              className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] hover:text-ink"
+            >
+              Dismiss
+            </button>
+          }
+          className="mb-14 max-w-none"
+        />
       ) : null}
 
       {items.map((item) => {

@@ -1,0 +1,1860 @@
+<!-- @moodforge
+schema: 1.0
+round: 6
+phase: animation-review
+worker: moodforge-motion-director
+theme: sorted
+version: v1
+created_at: 2026-08-30T00:00:00Z
+sha256: f3883a7e701d53ed91a77df1823da145403d25fe9faf94f2dc7f63249e53c99b
+palette: [#FAF5F2, #1A1A1A, #E2D8D0, #7D7169, #6B5F57, #F9ACCE, #F1A007, #23B471, #5483D3, #8A4BD1, #C43C63, #14199C, #A61B2B, #FCE4CA, #F1E8E2]
+fonts: [Bricolage Grotesque 800, Geist 400/500/600, Geist Mono 500]
+tokens_used: [--bg, --ink, --rule, --dim, --dim-2, --food, --bills, --invest, --transport, --shop, --health, --focus, --alert, --hero-field, --ink-wash, --disp, --ui, --num, --ease-out, --ease-in-out, --ease-drawer, --dur-press, --dur-hover, --dur-tooltip, --dur-dropdown, --dur-drawer, --dur-modal, --dur-skeleton, --stamp, --stamp-pressed, --stamp-offset, --focus-ring, --focus-offset, --stroke-panel, --r-panel, --r-pill, --r-otp, --r-notice]
+screen: login + dashboard (motion only)
+summary: Sorted motion gate — 12 live sections covering every animation on login and dashboard, with global reduced-motion and x1/x4/x12 slow-motion inspectors, and the count-up vs motion-rule-12 decision presented side by side for the user to settle.
+-->
+<!DOCTYPE html>
+<html lang="en" data-reduced="0">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorted · motion gate · round 6</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Geist+Mono:wght@500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   TOKENS — copied verbatim from docs/design/brand-kit/tokens.css.
+   The ONLY change: every duration is wrapped in calc(base * var(--mo)).
+   --mo is a GALLERY-ONLY inspector affordance so a 110ms press can be
+   watched at x12. In the shipped app the durations are literal. Nothing
+   else on this page is re-authored; if a value is not below, it is not
+   in the brand kit and it does not belong in the product.
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  --mo: 1;                       /* slow-motion multiplier — gallery only */
+
+  --bg:#FAF5F2; --ink:#1A1A1A; --rule:#E2D8D0; --ink-wash:#F1E8E2; --hero-field:#FCE4CA;
+  --dim:#7D7169; --dim-2:#6B5F57;
+  --food:#F9ACCE; --bills:#F1A007; --invest:#23B471;
+  --transport:#5483D3; --shop:#8A4BD1; --health:#C43C63;
+  --focus:#14199C; --alert:#A61B2B;
+
+  --disp:"Bricolage Grotesque","Geist",system-ui,sans-serif;
+  --ui:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --num:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --tracking-disp:-0.035em; --tracking-num:-0.02em;
+  --tracking-label:0.16em; --tracking-micro:0.13em;
+
+  --type-micro:9.5px; --type-label:10px; --type-meta:11px; --type-caption:13.5px;
+  --type-body-s:14.5px; --type-body:15px; --type-input:16px;
+  --type-h3:22px; --type-h2:26px; --type-h1:40px;
+  --type-figure-2:52px; --type-figure-1:108px;
+  --leading-tight:1.05; --leading-snug:1.25; --leading-body:1.55;
+
+  --sp-2:2px; --sp-4:4px; --sp-6:6px; --sp-8:8px; --sp-10:10px; --sp-12:12px;
+  --sp-14:14px; --sp-18:18px; --sp-22:22px; --sp-26:26px; --sp-32:32px;
+  --sp-44:44px; --sp-64:64px; --sp-96:96px;
+
+  --stroke-hair:1px; --stroke-panel:1.5px; --stroke-tether:1.6px;
+  --stroke-icon:2px; --stroke-focus:2.5px; --stroke-display:4px; --stroke-core:4.5px;
+  --dash-tether:4 6;
+
+  --r-xs:4px; --r-sm:14px; --r-otp:16px; --r-notice:18px;
+  --r-panel:22px; --r-card:26px; --r-pill:999px;
+
+  --stamp:0 2px 0 var(--ink);
+  --stamp-pressed:0 0 0 var(--ink);
+  --stamp-offset:2px;
+
+  --focus-ring:var(--stroke-focus) solid var(--focus);
+  --focus-offset:3px;
+
+  /* ── the three curves. There is no fourth. ── */
+  --ease-out:    cubic-bezier(.23, 1, .32, 1);
+  --ease-in-out: cubic-bezier(.77, 0, .175, 1);
+  --ease-drawer: cubic-bezier(.32, .72, 0, 1);
+  /* the counter-example. Present ONLY so section 01 can plot it. Never used. */
+  --ease-in-NEVER: cubic-bezier(.42, 0, 1, 1);
+
+  --dur-press:    calc(110ms  * var(--mo));
+  --dur-hover:    calc(150ms  * var(--mo));
+  --dur-tooltip:  calc(160ms  * var(--mo));
+  --dur-dropdown: calc(200ms  * var(--mo));
+  --dur-drawer:   calc(320ms  * var(--mo));
+  --dur-modal:    calc(400ms  * var(--mo));
+  --dur-skeleton: calc(1150ms * var(--mo));
+  /* derived, documented in-place: exit is ~75% of enter (rule 9) */
+  --dur-exit-dropdown: calc(150ms * var(--mo));
+  --dur-exit-notice:   calc(150ms * var(--mo));
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   REDUCED MOTION — driven by [data-reduced="1"] on <html> so the gallery
+   toggle and the OS setting both route through one code path. In the
+   shipped app this block is the @media (prefers-reduced-motion: reduce)
+   rule that already ships in tokens.css. Rule 10: fewer and gentler,
+   NOT zero. Opacity and colour survive. Movement does not.
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-reduced="1"]{
+  --dur-press:1ms; --dur-tooltip:1ms; --dur-dropdown:1ms;
+  --dur-drawer:1ms; --dur-modal:1ms;
+  --dur-exit-dropdown:1ms; --dur-exit-notice:1ms;
+  /* --dur-hover survives: a 150ms colour fade is not vestibular motion. */
+}
+html[data-reduced="1"] .stamp:active:not([disabled]),
+html[data-reduced="1"] .stamp.is-pressed{ transform:none; box-shadow:var(--stamp-pressed); }
+html[data-reduced="1"] .sk{ animation:none; opacity:.5; }
+html[data-reduced="1"] .rm-move{ transform:none !important; }
+html[data-reduced="1"] .rm-fade{ transition-duration: calc(180ms * var(--mo)) !important; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   PAGE
+   ══════════════════════════════════════════════════════════════════════ */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:96px}
+html[data-reduced="1"]{scroll-behavior:auto}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--ui);font-size:var(--type-body);line-height:var(--leading-body,1.55);
+  -webkit-font-smoothing:antialiased;
+  padding-top:64px;
+}
+::selection{background:var(--food);color:var(--ink)}
+:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-offset);border-radius:var(--r-xs)}
+
+h1,h2,h3{font-family:var(--disp);font-weight:800;letter-spacing:var(--tracking-disp);margin:0;line-height:1.05}
+p{margin:0 0 var(--sp-12)}
+a{color:var(--ink)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 var(--sp-32)}
+.mono{font-family:var(--num);font-weight:500}
+.lbl{font-family:var(--num);font-weight:500;font-size:var(--type-label);letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--dim)}
+.micro{font-family:var(--num);font-weight:500;font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim)}
+.prose{color:var(--dim-2);font-size:var(--type-body);max-width:74ch}
+.prose strong{color:var(--ink);font-weight:600}
+.tight{max-width:66ch}
+
+/* ── control bar ─────────────────────────────────────────────────────── */
+.bar{
+  position:fixed;inset:0 0 auto 0;z-index:60;height:64px;
+  background:var(--bg);border-bottom:var(--stroke-panel) solid var(--ink);
+  display:flex;align-items:center;gap:var(--sp-18);
+  padding:0 var(--sp-32);
+}
+.bar .brand{font-family:var(--disp);font-weight:800;letter-spacing:var(--tracking-disp);font-size:19px;white-space:nowrap}
+.bar .brand em{font-style:normal;color:var(--dim-2);font-weight:800}
+.bar .spacer{flex:1}
+.ctl{display:flex;align-items:center;gap:var(--sp-8)}
+.seg{display:inline-flex;border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);padding:2px;background:transparent}
+.seg button{
+  font-family:var(--num);font-weight:500;font-size:var(--type-meta);letter-spacing:.06em;
+  border:0;background:transparent;color:var(--ink);cursor:pointer;
+  padding:5px 12px;border-radius:var(--r-pill);
+  transition:background var(--dur-hover) var(--ease-out), color var(--dur-hover) var(--ease-out);
+}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.dot{width:8px;height:8px;border-radius:999px;background:var(--invest);display:inline-block}
+.dot.off{background:var(--alert)}
+@media (max-width:900px){ .bar .brand span{display:none} .wrap{padding:0 var(--sp-18)} }
+
+/* ── masthead ────────────────────────────────────────────────────────── */
+.mast{padding:var(--sp-64) 0 var(--sp-44)}
+.mast h1{font-size:clamp(52px,9vw,132px);line-height:.92}
+.mast .kicker{margin-bottom:var(--sp-18)}
+.mast .lede{font-size:var(--type-h3);font-family:var(--ui);font-weight:400;color:var(--dim-2);max-width:60ch;margin-top:var(--sp-22);line-height:1.4}
+.index{
+  margin-top:var(--sp-44);border-top:var(--stroke-panel) solid var(--ink);
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+}
+.index a{
+  display:flex;gap:var(--sp-10);align-items:baseline;text-decoration:none;
+  padding:var(--sp-12) var(--sp-14) var(--sp-12) 0;border-bottom:var(--stroke-hair) solid var(--rule);
+  font-size:var(--type-body-s);
+  transition:background var(--dur-hover) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){ .index a:hover{background:var(--ink-wash)} }
+.index a i{font-style:normal;font-family:var(--num);font-size:var(--type-meta);color:var(--dim);min-width:20px}
+
+/* ── section scaffolding ─────────────────────────────────────────────── */
+section{padding:var(--sp-64) 0;border-top:var(--stroke-panel) solid var(--ink)}
+.shead{display:grid;grid-template-columns:64px 1fr;gap:var(--sp-14);margin-bottom:var(--sp-26)}
+.shead .num{font-family:var(--num);font-size:var(--type-meta);color:var(--dim);padding-top:10px}
+.shead h2{font-size:var(--type-h1)}
+.shead .sub{color:var(--dim-2);margin-top:var(--sp-12);font-size:var(--type-body);max-width:74ch}
+.body{margin-left:78px}
+@media (max-width:820px){ .shead{grid-template-columns:1fr} .body{margin-left:0} }
+
+.panel{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);padding:var(--sp-22);background:var(--bg)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-22)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-18)}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-14)}
+@media (max-width:980px){ .grid2,.grid3,.grid4{grid-template-columns:1fr} }
+
+/* spec strip */
+.spec{display:grid;grid-template-columns:auto 1fr;gap:4px var(--sp-12);margin:var(--sp-14) 0 0;padding-top:var(--sp-12);border-top:var(--stroke-hair) solid var(--rule)}
+.spec dt{font-family:var(--num);font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);padding-top:2px}
+.spec dd{margin:0;font-family:var(--num);font-size:var(--type-meta);color:var(--ink);word-break:break-word}
+.tag{display:inline-block;font-family:var(--num);font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;border:var(--stroke-hair) solid var(--ink);border-radius:var(--r-pill);padding:3px 9px;line-height:1}
+.tag.css{background:var(--ink);color:var(--bg)}
+.tag.gsap{background:var(--hero-field)}
+.tag.none{background:transparent;color:var(--dim-2);border-color:var(--dim-2)}
+
+/* verdict blocks */
+.verdict{border-left:var(--stroke-focus) solid var(--ink);padding:var(--sp-4) 0 var(--sp-4) var(--sp-14);margin:var(--sp-18) 0;max-width:74ch}
+.verdict .lbl{display:block;margin-bottom:var(--sp-4)}
+.verdict p{color:var(--ink);margin:0}
+.yes,.no{font-family:var(--num);font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;padding:3px 8px;border-radius:var(--r-pill);border:var(--stroke-hair) solid currentColor;display:inline-block;line-height:1}
+.yes{color:var(--ink);background:var(--invest)}
+.no{color:var(--bg);background:var(--alert);border-color:var(--alert)}
+
+/* code */
+pre{
+  margin:var(--sp-14) 0 0;background:var(--ink-wash);border:var(--stroke-hair) solid var(--rule);
+  border-radius:var(--r-sm);padding:var(--sp-14) var(--sp-14);overflow:auto;
+  font-family:var(--num);font-weight:500;font-size:12.5px;line-height:1.65;color:var(--ink);
+}
+pre .c{color:var(--dim-2)}
+.codewrap{position:relative}
+.copy{
+  position:absolute;top:10px;right:10px;font-family:var(--num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;
+  border:var(--stroke-hair) solid var(--ink);background:var(--bg);color:var(--ink);
+  border-radius:var(--r-pill);padding:4px 10px;cursor:pointer;line-height:1;
+  transition:background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out);
+}
+@media (hover:hover) and (pointer:fine){ .copy:hover{background:var(--ink);color:var(--bg)} }
+
+/* ── the pill / stamp ────────────────────────────────────────────────── */
+.pill{
+  font-family:var(--ui);font-weight:600;font-size:var(--type-body);
+  background:var(--ink);color:var(--bg);
+  border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);
+  padding:15px 30px;cursor:pointer;display:inline-flex;align-items:center;gap:var(--sp-8);
+}
+.pill.sm{font-size:var(--type-body-s);padding:10px 20px}
+.pill[disabled]{opacity:.4;cursor:not-allowed}
+.pill.ghost{background:transparent;color:var(--ink)}
+.pill.quiet{background:transparent;color:var(--ink);border-color:transparent;box-shadow:none;text-decoration:underline;text-underline-offset:4px;padding-left:6px;padding-right:6px}
+
+/* THE LOCKED PRESS — verbatim from tokens.css */
+.stamp{
+  box-shadow:var(--stamp);
+  transition:
+    transform  var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out);
+}
+.stamp:active:not([disabled]),
+.stamp.is-pressed:not([disabled]){
+  transform:translateY(var(--stamp-offset));
+  box-shadow:var(--stamp-pressed);
+}
+/* WRONG #1 — scale() against a repainting hard shadow */
+.stamp-scale{
+  box-shadow:var(--stamp);
+  transition:
+    transform  var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out);
+}
+.stamp-scale:active:not([disabled]),
+.stamp-scale.is-pressed:not([disabled]){
+  transform:translateY(var(--stamp-offset)) scale(.985);
+  box-shadow:var(--stamp-pressed);
+}
+/* WRONG #2 — transform only; the shadow snaps to zero on frame 1 */
+.stamp-snap{
+  box-shadow:var(--stamp);
+  transition:transform var(--dur-press) var(--ease-out);
+}
+.stamp-snap:active:not([disabled]),
+.stamp-snap.is-pressed:not([disabled]){
+  transform:translateY(var(--stamp-offset));
+  box-shadow:var(--stamp-pressed);
+}
+
+/* ── chips ───────────────────────────────────────────────────────────── */
+.chip{
+  width:30px;height:30px;flex:0 0 30px;border-radius:var(--r-pill);
+  border:var(--stroke-panel) solid var(--ink);
+  display:inline-flex;align-items:center;justify-content:center;color:var(--ink);
+}
+.chip svg{width:17px;height:17px;display:block}
+.chip.food{background:var(--food)} .chip.bills{background:var(--bills)}
+.chip.invest{background:var(--invest)} .chip.transport{background:var(--transport)}
+.chip.shopping{background:var(--shop)} .chip.health{background:var(--health)}
+.chip.hollow{background:transparent}
+
+/* ── rows ────────────────────────────────────────────────────────────── */
+.row{display:grid;grid-template-columns:30px 1fr auto;gap:var(--sp-14);align-items:center;padding:13px 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.row:last-child{border-bottom:0}
+.row .name{font-size:var(--type-body-s)}
+.row .amt{font-family:var(--num);font-weight:500;font-size:var(--type-body-s);letter-spacing:var(--tracking-num)}
+
+/* ── budget bar ──────────────────────────────────────────────────────── */
+.bbar{height:20px;border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);overflow:hidden;background:transparent}
+.bbar > i{
+  display:block;height:100%;background:var(--c,var(--ink));
+  transform:scaleX(var(--v,0));transform-origin:left center;
+  transition:transform var(--dur-dropdown) var(--ease-in-out);
+}
+.bbar.instant > i{transition:none}
+.brow{display:grid;grid-template-columns:30px 1fr;gap:var(--sp-14);align-items:center;padding:var(--sp-12) 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.brow:last-child{border-bottom:0}
+.bmeta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--sp-6);gap:var(--sp-10)}
+.bmeta .n{font-size:var(--type-body-s)}
+.bmeta .v{font-family:var(--num);font-weight:500;font-size:var(--type-meta);color:var(--dim-2)}
+.over .v{color:var(--alert)}
+
+/* ── fields / OTP ────────────────────────────────────────────────────── */
+.field{
+  width:100%;font-family:var(--ui);font-size:var(--type-input);color:var(--ink);
+  background:transparent;border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);
+  padding:15px 22px;
+}
+.field::placeholder{color:var(--dim)}
+.otp{display:flex;gap:var(--sp-10)}
+.otp span{
+  width:52px;height:60px;border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-otp);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--num);font-weight:500;font-size:24px;letter-spacing:var(--tracking-num);
+}
+@media (max-width:520px){ .otp span{width:44px;height:52px;font-size:20px} }
+
+/* ── notice ──────────────────────────────────────────────────────────── */
+.notice{
+  border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-notice);
+  padding:var(--sp-12) var(--sp-14);display:grid;grid-template-columns:20px 1fr;gap:var(--sp-10);
+  align-items:start;font-size:var(--type-caption);color:var(--ink);background:var(--bg);
+}
+.notice svg{width:20px;height:20px;color:var(--alert);display:block}
+.notice[hidden]{display:none}
+.notice b{font-weight:600}
+.notice-slot{min-height:64px;display:flex;align-items:flex-start;padding-bottom:var(--sp-10)}
+.notice-slot.unreserved{min-height:0}
+.notice.enter{
+  opacity:0;transform:translateY(-4px);
+  transition:opacity var(--dur-dropdown) var(--ease-out), transform var(--dur-dropdown) var(--ease-out);
+}
+.notice.enter.on{opacity:1;transform:translateY(0)}
+.notice.enter.leaving{
+  opacity:0;transform:translateY(-4px);
+  transition-duration:var(--dur-exit-notice);
+}
+
+/* ── skeleton ────────────────────────────────────────────────────────── */
+@keyframes chip-pulse{0%,100%{opacity:.34}50%{opacity:.72}}
+.sk{animation:chip-pulse var(--dur-skeleton) var(--ease-in-out) infinite}
+.sk-chip{width:30px;height:30px;border-radius:var(--r-pill);border:var(--stroke-panel) dashed var(--ink)}
+.sk-line{height:11px;border-radius:var(--r-pill);background:var(--ink)}
+.sk-row{display:grid;grid-template-columns:30px 1fr auto;gap:var(--sp-14);align-items:center;padding:13px 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.sk-row:last-child{border-bottom:0}
+
+/* ── tether ──────────────────────────────────────────────────────────── */
+.tether{width:16px;height:12px;display:block;overflow:visible}
+.tether path{stroke:var(--ink);stroke-width:var(--stroke-tether);stroke-dasharray:var(--dash-tether);stroke-linecap:round;fill:none}
+@keyframes tether-march{to{stroke-dashoffset:-20}}
+.tether.march path{animation:tether-march 900ms linear infinite}
+@keyframes tether-draw{from{stroke-dashoffset:20}to{stroke-dashoffset:0}}
+.tether.draw path{animation:tether-draw var(--dur-dropdown) var(--ease-out) both}
+.trow{display:grid;grid-template-columns:16px 30px 1fr auto;gap:var(--sp-10);align-items:center;padding:13px 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.trow:last-child{border-bottom:0}
+
+/* ── easing plots ────────────────────────────────────────────────────── */
+.plot{width:100%;height:auto;display:block;border:var(--stroke-hair) solid var(--rule);border-radius:var(--r-sm);background:var(--bg)}
+.plot .axis{stroke:var(--rule);stroke-width:1}
+.plot .curve{fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round}
+.plot .curve.bad{stroke:var(--alert);stroke-dasharray:5 4}
+.plot .ctrl{stroke:var(--dim);stroke-width:1;stroke-dasharray:3 3}
+.plot .knob{fill:var(--bg);stroke:var(--dim);stroke-width:1.4}
+.track{position:relative;height:76px;margin-top:var(--sp-14);border-bottom:var(--stroke-hair) solid var(--rule)}
+.track .rail{position:absolute;left:0;right:0;top:37px;height:1px;background:var(--rule)}
+.puck{
+  position:absolute;left:0;width:30px;height:30px;border-radius:var(--r-pill);
+  border:var(--stroke-panel) solid var(--ink);background:var(--food);
+  transform:translateX(0);
+}
+.puck[data-role="ghost"]{top:2px;background:transparent;border-style:dashed;opacity:.45}
+.puck[data-role="real"]{top:42px}
+
+/* ── hero ────────────────────────────────────────────────────────────── */
+.herofield{background:var(--hero-field);border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);padding:var(--sp-22);display:flex;align-items:center;justify-content:center}
+.herofield svg.hero{width:100%;max-width:340px;height:auto;display:block}
+
+/* ── focus demo ──────────────────────────────────────────────────────── */
+.fxbad:focus-visible{outline:none;box-shadow:inset 0 0 0 2.5px var(--focus)}
+.fxgood:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-offset)}
+
+/* ── stage swap ──────────────────────────────────────────────────────── */
+.stagebox{position:relative;min-height:236px}
+.stage{
+  position:absolute;inset:0;
+  transition:opacity var(--dur-dropdown) var(--ease-out), transform var(--dur-dropdown) var(--ease-out);
+}
+.stage[data-state="out-up"]{opacity:0;transform:translateY(-6px);pointer-events:none;transition-duration:var(--dur-exit-dropdown)}
+.stage[data-state="out-down"]{opacity:0;transform:translateY(8px);pointer-events:none}
+.stage[data-state="in"]{opacity:1;transform:translateY(0)}
+.stage .otp span{opacity:0;transform:translateY(6px);transition:opacity 170ms var(--ease-out),transform 170ms var(--ease-out)}
+.stage[data-state="in"] .otp span{opacity:1;transform:translateY(0)}
+.stage .otp span:nth-child(1){transition-delay:calc(0ms   * var(--mo))}
+.stage .otp span:nth-child(2){transition-delay:calc(24ms  * var(--mo))}
+.stage .otp span:nth-child(3){transition-delay:calc(48ms  * var(--mo))}
+.stage .otp span:nth-child(4){transition-delay:calc(72ms  * var(--mo))}
+.stage .otp span:nth-child(5){transition-delay:calc(96ms  * var(--mo))}
+.stage .otp span:nth-child(6){transition-delay:calc(120ms * var(--mo))}
+html[data-reduced="1"] .stage .otp span{transform:none;transition-delay:0ms !important}
+
+/* ── stagger demo ────────────────────────────────────────────────────── */
+.stagger .item{opacity:0}
+.stagger.play .item{animation:st-in calc(200ms * var(--mo)) var(--ease-out) both}
+@keyframes st-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.stagger.play.fade .item{animation-name:st-fade}
+@keyframes st-fade{from{opacity:0}to{opacity:1}}
+.stagger.play.none .item{animation:none;opacity:1}
+html[data-reduced="1"] .stagger.play .item{animation-name:st-fade;animation-delay:0ms !important}
+html[data-reduced="1"] .stagger.play.none .item{animation:none;opacity:1}
+
+/* ── figures ─────────────────────────────────────────────────────────── */
+.fig{font-family:var(--num);font-weight:500;font-size:var(--type-figure-2);letter-spacing:var(--tracking-num);line-height:1;white-space:nowrap}
+.fig-sk{height:52px;border-radius:var(--r-sm);background:var(--ink);width:280px;max-width:100%}
+@media (max-width:1080px){ .fig{font-size:38px} .fig-sk{height:38px;width:210px} }
+
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-22)}
+@media (max-width:900px){ .cmp{grid-template-columns:1fr} }
+.cmp > div{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);padding:var(--sp-22)}
+.cmp .hd{display:flex;align-items:center;gap:var(--sp-10);margin-bottom:var(--sp-14)}
+
+/* tables */
+table{border-collapse:collapse;width:100%;font-size:var(--type-caption)}
+th,td{text-align:left;padding:10px 12px 10px 0;border-bottom:var(--stroke-hair) solid var(--rule);vertical-align:top}
+th{font-family:var(--num);font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);font-weight:500}
+td.m{font-family:var(--num);font-size:var(--type-meta);white-space:nowrap}
+
+footer{padding:var(--sp-64) 0 var(--sp-96);border-top:var(--stroke-panel) solid var(--ink)}
+.stack{display:flex;flex-wrap:wrap;gap:var(--sp-12);align-items:center;margin-top:var(--sp-14)}
+.hint{font-family:var(--num);font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim)}
+</style>
+</head>
+<body>
+
+<!-- ══ ICON SPRITE ═══════════════════════════════════════════════════════
+     Every icon is a <g> in a 24x24 space. The sprite host takes NO
+     viewBox (it renders nothing). Every CONSUMER <svg> carries
+     viewBox="0 0 24 24" — locked rule, 42 instances of the bug fixed.
+     ═══════════════════════════════════════════════════════════════════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="i-food" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/><path d="M17 10a2.9 2.9 0 0 1 0 4.5"/><path d="M9 5.6V4.2M12.6 5.6V4.2"/>
+    </g>
+    <g id="i-bills" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/>
+    </g>
+    <g id="i-invest" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/><path d="M14.8 5h4.8v4.8"/>
+    </g>
+    <g id="i-transport" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.6 15.6V9.4h8.8l3.9 6.2"/><path d="M3.6 15.6h13.9"/><circle cx="7.4" cy="17.8" r="2.1"/><circle cx="16.2" cy="17.8" r="2.1"/>
+    </g>
+    <g id="i-shopping" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.2 8h13.6l-1.3 12H6.5z"/><path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/>
+    </g>
+    <g id="i-health" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <g transform="rotate(-40 12 12)"><rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g>
+    </g>
+    <g id="i-down" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4.5v15"/><path d="M6 13.5 12 19.5 18 13.5"/>
+    </g>
+    <g id="i-up" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 19.5v-15"/><path d="M6 10.5 12 4.5 18 10.5"/>
+    </g>
+    <g id="i-bang" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9"/><path d="M12 7.4v5.4"/><path d="M12 16.4h.01"/>
+    </g>
+    <g id="i-check" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 12.6 10 17.4 19 6.6"/>
+    </g>
+  </defs>
+</svg>
+
+<!-- ══ CONTROL BAR ══════════════════════════════════════════════════════ -->
+<div class="bar" role="region" aria-label="Motion inspector controls">
+  <div class="brand">Sorted <em>· motion gate</em> <span class="lbl" style="margin-left:10px">round 06</span></div>
+  <div class="spacer"></div>
+
+  <div class="ctl">
+    <span class="lbl">Reduced motion</span>
+    <div class="seg" id="segReduced" role="group" aria-label="Reduced motion">
+      <button type="button" data-rm="0" aria-pressed="true">OFF</button>
+      <button type="button" data-rm="1" aria-pressed="false">ON</button>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <span class="lbl">Slow-mo</span>
+    <div class="seg" id="segSlow" role="group" aria-label="Slow motion multiplier">
+      <button type="button" data-mo="1"  aria-pressed="true">1&times;</button>
+      <button type="button" data-mo="4"  aria-pressed="false">4&times;</button>
+      <button type="button" data-mo="12" aria-pressed="false">12&times;</button>
+    </div>
+  </div>
+
+  <div class="ctl" title="GSAP load status">
+    <span class="dot off" id="gsapDot"></span>
+    <span class="lbl" id="gsapLbl">GSAP …</span>
+  </div>
+</div>
+
+<main class="wrap">
+
+<!-- ══ MASTHEAD ═════════════════════════════════════════════════════════ -->
+<header class="mast">
+  <div class="lbl kicker">Animation review · login + dashboard only · v1</div>
+  <h1>Everything<br>that moves.</h1>
+  <p class="lede">Twelve things move in Sorted. This page is all twelve, live, replayable, and slowed down twelve times if you want to see the frames. Everything here uses the tokens already locked in <span class="mono" style="font-size:14px">tokens.css</span> — three curves, seven durations, no fourth anything.</p>
+
+  <div class="prose" style="margin-top:var(--sp-26)">
+    <p><strong>How to use this page.</strong> Press things. Then set <span class="mono">Slow-mo</span> to <span class="mono">12&times;</span> and press them again — most of these are 110–320ms and you cannot fairly judge them at speed. Then flip <span class="mono">Reduced motion</span> to <span class="mono">ON</span> and scroll the whole page again: nothing should break, nothing should disappear, and every state change should still be legible.</p>
+    <p><strong>One decision is genuinely open</strong> and it is at the bottom, in section 12. Rounds 2 and 3 shipped a net-worth count-up you saw and did not object to. The approved brand kit now forbids it. I have built both, on the same figure, so you can settle it by eye rather than by rule.</p>
+  </div>
+
+  <nav class="index" aria-label="Sections">
+    <a href="#curves"><i>01</i> The three curves</a>
+    <a href="#stamp"><i>02</i> The stamp press</a>
+    <a href="#hero"><i>03</i> Login hero constellation</a>
+    <a href="#otp"><i>04</i> OTP stage transition</a>
+    <a href="#focus"><i>05</i> Focus rings</a>
+    <a href="#budget"><i>06</i> Budget bar fill</a>
+    <a href="#stagger"><i>07</i> Chip row stagger</a>
+    <a href="#tether"><i>08</i> The tether</a>
+    <a href="#skeleton"><i>09</i> Skeleton &amp; loading</a>
+    <a href="#error"><i>10</i> Error notice entrance</a>
+    <a href="#reduced"><i>11</i> Reduced motion</a>
+    <a href="#countup"><i>12</i> Count-up vs rule 12</a>
+  </nav>
+</header>
+
+
+<!-- ══ 01 · CURVES ══════════════════════════════════════════════════════ -->
+<section id="curves">
+  <div class="shead">
+    <div class="num">01</div>
+    <div>
+      <h2>The three curves</h2>
+      <p class="sub">There is no fourth curve. If a component seems to need one, it is the wrong component. Each plot below is the real <span class="mono">cubic-bezier</span> from <span class="mono">tokens.css</span>, drawn from its control points — not an illustration of one. Press <span class="mono">Run</span> on any card and a 30px chip travels the track underneath it using that exact curve, with a dashed ghost travelling <span class="mono">linear</span> beside it for reference.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="grid3" id="curveCards"></div>
+
+    <h3 style="font-size:var(--type-h3);margin-top:var(--sp-44)">The counter-example — why rule 3 forbids <span class="mono" style="font-size:19px">ease-in</span></h3>
+    <p class="prose" style="margin-top:var(--sp-12)">Both tracks below run for the <em>same</em> duration. The <span class="mono">ease-in</span> one feels slower, and that is not a metaphor — it delays movement through the first third of the animation, which is precisely the third the eye is watching hardest because it just clicked. On a login button pressed every morning, that reads as lag in the app, not style in the button.</p>
+    <div class="grid2" style="margin-top:var(--sp-18)" id="badCards"></div>
+
+    <div class="verdict">
+      <span class="lbl">When to use which</span>
+      <p><span class="mono">--ease-out</span> — anything entering or exiting, and every press. This is the default; roughly 80% of Sorted uses it.<br>
+      <span class="mono">--ease-in-out</span> — something already on screen changing position or size. In v1 that is exactly one thing: the budget bar re-scaling when a number changes.<br>
+      <span class="mono">--ease-drawer</span> — reserved. Sorted's login and dashboard have no drawer or sheet in v1. The token exists because the deferred screens will, and because inventing it later would break the "three curves" claim.</p>
+    </div>
+
+    <dl class="spec">
+      <dt>Implementation</dt><dd><span class="tag css">CSS</span> &nbsp;transition-timing-function. No GSAP anywhere in this section.</dd>
+      <dt>Why CSS</dt><dd>These are timing functions, not sequences. GSAP's power4.out is provided as an equivalent only for the one place a timeline is needed (§03).</dd>
+    </dl>
+  </div>
+</section>
+
+
+<!-- ══ 02 · STAMP PRESS ═════════════════════════════════════════════════ -->
+<section id="stamp">
+  <div class="shead">
+    <div class="num">02</div>
+    <div>
+      <h2>The stamp press</h2>
+      <p class="sub">The showpiece, because it is the one rule that came from you rather than from a style guide. Sorted's buttons have no hover state — the press is the <em>entire</em> feedback vocabulary of the primary CTA, so it has to be exactly right. Three buttons below: the shipped one, and the two ways it can be got wrong.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="stack" style="margin-bottom:var(--sp-22)">
+      <button class="pill sm stamp" id="pressAll" type="button">Press all three at once</button>
+      <button class="pill sm ghost stamp" data-mo-jump="12" type="button">Jump to 12&times;</button>
+      <span class="hint">Or hold any button. At 1&times; the press is 110ms — you will not see it.</span>
+    </div>
+
+    <div class="grid3">
+      <div class="panel">
+        <div class="hd" style="display:flex;gap:var(--sp-10);align-items:center;margin-bottom:var(--sp-14)">
+          <span class="yes">Shipped</span><span class="lbl">.stamp</span>
+        </div>
+        <button class="pill stamp" data-press type="button">Send code</button>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">translateY(2px) matched exactly to the 2px shadow offset, <strong>both properties on one curve</strong>. At every frame translate + offset = 2px, so the shadow's lower edge stays pinned and the button descends into the paper it was stamped on.</p>
+      </div>
+
+      <div class="panel">
+        <div class="hd" style="display:flex;gap:var(--sp-10);align-items:center;margin-bottom:var(--sp-14)">
+          <span class="no">Never</span><span class="lbl">scale() desync</span>
+        </div>
+        <button class="pill stamp-scale" data-press type="button">Send code</button>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">Adds <span class="mono">scale(.985)</span>. The box-shadow repaint and the GPU-composited scale run on different pipelines, so the 1.5px hard-edged border shrinks out of step with the shadow. At 12&times; the border visibly crawls inward while the shadow is still collapsing.</p>
+      </div>
+
+      <div class="panel">
+        <div class="hd" style="display:flex;gap:var(--sp-10);align-items:center;margin-bottom:var(--sp-14)">
+          <span class="no">Never</span><span class="lbl">shadow snap</span>
+        </div>
+        <button class="pill stamp-snap" data-press type="button">Send code</button>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">Transitions <span class="mono">transform</span> only. The shadow snaps to zero on frame 1 — the silhouette jumps 2px shorter <em>before</em> the button starts moving, then the button drifts down to meet nothing. That flicker fires on every single press.</p>
+      </div>
+    </div>
+
+    <dl class="spec">
+      <dt>Duration</dt><dd>--dur-press · 110ms</dd>
+      <dt>Easing</dt><dd>--ease-out · cubic-bezier(.23, 1, .32, 1)</dd>
+      <dt>Properties</dt><dd>transform (translateY 0 → 2px) + box-shadow (0 2px 0 → 0 0 0). Nothing else.</dd>
+      <dt>Trigger</dt><dd>:active — pointer only. Never on keydown; a keyboard-submitted form does not animate its button (rule 1).</dd>
+      <dt>Implementation</dt><dd><span class="tag css">CSS</span> transition, not keyframes. A person can double-press a CTA faster than 110ms; a transition retargets from wherever it is, a keyframe restarts from zero.</dd>
+      <dt>Reduced</dt><dd>translate drops, shadow collapse survives. The state change stays legible with no movement.</dd>
+      <dt>Scope</dt><dd>Every component carrying --stamp. Today: pill, pill.sm, pill.fab. Any future stamp inherits this press.</dd>
+    </dl>
+
+    <div class="codewrap"><button class="copy" type="button">copy</button><pre><span class="c">/* tokens.css — ships as-is. Do not re-author this in a component. */</span>
+.stamp {
+  box-shadow: var(--stamp);              <span class="c">/* 0 2px 0 var(--ink) */</span>
+  transition:
+    transform  var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out);
+}
+.stamp:active:not([disabled]) {
+  transform:  translateY(var(--stamp-offset));   <span class="c">/* 2px — MUST equal the offset */</span>
+  box-shadow: var(--stamp-pressed);              <span class="c">/* 0 0 0 var(--ink) */</span>
+}
+
+<span class="c">// React — shadcn Button, `sorted` variant. Delete shadcn's default
+// active:scale-[0.98] and hover:bg-primary/90; both are wrong here.</span>
+&lt;Button variant="sorted" className="stamp"&gt;Send code&lt;/Button&gt;</pre></div>
+  </div>
+</section>
+
+
+<!-- ══ 03 · HERO ════════════════════════════════════════════════════════ -->
+<section id="hero">
+  <div class="shead">
+    <div class="num">03</div>
+    <div>
+      <h2>Login hero constellation</h2>
+      <p class="sub">The one place in v1 that earns GSAP. Six chips, a core, and a dotted connector group that has to land in order — that is a sequence, not a state, and CSS <span class="mono">animation-delay</span> chains are brittle to interrupt. It plays <strong>once per page load</strong> and never loops (rule 14): a looping hero on a login screen reads as a spinner and tells the owner the app is stuck.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="grid2">
+      <div>
+        <div class="stack" style="margin-bottom:var(--sp-14)">
+          <span class="lbl">Animated layer</span>
+          <button class="pill sm stamp" id="heroReplay" type="button">Replay</button>
+          <span class="hint">dev control only — not in the product</span>
+        </div>
+        <div class="herofield">
+          <svg class="hero" id="heroAnim" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 380" fill="none" role="img" aria-labelledby="ha-t ha-d">
+            <title id="ha-t">Sorted</title>
+            <desc id="ha-d">Six category chips — food, investments, bills, transport, health and shopping — arranged around a rupee symbol and joined to it by dotted connector lines.</desc>
+            <g class="hero-links" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round">
+              <path d="M208 126 L206 82"/><path d="M267 161 L325 132"/><path d="M266 221 L324 253"/>
+              <path d="M212 254 L213 306"/><path d="M156 224 L91 266"/><path d="M153 162 L85 129"/>
+            </g>
+            <g class="hero-core">
+              <circle cx="210" cy="190" r="64" fill="#FAF5F2" stroke="#1A1A1A" stroke-width="4.5"/>
+              <text x="210" y="215" text-anchor="middle" font-family="Bricolage Grotesque, Geist, system-ui, sans-serif" font-weight="800" font-size="66" fill="#1A1A1A">&#8377;</text>
+            </g>
+            <g class="hero-chips" fill="none" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <g class="hc" data-x="206" data-y="52"><circle cx="206" cy="52" r="30" fill="#F9ACCE" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(194 40)"><path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/><path d="M17 10a2.9 2.9 0 0 1 0 4.5"/><path d="M9 5.6V4.2M12.6 5.6V4.2"/></g></g>
+              <g class="hc" data-x="352" data-y="118"><circle cx="352" cy="118" r="30" fill="#23B471" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(340 106)"><path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/><path d="M14.8 5h4.8v4.8"/></g></g>
+              <g class="hc" data-x="350" data-y="268"><circle cx="350" cy="268" r="30" fill="#F1A007" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(338 256)"><path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/></g></g>
+              <g class="hc" data-x="214" data-y="336"><circle cx="214" cy="336" r="30" fill="#5483D3" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(202 324)"><path d="M3.6 15.6V9.4h8.8l3.9 6.2"/><path d="M3.6 15.6h13.9"/><circle cx="7.4" cy="17.8" r="2.1"/><circle cx="16.2" cy="17.8" r="2.1"/></g></g>
+              <g class="hc" data-x="66" data-y="282"><circle cx="66" cy="282" r="30" fill="#C43C63" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(54 270)"><g transform="rotate(-40 12 12)"><rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g></g></g>
+              <g class="hc" data-x="64" data-y="112"><circle cx="64" cy="112" r="30" fill="#8A4BD1" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(52 100)"><path d="M5.2 8h13.6l-1.3 12H6.5z"/><path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/></g></g>
+            </g>
+          </svg>
+        </div>
+      </div>
+
+      <div>
+        <div class="stack" style="margin-bottom:var(--sp-14)">
+          <span class="lbl">Rule 15 · GSAP never loads</span>
+          <span class="hint">this copy is untouched by JS, forever</span>
+        </div>
+        <div class="herofield">
+          <svg class="hero" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 380" fill="none" role="img" aria-labelledby="hs-t hs-d">
+            <title id="hs-t">Sorted</title>
+            <desc id="hs-d">Static fallback: six category chips arranged around a rupee symbol and joined to it by dotted connector lines.</desc>
+            <g stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round">
+              <path d="M208 126 L206 82"/><path d="M267 161 L325 132"/><path d="M266 221 L324 253"/>
+              <path d="M212 254 L213 306"/><path d="M156 224 L91 266"/><path d="M153 162 L85 129"/>
+            </g>
+            <circle cx="210" cy="190" r="64" fill="#FAF5F2" stroke="#1A1A1A" stroke-width="4.5"/>
+            <text x="210" y="215" text-anchor="middle" font-family="Bricolage Grotesque, Geist, system-ui, sans-serif" font-weight="800" font-size="66" fill="#1A1A1A">&#8377;</text>
+            <g fill="none" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <g><circle cx="206" cy="52" r="30" fill="#F9ACCE" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(194 40)"><path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/><path d="M17 10a2.9 2.9 0 0 1 0 4.5"/><path d="M9 5.6V4.2M12.6 5.6V4.2"/></g></g>
+              <g><circle cx="352" cy="118" r="30" fill="#23B471" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(340 106)"><path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/><path d="M14.8 5h4.8v4.8"/></g></g>
+              <g><circle cx="350" cy="268" r="30" fill="#F1A007" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(338 256)"><path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/></g></g>
+              <g><circle cx="214" cy="336" r="30" fill="#5483D3" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(202 324)"><path d="M3.6 15.6V9.4h8.8l3.9 6.2"/><path d="M3.6 15.6h13.9"/><circle cx="7.4" cy="17.8" r="2.1"/><circle cx="16.2" cy="17.8" r="2.1"/></g></g>
+              <g><circle cx="66" cy="282" r="30" fill="#C43C63" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(54 270)"><g transform="rotate(-40 12 12)"><rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g></g></g>
+              <g><circle cx="64" cy="112" r="30" fill="#8A4BD1" stroke="#1A1A1A" stroke-width="4"/><g transform="translate(52 100)"><path d="M5.2 8h13.6l-1.3 12H6.5z"/><path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/></g></g>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <p class="prose" style="margin-top:var(--sp-22)">Those two are the <em>same asset</em>. The right-hand one is <span class="mono">assets/hero/constellation.svg</span> exactly as authored; the left-hand one is that file with a GSAP timeline painted on top. If the CDN is slow, if the bundle splits badly, if someone blocks scripts — the login screen is still complete and still correct. That is rule 15, and it is the reason the entrance is a <em>layer</em> rather than an <em>implementation</em>.</p>
+
+    <dl class="spec">
+      <dt>Sequence</dt><dd>core scale .95→1 + fade (320ms) · connectors scale .72→1 from the core + fade (300ms, overlapped −140ms) · six chips scale .95→1 + fade, 46ms stagger (260ms each)</dd>
+      <dt>Total</dt><dd>~880ms wall clock. Every individual step is ≤320ms and so obeys rule 4; the total is a choreography, which rule 4 does not govern. It is also the only thing on screen and it happens once.</dd>
+      <dt>Easing</dt><dd>power4.out — the GSAP equivalent of --ease-out</dd>
+      <dt>Properties</dt><dd>transform (scale, via GSAP svgOrigin so each chip grows from its own centre and the connectors grow from the core at 210,190) + opacity. Nothing else.</dd>
+      <dt>Implementation</dt><dd><span class="tag gsap">GSAP</span> — the only GSAP in login + dashboard v1. Wrapped in gsap.matchMedia so reduced-motion gets an opacity-only variant automatically.</dd>
+      <dt>Loops</dt><dd>Never. once per mount, no repeat, no yoyo. Rule 14.</dd>
+      <dt>Reduced</dt><dd>opacity-only, 260ms, no stagger, no scale.</dd>
+    </dl>
+
+    <div class="codewrap"><button class="copy" type="button">copy</button><pre><span class="c">// components/login/HeroConstellation.tsx — React 18 + @gsap/react</span>
+import { useRef } from 'react';
+import { useGSAP } from '@gsap/react';
+import gsap from 'gsap';
+
+export function HeroConstellation() {
+  const root = useRef&lt;SVGSVGElement&gt;(null);
+
+  useGSAP(() =&gt; {
+    const mm = gsap.matchMedia();
+
+    mm.add('(prefers-reduced-motion: no-preference)', () =&gt; {
+      const chips = gsap.utils.toArray&lt;SVGGElement&gt;('.hc');
+      <span class="c">// each chip grows from its own centre; svgOrigin beats transform-origin here</span>
+      chips.forEach(c =&gt; gsap.set(c, { svgOrigin: `${c.dataset.x} ${c.dataset.y}` }));
+      gsap.set('.hero-links', { svgOrigin: '210 190' });   <span class="c">// the core</span>
+
+      const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });   <span class="c">// --ease-out</span>
+      tl.from('.hero-core',  { scale: .95, opacity: 0, duration: .32, svgOrigin: '210 190' })
+        .from('.hero-links', { scale: .72, opacity: 0, duration: .30 }, '-=.14')
+        .from(chips,         { scale: .95, opacity: 0, duration: .26, stagger: .046 }, '-=.18');
+      return () =&gt; tl.kill();
+    });
+
+    mm.add('(prefers-reduced-motion: reduce)', () =&gt; {
+      <span class="c">// rule 10 — fewer and gentler, not zero. Opacity survives, movement does not.</span>
+      const tw = gsap.from('.hero-core, .hero-links, .hc', { opacity: 0, duration: .26 });
+      return () =&gt; tw.kill();
+    });
+
+    return () =&gt; mm.revert();   <span class="c">// full cleanup on unmount</span>
+  }, { scope: root });
+
+  return &lt;svg ref={root} viewBox="0 0 420 380" /* …the static asset, inlined… */ /&gt;;
+}</pre></div>
+  </div>
+</section>
+
+
+<!-- ══ 04 · OTP ═════════════════════════════════════════════════════════ -->
+<section id="otp">
+  <div class="shead">
+    <div class="num">04</div>
+    <div>
+      <h2>OTP stage transition</h2>
+      <p class="sub">The real hinge of the login screen, and the most interesting genuine motion in the product. One panel, two stages: email, then the six-digit code. The user did not navigate — the same panel changed its mind — so the motion has to say <em>replacement</em>, not <em>page change</em>.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="grid2">
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-18)">
+          <button class="pill sm stamp" id="otpNext" type="button">Send code &rarr;</button>
+          <button class="pill sm ghost stamp" id="otpBack" type="button">&larr; Back</button>
+        </div>
+
+        <div class="stagebox">
+          <div class="stage" id="stage1" data-state="in">
+            <div class="lbl" style="margin-bottom:var(--sp-10)">Step 1 · email</div>
+            <label class="micro" for="otpEmail" style="display:block;margin-bottom:var(--sp-8)">Email address</label>
+            <input class="field" id="otpEmail" type="email" value="om@sorted.in" readonly>
+            <p class="prose" style="font-size:var(--type-caption);margin:var(--sp-14) 0 0">We'll send a six-digit code. It expires in 10 minutes.</p>
+          </div>
+
+          <div class="stage" id="stage2" data-state="out-down" aria-hidden="true">
+            <div class="lbl" style="margin-bottom:var(--sp-10)">Step 2 · code</div>
+            <div class="micro" style="margin-bottom:var(--sp-8)">Sent to om@sorted.in</div>
+            <div class="otp"><span>4</span><span>0</span><span>7</span><span>2</span><span>9</span><span>1</span></div>
+            <p class="prose" style="font-size:var(--type-caption);margin:var(--sp-14) 0 0">Six visual slots, one real input behind them — that is what keeps paste, autofill and screen readers working.</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="verdict" style="margin-top:0">
+          <span class="lbl">The decision that matters here is not the easing</span>
+          <p>It is that the panel does <strong>not change height</strong>. Stage 1 and stage 2 are absolutely positioned in a fixed-height box, so the CTA below never jumps and nothing reflows mid-transition. Height is not an animatable property in this system (rule 5) — so instead of animating it, the design removes the need to.</p>
+        </div>
+
+        <div class="verdict">
+          <span class="lbl">Direction carries meaning</span>
+          <p>Stage 1 leaves <em>upward</em> and stage 2 arrives from <em>below</em>: the same direction of travel, so it reads as one strip of paper moving up past a window rather than two unrelated fades. Going back reverses it exactly. Spatial consistency is the whole argument for animating this at all.</p>
+        </div>
+
+        <dl class="spec">
+          <dt>Enter</dt><dd>--dur-dropdown 200ms · --ease-out · opacity 0→1, translateY 8px→0</dd>
+          <dt>Exit</dt><dd>150ms (75% of enter, rule 9) · --ease-out · opacity 1→0, translateY 0→−6px</dd>
+          <dt>OTP slots</dt><dd>170ms each, 24ms stagger. Last slot completes at 120+170 = 290ms — deliberately under the 300ms ceiling.</dd>
+          <dt>Properties</dt><dd>opacity + transform only. Panel height is fixed, not animated.</dd>
+          <dt>Implementation</dt><dd><span class="tag css">CSS</span> transitions + transition-delay. Explicitly <em>not</em> GSAP: this is the login critical path and adding a 70KB dependency to fade two divs is the wrong trade. It also keeps the swap interruptible if the user hits Back mid-flight.</dd>
+          <dt>Reduced</dt><dd>translate drops, cross-fade survives at 180ms, stagger delays go to 0.</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="codewrap"><button class="copy" type="button">copy</button><pre><span class="c">/* One box, two absolutely-positioned stages. No height animation, ever. */</span>
+.stagebox { position: relative; min-height: 236px; }
+.stage {
+  position: absolute; inset: 0;
+  transition: opacity   var(--dur-dropdown) var(--ease-out),
+              transform var(--dur-dropdown) var(--ease-out);
+}
+.stage[data-state="in"]       { opacity: 1; transform: translateY(0); }
+.stage[data-state="out-up"]   { opacity: 0; transform: translateY(-6px); transition-duration: 150ms; }
+.stage[data-state="out-down"] { opacity: 0; transform: translateY(8px); }
+.stage[data-state^="out"]     { pointer-events: none; }
+
+<span class="c">/* six slots, 24ms apart — last one lands at 290ms */</span>
+.stage .otp span { opacity: 0; transform: translateY(6px);
+  transition: opacity 170ms var(--ease-out), transform 170ms var(--ease-out); }
+.stage[data-state="in"] .otp span { opacity: 1; transform: translateY(0); }
+.stage .otp span:nth-child(n) { transition-delay: calc((var(--i) - 1) * 24ms); }
+
+<span class="c">// page.tsx — the stage machine is state, not animation</span>
+const [stage, setStage] = useState&lt;'email' | 'code'&gt;('email');
+&lt;div data-state={stage === 'email' ? 'in' : 'out-up'}&gt;…&lt;/div&gt;
+&lt;div data-state={stage === 'code'  ? 'in' : 'out-down'} aria-hidden={stage !== 'code'}&gt;…&lt;/div&gt;</pre></div>
+  </div>
+</section>
+
+
+<!-- ══ 05 · FOCUS ═══════════════════════════════════════════════════════ -->
+<section id="focus">
+  <div class="shead">
+    <div class="num">05</div>
+    <div>
+      <h2>Focus rings</h2>
+      <p class="sub">Tab through the form below, or use the stepper. Every ring is drawn <strong>outward</strong> with <span class="mono">outline-offset: 3px</span> so it lands on cream at <span class="mono">11.77:1</span>. Drawn inward on the ink-filled CTA it would measure <span class="mono">1.37:1</span> — which is the same as not drawing it.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="grid2">
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-18)">
+          <span class="yes">Shipped</span>
+          <button class="pill sm ghost stamp fxgood" id="fxStep" type="button">Focus next &rarr;</button>
+          <span class="hint">or press Tab</span>
+        </div>
+        <label class="micro" for="fx1" style="display:block;margin-bottom:var(--sp-8)">Email address</label>
+        <input class="field fxgood" id="fx1" type="email" value="om@sorted.in" readonly>
+        <div style="height:var(--sp-14)"></div>
+        <label class="micro" for="fx2" style="display:block;margin-bottom:var(--sp-8)">Six-digit code</label>
+        <input class="field fxgood" id="fx2" type="text" value="407291" readonly>
+        <div class="stack" style="margin-top:var(--sp-18)">
+          <button class="pill stamp fxgood" id="fx3" type="button">Verify</button>
+          <button class="pill quiet fxgood" id="fx4" type="button">Use a different email</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-18)">
+          <span class="no">Never</span>
+          <span class="lbl">inset ring on an ink fill</span>
+        </div>
+        <p class="prose" style="font-size:var(--type-caption)">Tab into this one. The input looks fine — cream background, plenty of contrast. The <strong>Verify</strong> button is where it falls apart: the ring is there, it is 2.5px, and you cannot see it.</p>
+        <input class="field fxbad" type="email" value="om@sorted.in" readonly aria-label="Email, wrong focus treatment">
+        <div class="stack" style="margin-top:var(--sp-18)">
+          <button class="pill fxbad" type="button">Verify</button>
+        </div>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">shadcn's default <span class="mono">ring-offset-background</span> assumes a white page and produces exactly this. It must be overridden, not merely re-coloured.</p>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <span class="lbl">Position · the ring does not animate</span>
+      <p>No fade, no scale, no draw-on. Focus is keyboard-initiated and a person traversing a form triggers it several times a second — rule 1 says anything seen that often gets nothing, and a ring that fades in at even 100ms reads as the app lagging behind the Tab key. It appears on the frame the focus lands. <strong>The only motion in this section is the stamp press, and that is pointer-only.</strong></p>
+    </div>
+
+    <dl class="spec">
+      <dt>Duration</dt><dd>0ms. Instant, deliberately.</dd>
+      <dt>Properties</dt><dd>outline + outline-offset. Never box-shadow-as-ring on a filled control.</dd>
+      <dt>Contrast</dt><dd>--focus #14199C on --bg = 11.77:1 · on --ink = 1.37:1 (forbidden by construction)</dd>
+      <dt>Implementation</dt><dd><span class="tag none">no animation</span> — :focus-visible only, so a mouse press never draws a ring.</dd>
+    </dl>
+
+    <div class="codewrap"><button class="copy" type="button">copy</button><pre><span class="c">/* global floor — app/globals.css. Two lines, no exceptions. */</span>
+:focus-visible {
+  outline: var(--focus-ring);            <span class="c">/* 2.5px solid #14199C */</span>
+  outline-offset: var(--focus-offset);   <span class="c">/* 3px — lands on cream, 11.77:1 */</span>
+  border-radius: var(--r-xs);
+}
+
+<span class="c">/* WRONG — invisible on the primary CTA at 1.37:1 */</span>
+.btn:focus-visible { outline: none; box-shadow: inset 0 0 0 2.5px var(--focus); }
+
+<span class="c">/* shadcn bridge — its default assumes a white page */</span>
+:root { --ring: var(--focus); --ring-offset-color: var(--bg); }</pre></div>
+  </div>
+</section>
+
+
+<!-- ══ 06 · BUDGET BAR ══════════════════════════════════════════════════ -->
+<section id="budget">
+  <div class="shead">
+    <div class="num">06</div>
+    <div>
+      <h2>Budget bar fill</h2>
+      <p class="sub">Budget vs Spend This Month — four category rows from the real dashboard module. The track is a transparent pill with a 1.5px ink border; the fill is a chip-coloured block driven by <span class="mono">transform: scaleX()</span> from <span class="mono">transform-origin: left</span>. Never <span class="mono">width</span>. Width triggers layout on every frame of every bar; scaleX is a compositor transform.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="grid2">
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-18)">
+          <span class="yes">Shipped</span><span class="lbl">renders final · transitions on change</span>
+        </div>
+        <div id="bGood">
+          <div class="brow"><span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+            <div><div class="bmeta"><span class="n">Food &amp; groceries</span><span class="v">&#8377;9,240 / &#8377;12,000</span></div>
+            <div class="bbar"><i style="--c:var(--food);--v:.77"></i></div></div></div>
+          <div class="brow" id="billsRow"><span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+            <div><div class="bmeta"><span class="n">Bills &amp; utilities</span><span class="v" id="billsVal">&#8377;5,120 / &#8377;6,000</span></div>
+            <div class="bbar"><i id="billsFill" style="--c:var(--bills);--v:.853"></i></div></div></div>
+          <div class="brow"><span class="chip transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span>
+            <div><div class="bmeta"><span class="n">Transport</span><span class="v">&#8377;2,410 / &#8377;4,500</span></div>
+            <div class="bbar"><i style="--c:var(--transport);--v:.536"></i></div></div></div>
+          <div class="brow"><span class="chip shopping"><svg viewBox="0 0 24 24"><use href="#i-shopping"/></svg></span>
+            <div><div class="bmeta"><span class="n">Shopping</span><span class="v">&#8377;3,900 / &#8377;8,000</span></div>
+            <div class="bbar"><i style="--c:var(--shop);--v:.4875"></i></div></div></div>
+        </div>
+        <div class="stack" style="margin-top:var(--sp-18)">
+          <button class="pill sm stamp" id="bTip" type="button">Add BSES Rajdhani &#8377;2,340</button>
+          <button class="pill sm ghost stamp" id="bReset" type="button">Reset</button>
+        </div>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">Press it. Bills goes from &#8377;5,120 to &#8377;7,460 against a &#8377;6,000 limit — the bar <strong>clamps at scaleX(1)</strong> and the overage moves into the label in <span class="mono">--alert</span>. The bar never overflows its track, because a bar that draws past its own end is drawing a lie.</p>
+      </div>
+
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-18)">
+          <span class="no">Rejected</span><span class="lbl">fills from zero on every load</span>
+        </div>
+        <div id="bBad">
+          <div class="brow"><span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+            <div><div class="bmeta"><span class="n">Food &amp; groceries</span><span class="v">&#8377;9,240 / &#8377;12,000</span></div>
+            <div class="bbar"><i data-v=".77" style="--c:var(--food);--v:0"></i></div></div></div>
+          <div class="brow"><span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+            <div><div class="bmeta"><span class="n">Bills &amp; utilities</span><span class="v">&#8377;5,120 / &#8377;6,000</span></div>
+            <div class="bbar"><i data-v=".853" style="--c:var(--bills);--v:0"></i></div></div></div>
+          <div class="brow"><span class="chip transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span>
+            <div><div class="bmeta"><span class="n">Transport</span><span class="v">&#8377;2,410 / &#8377;4,500</span></div>
+            <div class="bbar"><i data-v=".536" style="--c:var(--transport);--v:0"></i></div></div></div>
+          <div class="brow"><span class="chip shopping"><svg viewBox="0 0 24 24"><use href="#i-shopping"/></svg></span>
+            <div><div class="bmeta"><span class="n">Shopping</span><span class="v">&#8377;3,900 / &#8377;8,000</span></div>
+            <div class="bbar"><i data-v=".4875" style="--c:var(--shop);--v:0"></i></div></div></div>
+        </div>
+        <div class="stack" style="margin-top:var(--sp-18)">
+          <button class="pill sm ghost stamp" id="bReplay" type="button">Replay the load</button>
+        </div>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">This is the version most dashboards ship, and it is the same mistake as the count-up in &sect;12 wearing a different shape: for 400ms it shows you a food budget of &#8377;0 that is not true. Once, it is charming. On day four of opening this every morning it is a delay between you and the only thing you came to read.</p>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <span class="lbl">Position</span>
+      <p>The bar renders at its final value on load — no fill animation, ever. It transitions <strong>only when a value changes while you are watching</strong>, which on the dashboard means a Gmail parse landing mid-session or an inline edit. That is a legitimate "prevent a jarring change" and it is also the only case where the motion tells you something you did not already know: <em>this number just moved.</em></p>
+    </div>
+
+    <dl class="spec">
+      <dt>Duration</dt><dd>--dur-dropdown 200ms — on change only. 0ms on first paint.</dd>
+      <dt>Easing</dt><dd>--ease-in-out · cubic-bezier(.77, 0, .175, 1) — the bar is already on screen and moving, not entering. This is the one place in v1 that uses --ease-in-out.</dd>
+      <dt>Properties</dt><dd>transform: scaleX() with transform-origin: left. Never width. Never a keyframe.</dd>
+      <dt>Clamp</dt><dd>scaleX(min(spent/limit, 1)). Over-budget moves to the label in --alert with a bang glyph — colour is never the sole carrier (the word "over" is in the label).</dd>
+      <dt>Implementation</dt><dd><span class="tag css">CSS</span> transition on a CSS variable set from React state. shadcn Progress with a transparent track.</dd>
+      <dt>Reduced</dt><dd>transition drops to 1ms — the bar jumps to its new value. Still legible, no movement.</dd>
+    </dl>
+
+    <div class="codewrap"><button class="copy" type="button">copy</button><pre><span class="c">/* transparent track — shadcn Progress defaults to a filled muted track, kill it */</span>
+.bbar   { height: 20px; border: var(--stroke-panel) solid var(--ink);
+          border-radius: var(--r-pill); overflow: hidden; background: transparent; }
+.bbar &gt; i {
+  display: block; height: 100%; background: var(--c);
+  transform: scaleX(var(--v)); transform-origin: left center;
+  transition: transform var(--dur-dropdown) var(--ease-in-out);
+}
+
+<span class="c">// BudgetRow.tsx — clamp in the data layer, not the stylesheet</span>
+const ratio = Math.min(spent / limit, 1);
+const over  = spent &gt; limit ? spent - limit : 0;
+
+&lt;div className="bbar"&gt;
+  &lt;i style={{ '--c': `var(--${category})`, '--v': ratio } as CSSProperties} /&gt;
+&lt;/div&gt;
+{over &gt; 0 &amp;&amp; &lt;span className="text-alert"&gt;Over by {inr(over)}&lt;/span&gt;}</pre></div>
+  </div>
+</section>
+
+
+<!-- ══ 07 · STAGGER ═════════════════════════════════════════════════════ -->
+<section id="stagger">
+  <div class="shead">
+    <div class="num">07</div>
+    <div>
+      <h2>Chip row stagger</h2>
+      <p class="sub">Rule 1 is the hardest rule in the kit because it argues against the fun thing. Sorted is opened <em>every morning by one person</em>. The chip rail is the first thing on screen and it is the same six chips every single time. So the honest question is not "what stagger interval" — it is "why is this animating at all".</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="stack" style="margin-bottom:var(--sp-22)">
+      <button class="pill sm stamp" data-stagger="none" type="button">Play · none</button>
+      <button class="pill sm ghost stamp" data-stagger="fade" type="button">Play · 24ms opacity</button>
+      <button class="pill sm ghost stamp" data-stagger="move" type="button">Play · 40ms with movement</button>
+      <button class="pill sm ghost stamp" data-stagger="slow" type="button">Play · 80ms with movement</button>
+    </div>
+
+    <div class="grid4" id="staggerHost"></div>
+
+    <div class="verdict">
+      <span class="lbl">Position · two different lists, two different answers</span>
+      <p><strong>The sidebar chip rail does not animate. At all.</strong> Six fixed items, identical on every load, seen more than a hundred times a week by the one person who uses this. Rule 1 is unambiguous and there is no counter-argument: an 80ms stagger on the navigation of a daily tool is 480ms of the owner waiting for their own sidebar.</p>
+      <p style="margin-top:var(--sp-10)"><strong>The budget rows do animate — opacity only, 24ms apart.</strong> Not for delight. They are replacing a skeleton, and a skeleton that swaps to real content on a single frame reads as a glitch rather than as an arrival. That is rule 2's "preventing a jarring change", which is a legitimate reason. There is <em>no movement</em>: the rows are already in their final position under the skeleton, so translating them would invent motion that did not happen.</p>
+    </div>
+
+    <p class="prose">Compare the two right-hand demos above at 4&times;. The 40ms and 80ms versions look better in a gallery and worse in a product — they announce themselves, and the announcement is "the app is still getting ready", which on a dashboard is precisely the wrong message.</p>
+
+    <dl class="spec">
+      <dt>Sidebar rail</dt><dd><span class="tag none">no animation</span> · 0ms · rule 1</dd>
+      <dt>Budget rows</dt><dd><span class="tag css">CSS</span> · 200ms --ease-out · opacity 0→1 only · 24ms stagger · fires once, on the skeleton→data swap</dd>
+      <dt>Ceiling</dt><dd>4 rows &times; 24ms + 200ms = 272ms. Under 300 by construction; if the module ever renders more than 6 rows the stagger caps rather than growing.</dd>
+      <dt>Reduced</dt><dd>Stagger to 0, cross-fade survives. Identical to the non-reduced version minus the offsets.</dd>
+    </dl>
+
+    <div class="codewrap"><button class="copy" type="button">copy</button><pre><span class="c">/* opacity only. If the row is not moving, do not translate it. */</span>
+.budget-row {
+  animation: row-in 200ms var(--ease-out) both;
+  animation-delay: calc(min(var(--i), 5) * 24ms);   <span class="c">/* caps, never grows unbounded */</span>
+}
+@keyframes row-in { from { opacity: 0 } to { opacity: 1 } }
+
+@media (prefers-reduced-motion: reduce) { .budget-row { animation-delay: 0ms } }
+
+<span class="c">/* the sidebar rail gets nothing. This is intentional and it is the rule. */</span></pre></div>
+  </div>
+</section>
+
+
+<!-- ══ 08 · TETHER ══════════════════════════════════════════════════════ -->
+<section id="tether">
+  <div class="shead">
+    <div class="num">08</div>
+    <div>
+      <h2>The tether</h2>
+      <p class="sub">The product's signature mark: a 16&times;12 dotted lead-in in the row gutter, the same 1.6px / dash 4 6 stroke as the hero connectors, marking rows the Gmail parser filed by itself. It is the only place in the interface where the most unusual feature is visible.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="grid3">
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-14)"><span class="yes">Shipped</span><span class="lbl">static</span></div>
+        <div class="trow"><svg class="tether" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+          <span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+          <span class="name">Swiggy Instamart</span><span class="amt">&#8377;1,284</span></div>
+        <div class="trow"><svg class="tether" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+          <span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+          <span class="name">Airtel postpaid</span><span class="amt">&#8377;1,199</span></div>
+        <div class="trow"><span></span>
+          <span class="chip transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span>
+          <span class="name">Rapido &middot; added by you</span><span class="amt">&#8377;86</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-14)"><span class="no">Rejected</span><span class="lbl">dot march</span></div>
+        <div class="trow"><svg class="tether march" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+          <span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+          <span class="name">Swiggy Instamart</span><span class="amt">&#8377;1,284</span></div>
+        <div class="trow"><svg class="tether march" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+          <span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+          <span class="name">Airtel postpaid</span><span class="amt">&#8377;1,199</span></div>
+        <div class="trow"><span></span>
+          <span class="chip transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span>
+          <span class="name">Rapido &middot; added by you</span><span class="amt">&#8377;86</span></div>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">A marching dotted line is the universal sign for <em>in progress</em>. These rows are finished. It would say the parser is still working on a transaction from three weeks ago, forever.</p>
+      </div>
+
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-14)"><span class="no">Rejected</span><span class="lbl">draw on arrival</span></div>
+        <div id="tetherDraw">
+          <div class="trow"><svg class="tether" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+            <span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+            <span class="name">Swiggy Instamart</span><span class="amt">&#8377;1,284</span></div>
+          <div class="trow"><svg class="tether" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+            <span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+            <span class="name">Airtel postpaid</span><span class="amt">&#8377;1,199</span></div>
+          <div class="trow"><span></span>
+            <span class="chip transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span>
+            <span class="name">Rapido &middot; added by you</span><span class="amt">&#8377;86</span></div>
+        </div>
+        <div class="stack" style="margin-top:var(--sp-14)"><button class="pill sm ghost stamp" id="tDraw" type="button">Replay draw</button></div>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">Charming at three rows. At forty-two — a normal month of bank alerts — it is a light show across the whole list, and it also animates <span class="mono">stroke-dashoffset</span>, which is neither transform nor opacity.</p>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <span class="lbl">Position · the tether is static, with one exception that is not the tether's</span>
+      <p>It is a provenance mark, closer to a watermark than to a control. Its job is to be noticed the first week and then stop being noticed, and static marks do that; animated ones never stop asking for attention. <strong>The one time it appears to move is when the row it belongs to arrives live</strong> — a Gmail parse completing while you are sitting on the dashboard. In that case the <em>row</em> fades in over 200ms and the tether comes along inside it, with no animation of its own. The row is the unit of arrival; the tether is a property of the row.</p>
+    </div>
+
+    <dl class="spec">
+      <dt>Steady state</dt><dd><span class="tag none">no animation</span> · 0ms</dd>
+      <dt>Live arrival</dt><dd><span class="tag css">CSS</span> · the row fades, opacity 0→1, 200ms --ease-out. The tether inherits it. No separate tween.</dd>
+      <dt>Never</dt><dd>stroke-dashoffset animation of any kind. It violates rule 5 and it reads as "still loading".</dd>
+      <dt>Accessibility</dt><dd>aria-hidden. The provenance is also in the row's accessible name ("filed automatically from an HDFC Bank alert"), because a dotted line is not a label.</dd>
+    </dl>
+  </div>
+</section>
+
+
+<!-- ══ 09 · SKELETON ════════════════════════════════════════════════════ -->
+<section id="skeleton">
+  <div class="shead">
+    <div class="num">09</div>
+    <div>
+      <h2>Skeleton &amp; loading</h2>
+      <p class="sub">The chip-rhythm skeleton. It is not a grey rectangle field — it reproduces the exact row grid (30px chip gutter, 1fr name, auto amount) with a <em>dashed</em> circle in column one, so when the data lands nothing reflows by a single pixel and the eye does not have to re-find the column it was already reading.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="grid2">
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-18)">
+          <span class="lbl">Budget vs Spend · loading</span>
+          <button class="pill sm stamp" id="skLoad" type="button">Load the data</button>
+        </div>
+        <div id="skHost">
+          <div class="sk-row"><div class="sk-chip sk"></div><div class="sk-line sk" style="width:58%;animation-delay:calc(0ms * var(--mo))"></div><div class="sk-line sk" style="width:74px;animation-delay:calc(0ms * var(--mo))"></div></div>
+          <div class="sk-row"><div class="sk-chip sk" style="animation-delay:calc(140ms * var(--mo))"></div><div class="sk-line sk" style="width:44%;animation-delay:calc(140ms * var(--mo))"></div><div class="sk-line sk" style="width:74px;animation-delay:calc(140ms * var(--mo))"></div></div>
+          <div class="sk-row"><div class="sk-chip sk" style="animation-delay:calc(280ms * var(--mo))"></div><div class="sk-line sk" style="width:66%;animation-delay:calc(280ms * var(--mo))"></div><div class="sk-line sk" style="width:74px;animation-delay:calc(280ms * var(--mo))"></div></div>
+          <div class="sk-row"><div class="sk-chip sk" style="animation-delay:calc(420ms * var(--mo))"></div><div class="sk-line sk" style="width:52%;animation-delay:calc(420ms * var(--mo))"></div><div class="sk-line sk" style="width:74px;animation-delay:calc(420ms * var(--mo))"></div></div>
+        </div>
+        <div id="skReal" style="display:none">
+          <div class="row"><span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span><span class="name">Food &amp; groceries</span><span class="amt">&#8377;9,240</span></div>
+          <div class="row"><span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span><span class="name">Bills &amp; utilities</span><span class="amt">&#8377;5,120</span></div>
+          <div class="row"><span class="chip transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span><span class="name">Transport</span><span class="amt">&#8377;2,410</span></div>
+          <div class="row"><span class="chip shopping"><svg viewBox="0 0 24 24"><use href="#i-shopping"/></svg></span><span class="name">Shopping</span><span class="amt">&#8377;3,900</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="verdict" style="margin-top:0">
+          <span class="lbl">Why a keyframe here and nowhere else</span>
+          <p>Rule 8 says transitions, not keyframes, for anything a person can trigger twice quickly. A skeleton is the opposite: nobody triggers it, it loops until the data lands, and it has no interruptible state to retarget to. A keyframe is correct here <em>because</em> it is not user-driven — and it is the only keyframe in login + dashboard v1.</p>
+        </div>
+        <div class="verdict">
+          <span class="lbl">Why the dashed circle</span>
+          <p>A filled grey circle in the chip gutter would be a lie about which chip is coming — and under the chip taxonomy, a coloured circle is <em>meaning</em>. Dashed says "a chip goes here and I don't know which yet", which is exactly true.</p>
+        </div>
+
+        <dl class="spec">
+          <dt>Duration</dt><dd>--dur-skeleton 1150ms, infinite alternate</dd>
+          <dt>Easing</dt><dd>--ease-in-out · cubic-bezier(.77, 0, .175, 1)</dd>
+          <dt>Property</dt><dd>opacity .34 → .72 → .34. No shimmer sweep, no gradient, no transform — Sorted has no gradients and a sweeping highlight would be the only faked light source in the product.</dd>
+          <dt>Rhythm</dt><dd>140ms row offset. The rows breathe out of phase, which is what makes it read as a list rather than as one flashing block.</dd>
+          <dt>Swap</dt><dd>skeleton → data is an opacity cross-fade at 200ms --ease-out with the 24ms row stagger from &sect;07. No layout change, because the grids are identical.</dd>
+          <dt>Implementation</dt><dd><span class="tag css">CSS</span> keyframe, the one exception to rule 8.</dd>
+          <dt>Reduced</dt><dd><strong>Pulse stops entirely</strong> and holds at opacity .5. A repeating pulse is the single most nauseating thing on a loading screen for a motion-sensitive user, and a static skeleton communicates "loading" perfectly well.</dd>
+        </dl>
+      </div>
+    </div>
+
+    <div class="codewrap"><button class="copy" type="button">copy</button><pre>@keyframes chip-pulse { 0%, 100% { opacity: .34 } 50% { opacity: .72 } }
+
+.skeleton { animation: chip-pulse var(--dur-skeleton) var(--ease-in-out) infinite; }
+.skeleton-row:nth-child(n) { animation-delay: calc((var(--i) - 1) * 140ms); }
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; opacity: .5; }   <span class="c">/* hold, do not pulse */</span>
+}
+
+<span class="c">// SkeletonRow.tsx — same grid as Row.tsx, or the swap will reflow</span>
+&lt;div className="grid grid-cols-[30px_1fr_auto] gap-[14px] items-center py-[13px]"&gt;
+  &lt;div className="size-[30px] rounded-pill border-[1.5px] border-dashed border-ink skeleton" /&gt;
+  &lt;div className="h-[11px] rounded-pill bg-ink skeleton" style={{ width: '58%' }} /&gt;
+  &lt;div className="h-[11px] w-[74px] rounded-pill bg-ink skeleton" /&gt;
+&lt;/div&gt;</pre></div>
+  </div>
+</section>
+
+
+<!-- ══ 10 · ERROR ═══════════════════════════════════════════════════════ -->
+<section id="error">
+  <div class="shead">
+    <div class="num">10</div>
+    <div>
+      <h2>Error notice entrance</h2>
+      <p class="sub">The ink-bordered notice on the login screen. Sorted has no coloured alert backgrounds — the border is ink like every other boundary, and only the bang glyph and the amount-of-trouble carry <span class="mono">--alert</span>. The motion question here is smaller than the layout question underneath it.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="grid2">
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-18)">
+          <span class="yes">Shipped</span><span class="lbl">reserved slot</span>
+          <button class="pill sm stamp" data-err="good" type="button">Trigger error</button>
+        </div>
+        <div class="notice-slot"><div class="notice enter" id="errGood" role="alert" aria-live="polite" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bang"/></svg>
+          <div><b>That code didn't match.</b><br><span style="color:var(--dim-2)">Two attempts left, then we'll send a fresh one.</span></div>
+        </div></div>
+        <div class="otp" style="margin-bottom:var(--sp-18)"><span>4</span><span>0</span><span>7</span><span>2</span><span>9</span><span>1</span></div>
+        <button class="pill stamp" type="button">Verify</button>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">The slot is 64px whether or not there is a notice in it. The <strong>Verify</strong> button does not move.</p>
+      </div>
+
+      <div class="panel">
+        <div class="stack" style="margin-bottom:var(--sp-18)">
+          <span class="no">Rejected</span><span class="lbl">unreserved</span>
+          <button class="pill sm ghost stamp" data-err="bad" type="button">Trigger error</button>
+        </div>
+        <div class="notice-slot unreserved"><div class="notice enter" id="errBad" role="alert" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bang"/></svg>
+          <div><b>That code didn't match.</b><br><span style="color:var(--dim-2)">Two attempts left, then we'll send a fresh one.</span></div>
+        </div></div>
+        <div class="otp" style="margin-bottom:var(--sp-18)"><span>4</span><span>0</span><span>7</span><span>2</span><span>9</span><span>1</span></div>
+        <button class="pill stamp" type="button">Verify</button>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">Press it twice quickly. The notice pushes 64px of layout down while you are still reaching for the button — a mis-click waiting to happen, and no easing curve fixes it. <strong>Most "bad animation" is bad layout.</strong></p>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <span class="lbl">Position</span>
+      <p>The notice animates, and the reason is rule 2's "preventing a jarring change" plus one specific product fact: a wrong OTP is the moment the owner is most likely to think the app is broken rather than that they mistyped. A notice that <em>appears</em> reads as a response; a notice that is suddenly just there reads as a page that reloaded. 200ms is enough to say "this is new" and short enough that it never delays reading it.</p>
+    </div>
+
+    <dl class="spec">
+      <dt>Enter</dt><dd>--dur-dropdown 200ms · --ease-out · opacity 0→1, translateY −4px→0</dd>
+      <dt>Exit</dt><dd>150ms (75%, rule 9) · same curve, reversed. Fires when the user starts retyping.</dd>
+      <dt>Distance</dt><dd>4px. Deliberately smaller than the OTP stage's 8px — the notice is not arriving from somewhere, it is resolving into place.</dd>
+      <dt>Layout</dt><dd>Slot reserved at 64px. The animation animates nothing structural, because there is nothing structural left to animate.</dd>
+      <dt>Announcement</dt><dd>role="alert" + aria-live="polite". The screen reader announcement is not gated on the animation and does not wait for it.</dd>
+      <dt>Implementation</dt><dd><span class="tag css">CSS</span> transition. A person can hit Verify twice in under 200ms; a transition retargets, a keyframe restarts.</dd>
+      <dt>Reduced</dt><dd>translate drops, 180ms cross-fade survives. The "this is new" signal is preserved without movement.</dd>
+    </dl>
+  </div>
+</section>
+
+
+<!-- ══ 11 · REDUCED ═════════════════════════════════════════════════════ -->
+<section id="reduced">
+  <div class="shead">
+    <div class="num">11</div>
+    <div>
+      <h2>Reduced motion</h2>
+      <p class="sub">Flip the toggle in the control bar and scroll this whole page again. Rule 10: <strong>fewer and gentler, not zero.</strong> Removing all motion is the lazy reading of the preference — it strips out the opacity and colour changes that carry meaning along with the movement that causes harm. Below is what every demo on this page becomes.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="stack" style="margin-bottom:var(--sp-22)">
+      <button class="pill stamp" id="rmToggle" type="button">Turn reduced motion ON</button>
+      <span class="hint" id="rmState">currently OFF</span>
+      <span class="hint" id="rmOS"></span>
+    </div>
+
+    <table>
+      <thead><tr><th>§</th><th>Motion</th><th>Full</th><th>Reduced</th><th>What survives, and why</th></tr></thead>
+      <tbody>
+        <tr><td class="m">02</td><td>Stamp press</td><td class="m">translateY 2px + shadow, 110ms</td><td class="m">shadow only, 1ms</td><td>The shadow collapse alone still reads as "pressed". Losing it would leave the CTA with no feedback at all, since Sorted buttons have no hover state.</td></tr>
+        <tr><td class="m">03</td><td>Hero constellation</td><td class="m">scale + stagger, 880ms</td><td class="m">opacity, 260ms, no stagger</td><td>Six things scaling and cascading is the most vestibular moment in the product. The fade keeps the reveal; the movement goes.</td></tr>
+        <tr><td class="m">04</td><td>OTP stage swap</td><td class="m">translateY 8px + fade, 200ms</td><td class="m">fade, 180ms</td><td>The cross-fade is what says "replaced, not reloaded". That meaning is in the opacity, not the offset.</td></tr>
+        <tr><td class="m">05</td><td>Focus ring</td><td class="m">instant</td><td class="m">instant</td><td>Unchanged. It never animated.</td></tr>
+        <tr><td class="m">06</td><td>Budget bar</td><td class="m">scaleX, 200ms</td><td class="m">jump, 1ms</td><td>The new value is the information. The travel between values is decoration.</td></tr>
+        <tr><td class="m">07</td><td>Row stagger</td><td class="m">opacity, 24ms apart</td><td class="m">opacity, 0ms apart</td><td>Already opacity-only, so reduced motion barely touches it. That is a sign it was specified correctly.</td></tr>
+        <tr><td class="m">08</td><td>Tether</td><td class="m">none</td><td class="m">none</td><td>Unchanged.</td></tr>
+        <tr><td class="m">09</td><td>Skeleton pulse</td><td class="m">1150ms loop</td><td class="m">held at .5, no loop</td><td>The one place motion is removed outright. An indefinite pulse is the worst offender for a motion-sensitive user and a static skeleton still says "loading".</td></tr>
+        <tr><td class="m">10</td><td>Error notice</td><td class="m">translateY 4px + fade, 200ms</td><td class="m">fade, 180ms</td><td>"This is new" is preserved. Nothing slides.</td></tr>
+        <tr><td class="m">12</td><td>Net-worth figure</td><td class="m">— see §12 —</td><td class="m">— see §12 —</td><td>If rule 12 stands, this row is empty in both columns, which is the cleanest possible answer.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="verdict">
+      <span class="lbl">The test that matters</span>
+      <p>With reduced motion ON, is there anything on the login or dashboard screen you can no longer tell has happened? If yes, that motion was carrying information it should never have been trusted with. Right now the answer is no — every state change is legible from colour, opacity and position alone.</p>
+    </div>
+
+    <div class="codewrap"><button class="copy" type="button">copy</button><pre><span class="c">/* tokens.css — already shipping. Note --dur-hover deliberately survives. */</span>
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-press: 1ms; --dur-tooltip: 1ms; --dur-dropdown: 1ms;
+    --dur-drawer: 1ms; --dur-modal: 1ms;
+    <span class="c">/* --dur-hover survives: a 150ms colour fade is not vestibular motion. */</span>
+  }
+  .stamp:active:not([disabled]) { transform: none; box-shadow: var(--stamp-pressed); }
+  .skeleton { animation: none; opacity: .5; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+<span class="c">// GSAP side — matchMedia, not a manual if()</span>
+const mm = gsap.matchMedia();
+mm.add('(prefers-reduced-motion: reduce)', () =&gt; { /* opacity-only variant */ });</pre></div>
+  </div>
+</section>
+
+
+<!-- ══ 12 · COUNT-UP ════════════════════════════════════════════════════ -->
+<section id="countup">
+  <div class="shead">
+    <div class="num">12</div>
+    <div>
+      <h2>The count-up, and rule 12</h2>
+      <p class="sub">This is the one thing on this page I am not deciding for you. Rounds 2 and 3 both shipped a GSAP net-worth count-up with correct lakh/crore grouping. You saw it and did not object. Then the brand kit you approved wrote <strong>motion rule 12: "No rupee figure ever animates. No count-up, no odometer roll. The number is known, or it is a skeleton."</strong> Both are true and they contradict. Nobody has asked you about the reversal.</p>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="stack" style="margin-bottom:var(--sp-22)">
+      <button class="pill stamp" id="cuRun" type="button">Run both</button>
+      <span class="hint">same figure &middot; same moment &middot; net worth as at 30 Aug 2026</span>
+    </div>
+
+    <div class="cmp">
+      <div>
+        <div class="hd"><span class="lbl">A · as shipped in rounds 2–3</span></div>
+        <div class="micro" style="margin-bottom:var(--sp-8)">Net Worth</div>
+        <div class="fig" id="cuFig">&#8377;0</div>
+        <div class="micro" style="margin-top:var(--sp-12);color:var(--dim-2)">GSAP count-up &middot; 900ms &middot; power4.out &middot; snap to 1</div>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">It is genuinely good. The lakh/crore grouping reflows correctly through 4 lakh, 40 lakh, 47 lakh; power4.out means it lands rather than creeping; there is no overshoot. If the goal were a landing page this would be the right answer and I would defend it.</p>
+      </div>
+
+      <div>
+        <div class="hd"><span class="lbl">B · rule 12 · known, or a skeleton</span></div>
+        <div class="micro" style="margin-bottom:var(--sp-8)">Net Worth</div>
+        <div id="cuSlot"><div class="fig" id="cuFig2">&#8377;47,82,610</div></div>
+        <div class="micro" style="margin-top:var(--sp-12);color:var(--dim-2)">skeleton at 1150ms &rarr; final value, 200ms opacity</div>
+        <p class="prose" style="font-size:var(--type-caption);margin-top:var(--sp-14)">The figure has exactly two states: not yet known (a skeleton, honestly shaped like the number) and known (the number). There is no third state where it is partly known, because there is no such thing as partly knowing your net worth.</p>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <span class="lbl">The argument for rule 12, stated honestly</span>
+      <p>A count-up displays <strong>a wrong balance to the person who owns that money</strong> for the entire duration of the animation. At 900ms, someone glancing at their phone at 7am sees &#8377;18,40,220 for a quarter of a second when the real figure is &#8377;47,82,610. Nothing bad happens — but the interface has told them something untrue in order to look nice, and this is the one product category where that trade is worst.</p>
+      <p style="margin-top:var(--sp-10)">The second argument is duration in the other sense. <strong>By day three the novelty is gone and only the delay is left.</strong> This is a tool opened every morning by one person. Everything on this page that survived did so by passing rule 1 — "anything seen a hundred times a day gets no animation" — and the net-worth figure is the single most-looked-at pixel in the product. The count-up is the one element that fails that test hardest, and it is also the one that would be most fun to keep.</p>
+      <p style="margin-top:var(--sp-10)">And a third, quieter one: if GSAP fails to load, version B is already correct and version A is a blank number until the fallback fires. Rule 15 and rule 12 are the same argument wearing different clothes.</p>
+    </div>
+
+    <div class="verdict">
+      <span class="lbl">The argument for overruling it</span>
+      <p>You have already seen it twice and liked it enough to keep going. Net Worth is the "number you admire" in the locked hierarchy — it is explicitly <em>not</em> the number that changes behaviour, that is Guilt-Free Money at 108px. If any figure in this product can afford a moment of drama, it is precisely this one, because nobody makes a decision off it. A narrower version of the rule is available: <strong>rule 12 applies to every rupee figure except Net Worth</strong>, count-up capped at 600ms, once per session rather than on every re-render, skipped entirely under reduced motion.</p>
+      <p style="margin-top:var(--sp-10)">I am not recommending that. I am saying it is defensible, and that the decision is yours rather than the brand kit's, because the brand kit made it without asking.</p>
+    </div>
+
+    <dl class="spec">
+      <dt>A · implementation</dt><dd><span class="tag gsap">GSAP</span> · 900ms · power4.out · snap {v:1} · onUpdate reformats through Intl.NumberFormat('en-IN')</dd>
+      <dt>A · cost</dt><dd>~30 string reformats and 30 layout passes on a 52px mono figure, plus GSAP on the dashboard critical path where it currently is not needed at all.</dd>
+      <dt>B · implementation</dt><dd><span class="tag css">CSS</span> · skeleton at --dur-skeleton, then opacity 0→1 at 200ms --ease-out. No JS, no dependency.</dd>
+      <dt>Formatting</dt><dd>Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }) — identical in both.</dd>
+      <dt>Currently governs</dt><dd>Rule 12. The brand kit is approved, so B ships unless you say otherwise.</dd>
+    </dl>
+
+    <div class="codewrap"><button class="copy" type="button">copy</button><pre><span class="c">// A — what rounds 2 and 3 shipped</span>
+const inr = (n: number) =&gt; new Intl.NumberFormat('en-IN',
+  { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(n);
+
+useGSAP(() =&gt; {
+  const o = { v: 0 };
+  gsap.to(o, { v: netWorth, duration: .9, ease: 'power4.out', snap: { v: 1 },
+    onUpdate: () =&gt; { el.current!.textContent = inr(o.v); } });
+}, [netWorth]);
+
+<span class="c">// B — rule 12. There is no animation to write.</span>
+{isLoading
+  ? &lt;div className="h-[52px] w-[280px] rounded-sm bg-ink skeleton" /&gt;
+  : &lt;p className="font-num text-figure-2 tabular-nums"&gt;{inr(netWorth)}&lt;/p&gt;}</pre></div>
+  </div>
+</section>
+
+
+<footer>
+  <div class="lbl">Motion inventory · login + dashboard · v1</div>
+  <table style="margin-top:var(--sp-18)">
+    <thead><tr><th>Element</th><th>Animates</th><th>Duration</th><th>Easing</th><th>Properties</th><th>Tech</th></tr></thead>
+    <tbody>
+      <tr><td>Primary pill CTA (press)</td><td>yes</td><td class="m">110ms</td><td class="m">--ease-out</td><td class="m">transform, box-shadow</td><td class="m">CSS</td></tr>
+      <tr><td>Login hero constellation</td><td>once</td><td class="m">~880ms seq</td><td class="m">power4.out</td><td class="m">transform, opacity</td><td class="m">GSAP</td></tr>
+      <tr><td>OTP stage swap (enter)</td><td>yes</td><td class="m">200ms</td><td class="m">--ease-out</td><td class="m">transform, opacity</td><td class="m">CSS</td></tr>
+      <tr><td>OTP stage swap (exit)</td><td>yes</td><td class="m">150ms</td><td class="m">--ease-out</td><td class="m">transform, opacity</td><td class="m">CSS</td></tr>
+      <tr><td>OTP slot stagger</td><td>yes</td><td class="m">170ms / 24ms</td><td class="m">--ease-out</td><td class="m">transform, opacity</td><td class="m">CSS</td></tr>
+      <tr><td>Focus ring</td><td>no</td><td class="m">0ms</td><td class="m">—</td><td class="m">outline</td><td class="m">CSS</td></tr>
+      <tr><td>Budget bar (on change)</td><td>yes</td><td class="m">200ms</td><td class="m">--ease-in-out</td><td class="m">transform</td><td class="m">CSS</td></tr>
+      <tr><td>Budget bar (first paint)</td><td>no</td><td class="m">0ms</td><td class="m">—</td><td class="m">—</td><td class="m">—</td></tr>
+      <tr><td>Sidebar chip rail</td><td>no</td><td class="m">0ms</td><td class="m">—</td><td class="m">—</td><td class="m">—</td></tr>
+      <tr><td>Budget rows (skeleton swap)</td><td>yes</td><td class="m">200ms / 24ms</td><td class="m">--ease-out</td><td class="m">opacity</td><td class="m">CSS</td></tr>
+      <tr><td>Tether</td><td>no</td><td class="m">0ms</td><td class="m">—</td><td class="m">—</td><td class="m">—</td></tr>
+      <tr><td>Skeleton pulse</td><td>loops</td><td class="m">1150ms</td><td class="m">--ease-in-out</td><td class="m">opacity</td><td class="m">CSS keyframe</td></tr>
+      <tr><td>Error notice (enter / exit)</td><td>yes</td><td class="m">200 / 150ms</td><td class="m">--ease-out</td><td class="m">transform, opacity</td><td class="m">CSS</td></tr>
+      <tr><td>Net Worth figure</td><td class="m">open — §12</td><td class="m">0 or 900ms</td><td class="m">— / power4.out</td><td class="m">textContent</td><td class="m">— / GSAP</td></tr>
+    </tbody>
+  </table>
+  <p class="prose" style="margin-top:var(--sp-26)">Thirteen entries. Five of them animate nothing, and that is the point — the restraint is the design, not the absence of one. One GSAP dependency in the whole of v1, on a layer the screen does not need in order to be correct. Three curves. No fourth.</p>
+  <p class="micro" style="margin-top:var(--sp-32)">Sorted · round 6 · animation-review · moodforge-motion-director · v1</p>
+</footer>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+<script>
+(function () {
+  'use strict';
+  var html = document.documentElement;
+  var INR = new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 });
+  var MO = 1;
+
+  /* ────────────────────────────────────────────────────────────────────
+     CONTROL BAR
+     ──────────────────────────────────────────────────────────────────── */
+  function setSeg(group, attr, val) {
+    group.querySelectorAll('button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset[attr] === String(val)));
+    });
+  }
+
+  var segSlow = document.getElementById('segSlow');
+  function setMo(v) {
+    MO = Number(v);
+    html.style.setProperty('--mo', String(MO));
+    setSeg(segSlow, 'mo', MO);
+    if (window.gsap) gsap.globalTimeline.timeScale(1 / MO);
+  }
+  segSlow.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-mo]'); if (b) setMo(b.dataset.mo);
+  });
+  document.querySelectorAll('[data-mo-jump]').forEach(function (b) {
+    b.addEventListener('click', function () { setMo(b.dataset.moJump); });
+  });
+
+  var segReduced = document.getElementById('segReduced');
+  var rmState = document.getElementById('rmState');
+  var rmToggleBtn = document.getElementById('rmToggle');
+  function setReduced(on) {
+    html.setAttribute('data-reduced', on ? '1' : '0');
+    setSeg(segReduced, 'rm', on ? 1 : 0);
+    rmState.textContent = 'currently ' + (on ? 'ON' : 'OFF');
+    rmToggleBtn.textContent = on ? 'Turn reduced motion OFF' : 'Turn reduced motion ON';
+  }
+  segReduced.addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-rm]'); if (b) setReduced(b.dataset.rm === '1');
+  });
+  rmToggleBtn.addEventListener('click', function () {
+    setReduced(html.getAttribute('data-reduced') !== '1');
+  });
+
+  /* seed from the OS preference, exactly as the app would */
+  var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+  setReduced(mq.matches);
+  document.getElementById('rmOS').textContent = mq.matches
+    ? '· your OS asks for reduced motion, so this page started ON'
+    : '· your OS does not ask for reduced motion';
+
+  /* ── copy buttons ── */
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.copy'); if (!b) return;
+    var code = b.parentElement.querySelector('pre');
+    navigator.clipboard.writeText(code.innerText).then(function () {
+      b.textContent = 'copied'; setTimeout(function () { b.textContent = 'copy'; }, 1400);
+    }).catch(function () { b.textContent = 'select it'; });
+  });
+
+  /* ────────────────────────────────────────────────────────────────────
+     §01 · EASING PLOTS
+     Curves drawn from the real control points. y is flipped for SVG.
+     ──────────────────────────────────────────────────────────────────── */
+  var CURVES = [
+    { id:'ease-out',    p:[.23, 1, .32, 1],    css:'var(--ease-out)',
+      use:'Enter, exit, press, reveal. The default — about 80% of Sorted.',
+      gs:'power4.out', chip:'food' },
+    { id:'ease-in-out', p:[.77, 0, .175, 1],   css:'var(--ease-in-out)',
+      use:'Something already on screen moving. In v1: the budget bar only.',
+      gs:'power4.inOut', chip:'transport' },
+    { id:'ease-drawer', p:[.32, .72, 0, 1],    css:'var(--ease-drawer)',
+      use:'Drawers and sheets. Reserved — login + dashboard have none in v1.',
+      gs:'power3.out', chip:'invest' }
+  ];
+  var BAD = [
+    { id:'ease-in',      p:[.42, 0, 1, 1],       css:'cubic-bezier(.42, 0, 1, 1)',
+      use:'Delays movement through the first third — the third the eye is watching hardest.', bad:true, chip:'health' },
+    { id:'--ease-out',   p:[.23, 1, .32, 1],     css:'var(--ease-out)',
+      use:'Same duration. Moves immediately, then settles. This is what "responsive" is made of.', chip:'food' }
+  ];
+
+  function curvePath(p) {
+    var x1 = p[0]*100, y1 = 100 - p[1]*100, x2 = p[2]*100, y2 = 100 - p[3]*100;
+    return 'M0,100 C' + x1.toFixed(2) + ',' + y1.toFixed(2) + ' ' +
+           x2.toFixed(2) + ',' + y2.toFixed(2) + ' 100,0';
+  }
+  function cbz(p) { return 'cubic-bezier(' + p.join(', ') + ')'; }
+
+  function chipSvg(cat) {
+    var map = { food:'i-food', transport:'i-transport', invest:'i-invest', health:'i-health' };
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><use href="#' + map[cat] + '"/></svg>';
+  }
+
+  function buildCard(c, host) {
+    var el = document.createElement('div');
+    el.className = 'panel';
+    el.innerHTML =
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+        (c.bad ? '<span class="no">Never</span>' : '<span class="yes">Locked</span>') +
+        '<span class="lbl">' + c.id + '</span></div>' +
+      '<svg class="plot" viewBox="-12 -12 124 124" role="img" aria-label="' + c.id + ' bezier curve">' +
+        '<line class="axis" x1="0" y1="100" x2="100" y2="100"/>' +
+        '<line class="axis" x1="0" y1="0" x2="0" y2="100"/>' +
+        '<line class="axis" x1="0" y1="0" x2="100" y2="0" stroke-dasharray="2 4"/>' +
+        '<line class="axis" x1="100" y1="0" x2="100" y2="100" stroke-dasharray="2 4"/>' +
+        '<line class="ctrl" x1="0" y1="100" x2="' + (c.p[0]*100) + '" y2="' + (100-c.p[1]*100) + '"/>' +
+        '<line class="ctrl" x1="100" y1="0" x2="' + (c.p[2]*100) + '" y2="' + (100-c.p[3]*100) + '"/>' +
+        '<circle class="knob" cx="' + (c.p[0]*100) + '" cy="' + (100-c.p[1]*100) + '" r="3"/>' +
+        '<circle class="knob" cx="' + (c.p[2]*100) + '" cy="' + (100-c.p[3]*100) + '" r="3"/>' +
+        '<path class="curve' + (c.bad ? ' bad' : '') + '" d="' + curvePath(c.p) + '"/>' +
+      '</svg>' +
+      '<div class="track"><div class="rail"></div>' +
+        '<span class="puck ghost" data-role="ghost"></span>' +
+        '<span class="puck ' + c.chip + '" data-role="real" style="background:var(--' +
+          (c.chip === 'shopping' ? 'shop' : c.chip) + ')">' + chipSvg(c.chip) + '</span>' +
+      '</div>' +
+      '<div style="display:flex;gap:10px;align-items:center;margin-top:14px">' +
+        '<button class="pill sm stamp" type="button" data-run>Run</button>' +
+        '<span class="micro">ghost = linear</span></div>' +
+      '<dl class="spec">' +
+        '<dt>Curve</dt><dd>' + cbz(c.p) + '</dd>' +
+        (c.gs ? '<dt>GSAP</dt><dd>' + c.gs + '</dd>' : '') +
+        '<dt>Use</dt><dd style="font-family:var(--ui);font-size:13.5px;color:var(--dim-2)">' + c.use + '</dd>' +
+      '</dl>';
+
+    var real = el.querySelector('[data-role="real"]');
+    var ghost = el.querySelector('[data-role="ghost"]');
+    var track = el.querySelector('.track');
+
+    real.style.width = '30px'; real.style.height = '30px';
+    real.style.display = 'inline-flex'; real.style.alignItems = 'center'; real.style.justifyContent = 'center';
+    real.style.color = 'var(--ink)';
+    real.querySelector('svg').style.width = '17px';
+    real.querySelector('svg').style.height = '17px';
+
+    function run() {
+      var dist = Math.max(0, track.clientWidth - 30);
+      var d = 900 * MO;
+      var reduced = html.getAttribute('data-reduced') === '1';
+      [real, ghost].forEach(function (n) {
+        n.style.transition = 'none';
+        n.style.transform = 'translateX(0px)';
+      });
+      /* force reflow so the reset commits before the run */
+      void real.offsetWidth;
+      if (reduced) {
+        /* rule 10 — the curve demo is the content here, so it becomes a fade */
+        [real, ghost].forEach(function (n) {
+          n.style.transition = 'opacity ' + (200 * MO) + 'ms ' + cbz(c.p);
+          n.style.opacity = '0';
+          setTimeout(function () { n.style.opacity = ''; }, 20);
+        });
+        return;
+      }
+      real.style.transition  = 'transform ' + d + 'ms ' + cbz(c.p);
+      ghost.style.transition = 'transform ' + d + 'ms linear';
+      requestAnimationFrame(function () {
+        real.style.transform  = 'translateX(' + dist + 'px)';
+        ghost.style.transform = 'translateX(' + dist + 'px)';
+      });
+    }
+    el.querySelector('[data-run]').addEventListener('click', run);
+    host.appendChild(el);
+    return run;
+  }
+
+  var curveRuns = CURVES.map(function (c) { return buildCard(c, document.getElementById('curveCards')); });
+  var badRuns   = BAD.map(function (c) { return buildCard(c, document.getElementById('badCards')); });
+
+  /* the counter-example only teaches if both tracks run at the same instant,
+     so both buttons drive both tracks. Rebind rather than stack listeners. */
+  document.querySelectorAll('#badCards [data-run]').forEach(function (b) {
+    var fresh = b.cloneNode(false);
+    fresh.className = b.className;
+    fresh.type = 'button';
+    fresh.textContent = 'Run both';
+    b.parentNode.replaceChild(fresh, b);
+    fresh.addEventListener('click', function () { badRuns.forEach(function (r) { r(); }); });
+  });
+
+  /* ────────────────────────────────────────────────────────────────────
+     §02 · STAMP PRESS
+     ──────────────────────────────────────────────────────────────────── */
+  document.getElementById('pressAll').addEventListener('click', function () {
+    var hold = 320 + 110 * MO * 2;
+    var btns = document.querySelectorAll('[data-press]');
+    btns.forEach(function (b) { b.classList.add('is-pressed'); });
+    setTimeout(function () { btns.forEach(function (b) { b.classList.remove('is-pressed'); }); }, hold);
+  });
+
+  /* ────────────────────────────────────────────────────────────────────
+     §03 · HERO CONSTELLATION — the only GSAP in v1
+     ──────────────────────────────────────────────────────────────────── */
+  var heroTl = null;
+  function playHero() {
+    if (!window.gsap) return;                       /* rule 15: silence, not failure */
+    var svg = document.getElementById('heroAnim');
+    var chips = svg.querySelectorAll('.hc');
+    var reduced = html.getAttribute('data-reduced') === '1';
+
+    if (heroTl) heroTl.kill();
+    gsap.set([svg.querySelector('.hero-core'), svg.querySelector('.hero-links'), chips],
+      { clearProps: 'all' });
+
+    if (reduced) {
+      heroTl = gsap.timeline();
+      heroTl.from([svg.querySelector('.hero-core'), svg.querySelector('.hero-links')].concat(Array.prototype.slice.call(chips)),
+        { opacity: 0, duration: .26, ease: 'power4.out' });
+    } else {
+      chips.forEach(function (c) { gsap.set(c, { svgOrigin: c.dataset.x + ' ' + c.dataset.y }); });
+      gsap.set(svg.querySelector('.hero-links'), { svgOrigin: '210 190' });
+      gsap.set(svg.querySelector('.hero-core'),  { svgOrigin: '210 190' });
+
+      heroTl = gsap.timeline({ defaults: { ease: 'power4.out' } });
+      heroTl.from(svg.querySelector('.hero-core'),  { scale: .95, opacity: 0, duration: .32 })
+            .from(svg.querySelector('.hero-links'), { scale: .72, opacity: 0, duration: .30 }, '-=.14')
+            .from(chips, { scale: .95, opacity: 0, duration: .26, stagger: .046 }, '-=.18');
+    }
+    heroTl.timeScale(1 / MO);
+  }
+  document.getElementById('heroReplay').addEventListener('click', playHero);
+
+  /* ────────────────────────────────────────────────────────────────────
+     §04 · OTP STAGE SWAP
+     ──────────────────────────────────────────────────────────────────── */
+  var s1 = document.getElementById('stage1'), s2 = document.getElementById('stage2');
+  function stage(to) {
+    var goCode = to === 'code';
+    s1.dataset.state = goCode ? 'out-up' : 'in';
+    s2.dataset.state = goCode ? 'in' : 'out-down';
+    s1.setAttribute('aria-hidden', String(goCode));
+    s2.setAttribute('aria-hidden', String(!goCode));
+  }
+  document.getElementById('otpNext').addEventListener('click', function () { stage('code'); });
+  document.getElementById('otpBack').addEventListener('click', function () { stage('email'); });
+
+  /* ────────────────────────────────────────────────────────────────────
+     §05 · FOCUS STEPPER
+     ──────────────────────────────────────────────────────────────────── */
+  var fxSeq = ['fx1', 'fx2', 'fx3', 'fx4'], fxAt = -1;
+  document.getElementById('fxStep').addEventListener('click', function () {
+    fxAt = (fxAt + 1) % fxSeq.length;
+    document.getElementById(fxSeq[fxAt]).focus();
+  });
+
+  /* ────────────────────────────────────────────────────────────────────
+     §06 · BUDGET BAR
+     ──────────────────────────────────────────────────────────────────── */
+  var billsFill = document.getElementById('billsFill');
+  var billsVal  = document.getElementById('billsVal');
+  var billsRow  = document.getElementById('billsRow');
+  var BILLS_LIMIT = 6000, BILLS_BASE = 5120;
+
+  function setBills(spent) {
+    var ratio = Math.min(spent / BILLS_LIMIT, 1);
+    billsFill.style.setProperty('--v', String(ratio));
+    var over = spent - BILLS_LIMIT;
+    billsRow.classList.toggle('over', over > 0);
+    billsVal.innerHTML = over > 0
+      ? INR.format(spent) + ' / ' + INR.format(BILLS_LIMIT) + ' &middot; over by ' + INR.format(over)
+      : INR.format(spent) + ' / ' + INR.format(BILLS_LIMIT);
+  }
+  document.getElementById('bTip').addEventListener('click', function () { setBills(BILLS_BASE + 2340); });
+  document.getElementById('bReset').addEventListener('click', function () { setBills(BILLS_BASE); });
+
+  var bBad = document.getElementById('bBad');
+  function replayBad() {
+    var fills = bBad.querySelectorAll('.bbar > i');
+    fills.forEach(function (f) {
+      f.parentElement.classList.add('instant');
+      f.style.setProperty('--v', '0');
+    });
+    void bBad.offsetWidth;
+    requestAnimationFrame(function () {
+      fills.forEach(function (f, i) {
+        f.parentElement.classList.remove('instant');
+        setTimeout(function () { f.style.setProperty('--v', f.dataset.v); }, i * 60 * MO);
+      });
+    });
+  }
+  document.getElementById('bReplay').addEventListener('click', replayBad);
+
+  /* ────────────────────────────────────────────────────────────────────
+     §07 · STAGGER
+     ──────────────────────────────────────────────────────────────────── */
+  var STAG = [
+    { key:'none', title:'No animation', note:'Shipped for the sidebar rail.', delay:0, mode:'none', good:true },
+    { key:'fade', title:'24ms · opacity only', note:'Shipped for budget rows on the skeleton swap.', delay:24, mode:'fade', good:true },
+    { key:'move', title:'40ms · with movement', note:'Announces itself. Rejected.', delay:40, mode:'move' },
+    { key:'slow', title:'80ms · with movement', note:'480ms of waiting for your own sidebar. Rejected.', delay:80, mode:'move' }
+  ];
+  var CATS = [
+    ['food','Food'], ['bills','Bills'], ['invest','Investments'],
+    ['transport','Transport'], ['shopping','Shopping'], ['health','Health']
+  ];
+  var ICON = { food:'i-food', bills:'i-bills', invest:'i-invest',
+               transport:'i-transport', shopping:'i-shopping', health:'i-health' };
+
+  var staggerHost = document.getElementById('staggerHost');
+  STAG.forEach(function (s) {
+    var el = document.createElement('div');
+    el.className = 'panel';
+    var rows = CATS.map(function (c, i) {
+      return '<div class="item" style="display:grid;grid-template-columns:30px 1fr;gap:14px;' +
+             'align-items:center;padding:9px 0;animation-delay:calc(' + (s.delay * i) + 'ms * var(--mo))">' +
+             '<span class="chip ' + c[0] + '"><svg viewBox="0 0 24 24"><use href="#' + ICON[c[0]] + '"/></svg></span>' +
+             '<span style="font-size:14.5px">' + c[1] + '</span></div>';
+    }).join('');
+    el.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">' +
+        (s.good ? '<span class="yes">Keep</span>' : '<span class="no">No</span>') +
+        '<span class="lbl">' + s.title + '</span></div>' +
+      '<div class="stagger" data-key="' + s.key + '">' + rows + '</div>' +
+      '<p class="prose" style="font-size:13.5px;margin:14px 0 0">' + s.note + '</p>';
+    staggerHost.appendChild(el);
+  });
+
+  function playStagger(key) {
+    document.querySelectorAll('.stagger').forEach(function (g) {
+      if (key && g.dataset.key !== key) return;
+      var cfg = STAG.filter(function (s) { return s.key === g.dataset.key; })[0];
+      g.classList.remove('play', 'fade', 'none');
+      void g.offsetWidth;
+      g.classList.add('play');
+      if (cfg.mode === 'fade') g.classList.add('fade');
+      if (cfg.mode === 'none') g.classList.add('none');
+    });
+  }
+  document.querySelectorAll('[data-stagger]').forEach(function (b) {
+    b.addEventListener('click', function () { playStagger(b.dataset.stagger); });
+  });
+  playStagger(null);
+
+  /* ────────────────────────────────────────────────────────────────────
+     §08 · TETHER DRAW (the rejected version, replayable)
+     ──────────────────────────────────────────────────────────────────── */
+  document.getElementById('tDraw').addEventListener('click', function () {
+    document.querySelectorAll('#tetherDraw .tether').forEach(function (t, i) {
+      t.classList.remove('draw'); void t.offsetWidth;
+      setTimeout(function () { t.classList.add('draw'); }, i * 90 * MO);
+    });
+  });
+
+  /* ────────────────────────────────────────────────────────────────────
+     §09 · SKELETON SWAP
+     ──────────────────────────────────────────────────────────────────── */
+  var skHost = document.getElementById('skHost'), skReal = document.getElementById('skReal');
+  var skBtn = document.getElementById('skLoad'), skLoaded = false;
+  skBtn.addEventListener('click', function () {
+    skLoaded = !skLoaded;
+    if (skLoaded) {
+      skHost.style.display = 'none';
+      skReal.style.display = '';
+      skReal.querySelectorAll('.row').forEach(function (r, i) {
+        r.style.animation = 'st-fade ' + (200 * MO) + 'ms var(--ease-out) both';
+        r.style.animationDelay = (html.getAttribute('data-reduced') === '1' ? 0 : i * 24 * MO) + 'ms';
+      });
+      skBtn.textContent = 'Back to loading';
+    } else {
+      skHost.style.display = '';
+      skReal.style.display = 'none';
+      skBtn.textContent = 'Load the data';
+    }
+  });
+
+  /* ────────────────────────────────────────────────────────────────────
+     §10 · ERROR NOTICE
+     ──────────────────────────────────────────────────────────────────── */
+  function showNotice(el) {
+    clearTimeout(el._t);
+    if (el.hidden) {
+      el.hidden = false;
+      void el.offsetWidth;                  /* commit the from-state before transitioning */
+    }
+    /* already up? do nothing visual — the notice is the same notice. Just
+       reset the dismiss timer. Re-playing the entrance on every failed
+       attempt would flash the error the user is currently reading. */
+    el.classList.remove('leaving');
+    el.classList.add('on');
+    el._t = setTimeout(function () {
+      el.classList.add('leaving'); el.classList.remove('on');
+      setTimeout(function () { el.hidden = true; el.classList.remove('leaving'); }, 200 * MO);
+    }, 3600 * MO);
+  }
+  document.querySelectorAll('[data-err]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      showNotice(document.getElementById(b.dataset.err === 'good' ? 'errGood' : 'errBad'));
+    });
+  });
+
+  /* ────────────────────────────────────────────────────────────────────
+     §12 · COUNT-UP vs RULE 12
+     ──────────────────────────────────────────────────────────────────── */
+  var NET_WORTH = 4782610;
+  var cuFig = document.getElementById('cuFig');
+  var cuSlot = document.getElementById('cuSlot');
+  cuFig.textContent = INR.format(0);
+
+  function runCountUp() {
+    if (html.getAttribute('data-reduced') === '1') { cuFig.textContent = INR.format(NET_WORTH); return; }
+    if (!window.gsap) { cuFig.textContent = INR.format(NET_WORTH); return; }   /* rule 15 argues rule 12 */
+    var o = { v: 0 };
+    cuFig.textContent = INR.format(0);
+    gsap.to(o, {
+      v: NET_WORTH, duration: .9 * MO, ease: 'power4.out', snap: { v: 1 },
+      onUpdate: function () { cuFig.textContent = INR.format(o.v); }
+    });
+  }
+  function runRule12() {
+    cuSlot.innerHTML = '<div class="fig-sk sk"></div>';
+    setTimeout(function () {
+      cuSlot.innerHTML = '<div class="fig" style="animation:st-fade ' + (200 * MO) +
+        'ms var(--ease-out) both">' + INR.format(NET_WORTH) + '</div>';
+    }, 1150 * MO);
+  }
+  document.getElementById('cuRun').addEventListener('click', function () { runCountUp(); runRule12(); });
+
+  /* ────────────────────────────────────────────────────────────────────
+     BOOT
+     ──────────────────────────────────────────────────────────────────── */
+  window.addEventListener('load', function () {
+    var dot = document.getElementById('gsapDot'), lbl = document.getElementById('gsapLbl');
+    if (window.gsap) {
+      dot.classList.remove('off');
+      lbl.textContent = 'GSAP ' + gsap.version;
+      gsap.globalTimeline.timeScale(1 / MO);
+      playHero();
+    } else {
+      lbl.textContent = 'GSAP absent — §03 and §12A are static. §15 holds.';
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -63,6 +63,60 @@ describe("accounts", () => {
     expect(historyRes.body[0].balance).toBe(1500);
   });
 
+  it("a manual balance update bumps balanceAsOf to now and records previousBalance/delta/source on the snapshot", async () => {
+    const cookie = authCookie("user-manual-asof");
+    const createRes = await request(app)
+      .post("/accounts")
+      .set("Cookie", cookie)
+      .send({ type: "cash", institution: "Cash", nickname: "Wallet", currentBalance: 1000 });
+    const accountId = createRes.body._id;
+
+    const before = Date.now();
+    const balanceRes = await request(app)
+      .post(`/accounts/${accountId}/balance`)
+      .set("Cookie", cookie)
+      .send({ balance: 1500 });
+    expect(balanceRes.status).toBe(200);
+    const after = Date.now();
+
+    expect(new Date(balanceRes.body.balanceAsOf).getTime()).toBeGreaterThanOrEqual(before);
+    expect(new Date(balanceRes.body.balanceAsOf).getTime()).toBeLessThanOrEqual(after);
+
+    const historyRes = await request(app).get(`/accounts/${accountId}/balance-history`).set("Cookie", cookie);
+    expect(historyRes.body[0].source).toBe("manual");
+    expect(historyRes.body[0].previousBalance).toBe(1000);
+    expect(historyRes.body[0].delta).toBe(500);
+  });
+
+  // A manual correction is the person looking at their real bank app right now —
+  // it must always win, unconditionally, over anything automated (no staleness
+  // guard the way `reconcileBalance` has), AND must bump `balanceAsOf` so a LATER
+  // automated reconciliation describing an EARLIER point in time (an old statement
+  // processed after the fact, a delayed email) correctly loses to it instead of
+  // silently clobbering the correction the person just made.
+  it("a manual balance update always applies even when it would 'regress' a later-processed automated balanceAsOf", async () => {
+    const { reconcileBalance } = await import("../../src/modules/accounts/balance.service.js");
+    const cookie = authCookie("user-manual-wins");
+    const createRes = await request(app)
+      .post("/accounts")
+      .set("Cookie", cookie)
+      .send({ type: "bank", institution: "HDFC", nickname: "Savings", currentBalance: 1000 });
+    const accountId = createRes.body._id;
+
+    // Simulate a statement reconciliation dated far in the future (later than "now").
+    await reconcileBalance("user-manual-wins", accountId, 5000, new Date("2099-01-01"), "statement_closing_balance");
+
+    const balanceRes = await request(app)
+      .post(`/accounts/${accountId}/balance`)
+      .set("Cookie", cookie)
+      .send({ balance: 42 });
+    expect(balanceRes.status).toBe(200);
+    expect(balanceRes.body.currentBalance).toBe(42);
+
+    const updated = await request(app).get("/accounts").set("Cookie", cookie);
+    expect(updated.body.find((a: { _id: string }) => a._id === accountId).currentBalance).toBe(42);
+  });
+
   it("does not let another user update an account's balance or read its history", async () => {
     const ownerCookie = authCookie("owner-1");
     const attackerCookie = authCookie("attacker-1");

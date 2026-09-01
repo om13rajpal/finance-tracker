@@ -1,0 +1,285 @@
+<!-- @moodforge
+schema: 1.0
+round: 18
+phase: production
+worker: moodforge-queen
+theme: sorted
+version: v1
+created_at: 2026-08-31T20:10:00Z
+sha256: bf899a231f97a4d9cc1ad407acb7da8d2be6eb6d6c0698265adde18fcb6dc279
+palette: [#FAF5F2, #1A1A1A, #E2D8D0, #7D7169, #6B5F57, #F1A007, #23B471, #5483D3, #F9ACCE]
+fonts: [Bricolage Grotesque 800, Geist 400/500/600, Geist Mono 400/500]
+tokens_used: [--bg, --ink, --rule, --dim, --dim-2, --bucket-fixed, --bucket-invest, --bucket-savings, --bucket-guiltfree, --disp, --ui, --num, --r-pill, --stroke-panel, --stroke-hair]
+screen: landing-header
+summary: Round 18 — eight landing-page header directions rendered at full 1440 scale in situ on the ink hero, each with its argument and its cost. Headers only; footer and scroll follow once one is picked.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorted · header directions — round 18</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#FAF5F2; --ink:#1A1A1A; --rule:#E2D8D0; --dim:#7D7169; --dim-2:#6B5F57;
+  --fixed:#F1A007; --invest:#23B471; --savings:#5483D3; --guiltfree:#F9ACCE;
+  --on-ink-prose:#B2AFAD; --on-ink-micro:#8F8C8A; --on-ink-hair:#4B4A49;
+  --disp:"Bricolage Grotesque",system-ui,sans-serif;
+  --ui:"Geist",system-ui,sans-serif;
+  --num:"Geist Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--bg);color:var(--ink)}
+body{margin:0;font-family:var(--ui);-webkit-font-smoothing:antialiased}
+.mic{font-family:var(--num);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase}
+.lbl{font-family:var(--num);font-size:10px;letter-spacing:.16em;text-transform:uppercase}
+.meta{font-family:var(--num);font-size:11px;letter-spacing:.20em;text-transform:uppercase}
+
+/* ── page chrome ─────────────────────────────────────────────── */
+.masthead{padding:64px 44px 32px;border-bottom:1.5px solid var(--ink);max-width:1180px;margin:0 auto}
+.masthead h1{font-family:var(--disp);font-weight:800;font-size:clamp(38px,6vw,84px);line-height:.86;letter-spacing:-.05em;margin:14px 0 0;text-transform:uppercase}
+.masthead p{max-width:62ch;font-size:16px;line-height:1.55;color:var(--dim-2);margin:22px 0 0}
+.wrap{max-width:1180px;margin:0 auto;padding:0 44px}
+
+.opt{border-bottom:1.5px solid var(--ink)}
+.opt__head{max-width:1180px;margin:0 auto;padding:44px 44px 22px;display:flex;gap:26px;align-items:baseline;flex-wrap:wrap}
+.opt__ltr{font-family:var(--disp);font-weight:800;font-size:44px;line-height:1;letter-spacing:-.05em}
+.opt__name{font-family:var(--disp);font-weight:800;font-size:30px;line-height:1.05;letter-spacing:-.04em;text-transform:uppercase}
+.opt__body{max-width:1180px;margin:0 auto;padding:0 44px 32px;display:grid;grid-template-columns:1fr 1fr;gap:32px}
+@media(max-width:900px){.opt__body{grid-template-columns:1fr}}
+.opt__body p{margin:0;font-size:15px;line-height:1.6;color:var(--dim-2)}
+.opt__body .cost{color:var(--ink);border-left:2.5px solid var(--fixed);padding-left:16px}
+.opt__body .cost b{font-weight:600}
+
+/* the live frame — full bleed, real scale */
+.frame{position:relative;background:var(--ink);height:460px;overflow:hidden;display:flex;flex-direction:column}
+.frame--cream{background:var(--bg)}
+.hero-word{font-family:var(--disp);font-weight:800;font-size:132px;line-height:.82;letter-spacing:-.055em;color:var(--bg);text-transform:uppercase;margin:0}
+.hero-sub{max-width:40ch;font-size:17px;line-height:1.45;color:var(--on-ink-prose);margin:20px 0 0}
+.pad{padding:0 56px}
+.grow{flex:1;display:flex;flex-direction:column;justify-content:center}
+
+/* the stamped pill, exactly as it ships */
+.pill{display:inline-flex;align-items:center;gap:10px;background:var(--bg);color:var(--ink);border:1.5px solid var(--ink);border-radius:999px;padding:11px 26px;font-size:14.5px;font-weight:600;box-shadow:0 2px 0 var(--guiltfree);text-decoration:none;white-space:nowrap}
+.pill--ink{background:var(--ink);color:var(--bg);box-shadow:0 2px 0 var(--guiltfree);border-color:var(--ink)}
+.pill--sm{padding:8px 20px;font-size:13.5px}
+
+.dots{display:flex;gap:5px}
+.dots i{width:7px;height:7px;border-radius:999px;display:block}
+.core{display:block}
+.link-cta{font-size:14.5px;font-weight:500;color:var(--bg);border-bottom:1.5px solid var(--guiltfree);padding-bottom:3px;text-decoration:none}
+
+.foot{max-width:1180px;margin:0 auto;padding:44px;color:var(--dim-2);font-size:15px;line-height:1.6}
+.foot b{color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <span class="meta" style="color:var(--dim)">Sorted · round 18 · headers only</span>
+  <h1>Eight ways<br>into the page.</h1>
+  <p>Each one is drawn at full 1440 scale, sitting on the real ink hero with the real wordmark, so you are judging it at the size a visitor meets it — not as a thumbnail. Every option uses only Sorted's own palette, type and the one permitted stamp shadow. Pick a letter and I will build it into the live page, then we do the footer and the scroll section the same way.</p>
+</header>
+
+<!-- ══ A ══════════════════════════════════════════════════════ -->
+<section class="opt">
+  <div class="opt__head"><span class="opt__ltr">A</span><span class="opt__name">The rule</span></div>
+  <div class="frame">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:22px 56px 18px;border-bottom:1px solid var(--on-ink-hair)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <svg class="core" width="26" height="26" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+          <circle cx="100" cy="100" r="94" stroke="#FAF5F2" stroke-width="6"/>
+          <circle cx="100" cy="100" r="70" stroke="#FAF5F2" stroke-width="6" stroke-dasharray="18 26" stroke-linecap="round"/>
+        </svg>
+        <span class="lbl" style="color:var(--bg)">Sorted</span>
+      </div>
+      <a class="link-cta" href="#">Sign in</a>
+    </div>
+    <div class="grow pad">
+      <p class="hero-word">Sorted.</p>
+      <p class="hero-sub">It reads your bank emails and files every rupee into one of four buckets.</p>
+    </div>
+  </div>
+  <div class="opt__body">
+    <p>A hairline spans the full width and both marks <b>hang from it</b>, so the bar has two ends instead of one pill floating in a corner. The rupee core returns at 26px as the left anchor. Sign in is a text link with a real underline, not a third stamped button — the page already has two further down.</p>
+    <p class="cost"><b>Cost:</b> it is the safest option here. Quiet, correct, and it will not be the thing anyone remembers about the page.</p>
+  </div>
+</section>
+
+<!-- ══ B ══════════════════════════════════════════════════════ -->
+<section class="opt">
+  <div class="opt__head"><span class="opt__ltr">B</span><span class="opt__name">The capsule</span></div>
+  <div class="frame">
+    <div style="display:flex;justify-content:center;padding:24px 0 0">
+      <div style="display:flex;align-items:center;gap:18px;background:var(--bg);border:1.5px solid var(--ink);border-radius:999px;padding:9px 10px 9px 22px;box-shadow:0 2px 0 var(--guiltfree)">
+        <div style="display:flex;align-items:center;gap:11px">
+          <span class="lbl" style="color:var(--ink)">Sorted</span>
+          <span class="dots"><i style="background:var(--fixed)"></i><i style="background:var(--invest)"></i><i style="background:var(--savings)"></i><i style="background:var(--guiltfree)"></i></span>
+        </div>
+        <span style="width:1px;height:20px;background:var(--rule)"></span>
+        <a class="pill pill--ink pill--sm" href="#" style="box-shadow:none">Sign in</a>
+      </div>
+    </div>
+    <div class="grow pad">
+      <p class="hero-word">Sorted.</p>
+      <p class="hero-sub">It reads your bank emails and files every rupee into one of four buckets.</p>
+    </div>
+  </div>
+  <div class="opt__body">
+    <p><b>One object, centred</b>, instead of two things pinned to opposite corners. Mark, name, the four bucket dots and the way in all travel together. Because it is a single object it can shrink and dock on scroll without the layout shifting, and the four dots are the page's only early hint of the taxonomy.</p>
+    <p class="cost"><b>Cost:</b> a centred floating capsule is a recognisable 2024 web trope. It will read as current now and dated sooner than A.</p>
+  </div>
+</section>
+
+<!-- ══ C ══════════════════════════════════════════════════════ -->
+<section class="opt">
+  <div class="opt__head"><span class="opt__ltr">C</span><span class="opt__name">The ticker</span></div>
+  <div class="frame">
+    <div style="background:var(--bg);color:var(--ink);padding:9px 0;overflow:hidden;white-space:nowrap;border-bottom:1.5px solid var(--ink)">
+      <span class="mic" style="display:inline-block">
+        <span style="color:var(--fixed)">●</span>&nbsp; BSES Rajdhani −₹2,847.50 &nbsp;&nbsp;·&nbsp;&nbsp;
+        <span style="color:var(--invest)">●</span>&nbsp; Parag Parikh Flexi Cap −₹25,000 &nbsp;&nbsp;·&nbsp;&nbsp;
+        <span style="color:var(--savings)">●</span>&nbsp; HDFC recurring deposit −₹10,000 &nbsp;&nbsp;·&nbsp;&nbsp;
+        <span style="color:var(--guiltfree)">●</span>&nbsp; Blinkit −₹1,204 &nbsp;&nbsp;·&nbsp;&nbsp;
+        <span style="color:var(--fixed)">●</span>&nbsp; Airtel Fibre −₹1,099.50 &nbsp;&nbsp;·&nbsp;&nbsp;
+        <span style="color:var(--guiltfree)">●</span>&nbsp; Third Wave Coffee −₹388
+      </span>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 56px 0">
+      <span class="lbl" style="color:var(--bg)">Sorted</span>
+      <a class="pill pill--sm" href="#">Sign in</a>
+    </div>
+    <div class="grow pad">
+      <p class="hero-word">Sorted.</p>
+      <p class="hero-sub">It reads your bank emails and files every rupee into one of four buckets.</p>
+    </div>
+  </div>
+  <div class="opt__body">
+    <p>The header <b>is</b> the feed. A cream strip runs the raw unsorted bank alerts across the very top of the page, scrolling continuously, with the chrome sitting quietly beneath it. It states what the product does in the first half-second without a single line of marketing copy — and it moves the ticker off the bottom of the hero, where it currently competes with the sentence.</p>
+    <p class="cost"><b>Cost:</b> it is motion at the very top of the page, above everything. Under reduced motion it has to hold still and become a static strip, which is a weaker version of the idea.</p>
+  </div>
+</section>
+
+<!-- ══ D ══════════════════════════════════════════════════════ -->
+<section class="opt">
+  <div class="opt__head"><span class="opt__ltr">D</span><span class="opt__name">The four dots</span></div>
+  <div class="frame">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:26px 56px 0">
+      <span class="dots" style="gap:9px">
+        <i style="background:var(--fixed);width:13px;height:13px"></i>
+        <i style="background:var(--invest);width:13px;height:13px"></i>
+        <i style="background:var(--savings);width:13px;height:13px"></i>
+        <i style="background:var(--guiltfree);width:13px;height:13px"></i>
+      </span>
+      <a class="pill pill--sm" href="#">Sign in</a>
+    </div>
+    <div class="grow pad">
+      <p class="hero-word">Sorted.</p>
+      <p class="hero-sub">It reads your bank emails and files every rupee into one of four buckets.</p>
+    </div>
+  </div>
+  <div class="opt__body">
+    <p><b>No words in the chrome at all.</b> Four coloured dots are the mark — and they are the product's actual model, not decoration. The wordmark below is already 260px tall, so the header does not need to say the name; it needs to say what kind of thing this is. Four dots do that in a shape you will recognise on the second visit.</p>
+    <p class="cost"><b>Cost:</b> on a first visit the dots mean nothing yet — the meaning only lands two sections later. Needs a <code>title</code> and an accessible label to be honest to a screen reader.</p>
+  </div>
+</section>
+
+<!-- ══ E ══════════════════════════════════════════════════════ -->
+<section class="opt">
+  <div class="opt__head"><span class="opt__ltr">E</span><span class="opt__name">The proof strip</span></div>
+  <div class="frame">
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:26px;padding:20px 56px 16px;border-bottom:1px solid var(--on-ink-hair);flex-wrap:wrap">
+      <span class="lbl" style="color:var(--bg)">Sorted</span>
+      <div style="display:flex;align-items:center;gap:26px;flex-wrap:wrap">
+        <span class="mic" style="color:var(--on-ink-micro)">312 emails read this month</span>
+        <span class="mic" style="color:var(--on-ink-micro)">0 transactions typed</span>
+        <a class="pill pill--sm" href="#">Sign in</a>
+      </div>
+    </div>
+    <div class="grow pad">
+      <p class="hero-word">Sorted.</p>
+      <p class="hero-sub">It reads your bank emails and files every rupee into one of four buckets.</p>
+    </div>
+  </div>
+  <div class="opt__body">
+    <p>The header carries <b>proof instead of a label</b>. Two mono facts — how many bank emails were parsed, and how many transactions were typed by hand — make the argument before the visitor has scrolled a pixel. <em>0 transactions typed</em> is the whole product in three words, and it is the one number a finance tracker can brag about that no competitor can copy.</p>
+    <p class="cost"><b>Cost:</b> these have to be <b>real</b> numbers or bracketed placeholders. A fabricated stat in the header poisons everything under it — and this is a single-owner product, so "312" is one person's month, not a userbase.</p>
+  </div>
+</section>
+
+<!-- ══ F ══════════════════════════════════════════════════════ -->
+<section class="opt">
+  <div class="opt__head"><span class="opt__ltr">F</span><span class="opt__name">The margins</span></div>
+  <div class="frame">
+    <div style="position:absolute;left:20px;top:0;bottom:0;display:flex;align-items:center">
+      <span class="lbl" style="color:var(--on-ink-micro);writing-mode:vertical-rl;transform:rotate(180deg)">Sorted · personal finance, India</span>
+    </div>
+    <div style="position:absolute;right:20px;top:0;bottom:0;display:flex;align-items:center">
+      <span class="lbl" style="color:var(--on-ink-micro);writing-mode:vertical-rl">Passwordless · one address</span>
+    </div>
+    <div style="position:absolute;right:56px;top:26px">
+      <a class="pill pill--sm" href="#">Sign in</a>
+    </div>
+    <div class="grow" style="padding:0 96px">
+      <p class="hero-word">Sorted.</p>
+      <p class="hero-sub">It reads your bank emails and files every rupee into one of four buckets.</p>
+    </div>
+  </div>
+  <div class="opt__body">
+    <p>The top of the page is left <b>completely empty</b>. The identifying text rotates 90° into the left and right margins, where it frames the hero like the spine text on a book jacket, and only the CTA stays horizontal. It is the most architectural option and it makes the wordmark the unambiguous first thing you see.</p>
+    <p class="cost"><b>Cost:</b> rotated type is genuinely harder to read and needs care on mobile, where the margins collapse. The vertical strips would drop out entirely below 900px.</p>
+  </div>
+</section>
+
+<!-- ══ G ══════════════════════════════════════════════════════ -->
+<section class="opt">
+  <div class="opt__head"><span class="opt__ltr">G</span><span class="opt__name">The stamp</span></div>
+  <div class="frame">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:26px 56px 0">
+      <span style="display:inline-flex;align-items:center;gap:10px;border:1.5px solid var(--bg);border-radius:4px;padding:8px 14px;box-shadow:3px 3px 0 var(--guiltfree)">
+        <svg width="16" height="16" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+          <circle cx="100" cy="100" r="92" stroke="#FAF5F2" stroke-width="10"/>
+        </svg>
+        <span class="lbl" style="color:var(--bg)">Sorted</span>
+      </span>
+      <a class="pill pill--sm" href="#">Sign in</a>
+    </div>
+    <div class="grow pad">
+      <p class="hero-word">Sorted.</p>
+      <p class="hero-sub">It reads your bank emails and files every rupee into one of four buckets.</p>
+    </div>
+  </div>
+  <div class="opt__body">
+    <p>The mark is drawn as a <b>rubber stamp</b> — a hard-edged outlined block with a flat offset shadow, the same device as the CTA's stamp but rotated into an identity. It ties the header to the one shadow the whole system permits, and it nods at the rubber-stamp idea preserved from direction D back in round 2 that has never been used.</p>
+    <p class="cost"><b>Cost:</b> a 4px-radius rectangle is the only square corner on a page built from 999px pills and 22px panels. That is either a deliberate accent or a crack in the system, and it is a close call.</p>
+  </div>
+</section>
+
+<!-- ══ H ══════════════════════════════════════════════════════ -->
+<section class="opt">
+  <div class="opt__head"><span class="opt__ltr">H</span><span class="opt__name">No header</span></div>
+  <div class="frame">
+    <div class="grow pad">
+      <p class="hero-word">Sorted.</p>
+      <div style="display:flex;align-items:center;gap:26px;margin-top:26px;flex-wrap:wrap">
+        <a class="pill" href="#">Sign in</a>
+        <span style="font-size:17px;line-height:1.45;color:var(--on-ink-prose);max-width:38ch">It reads your bank emails and files every rupee into one of four buckets.</span>
+      </div>
+    </div>
+  </div>
+  <div class="opt__body">
+    <p><b>Delete the chrome.</b> The wordmark is the identity and it is enormous; it does not need a 10px caption above it. The way in moves down beside the sentence, where the visitor is already reading, and it is the same stamped pill the closing section uses — so the page has exactly two calls to action and they are identical.</p>
+    <p class="cost"><b>Cost:</b> nothing is pinned to the top, so once a visitor scrolls past the hero there is no way in until the very bottom. Fine for a short page, a real loss on a long one — and this page is sixteen viewports tall.</p>
+  </div>
+</section>
+
+<div class="foot">
+  <p><b>My pick:</b> <b>C, the ticker</b> — it is the only one that does a job no other element on the page is doing. It states the product's whole premise in the first half-second using nothing but real bank alerts, and it relocates the marquee from the bottom of the hero, where it currently fights the sentence for attention. <b>E</b> is the sharpest if you want the argument made in words, and <b>D</b> is the most confident piece of pure identity. <b>A</b> is the safe one.</p>
+  <p style="margin-top:18px">Tell me a letter — or a combination, e.g. <em>"C but with D's dots instead of the word"</em> — and I will build it into the live page. Then we do the footer, then the scroll section.</p>
+</div>
+
+</body>
+</html>

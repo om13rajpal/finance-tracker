@@ -3,6 +3,7 @@ import type { PDFExtractPage, PDFExtractText } from "pdf.js-extract";
 import {
   parseStatementRows,
   findStatementClosingBalance,
+  findStatementOpeningBalance,
 } from "../../src/modules/statements/statement-row-parser.service.js";
 
 /**
@@ -450,6 +451,74 @@ describe("parseStatementRows — hdfc_statement", () => {
     expect("error" in rows[0]).toBe(true);
   });
 
+  // Confirmed against a real, newer HDFC savings-account e-statement (a
+  // later date range than the PPF statement above, same underlying
+  // account): its transaction AND value-date columns print `DD/MM/YY`
+  // (2-digit year, e.g. `31/05/26`) instead of `DD/MM/YYYY`. Before this was
+  // fixed, `ANCHOR_RE` never matched a single row of that real file — it
+  // silently parsed ZERO of its ~117 real transactions. These tests cover
+  // that date shape directly; 4-digit-year rows are covered by every test
+  // above, unchanged.
+  describe("2-digit-year (DD/MM/YY) transaction dates", () => {
+    it("parses a two-amount-column row whose date and value date both use a 2-digit year", () => {
+      const pages = onePage([
+        HEADER_ROW,
+        ["31/05/26", "UPI-DOMINOS-payee@okbank", "REF12345", "31/05/26", "649.00", "0.00", "3,55,901.34"],
+      ]);
+      const rows = parseStatementRows(pages, "hdfc_statement");
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ date: "2026-05-31", amount: -649 });
+    });
+
+    it("parses a single-amount-column 2-digit-year row too, inferring direction the same way a 4-digit-year row would", () => {
+      const pages = onePage([
+        HEADER_ROW,
+        ["01/06/26", "NB", "Subscription", "-", "01/06/26", "1,200.00", "1,200.00"],
+      ]);
+      const rows = parseStatementRows(pages, "hdfc_statement");
+      expect(rows).toHaveLength(1);
+      // No reference balance available (no prior row, no summary block), so
+      // — same as the 4-digit-year case above — this is correctly reported
+      // as unresolvable rather than a silent wrong guess.
+      expect("error" in rows[0]).toBe(true);
+    });
+
+    it("mirrors the real HDFC savings-account bug this fix was built for: a full statement of 2-digit-year rows, all parsing correctly, with the correct closing balance read off a summary block where opening != closing", () => {
+      const pages = onePage([
+        HEADER_ROW,
+        ["31/05/26", "UPI-DOMINOS-payee@okbank", "REF11111", "31/05/26", "649.00", "0.00", "2,49,581.40"],
+        ["01/06/26", "UPI-AMAZON", "PAY-payee@okbank", "REF22222", "01/06/26", "0.00", "2,500.00", "2,52,081.40"],
+        ["02/06/26", "UPI-DTDC", "EXPRESS-payee@okbank", "REF33333", "02/06/26", "180.00", "0.00", "2,51,901.40"],
+        ...SUMMARY_LINES("2,50,230.40", 2, "2,500.00", "2,51,901.40"),
+      ]);
+      const rows = parseStatementRows(pages, "hdfc_statement");
+      expect(rows).toHaveLength(3);
+      expect(rows.map((r) => ("error" in r ? r.error : r.date))).toEqual([
+        "2026-05-31",
+        "2026-06-01",
+        "2026-06-02",
+      ]);
+      expect(rows.map((r) => ("error" in r ? r.error : r.amount))).toEqual([-649, 2500, -180]);
+      // The real bug being regression-tested: this must be the statement's
+      // actual CLOSING balance (251901.40), never its opening balance
+      // (250230.40) — those two are deliberately different in this fixture
+      // so a test reading the wrong one would fail loudly.
+      expect(findStatementClosingBalance(pages, "hdfc_statement")).toBe(251901.4);
+    });
+
+    it("accepts a mix of 4-digit- and 2-digit-year rows in the same statement (e.g. a statement whose date range straddles the format change)", () => {
+      const pages = onePage([
+        HEADER_ROW,
+        ["30/12/2025", "OLD", "FORMAT", "ROW", "REF1", "30/12/2025", "100.00", "0.00", "9,900.00"],
+        ["02/01/26", "NEW", "FORMAT", "ROW", "REF2", "02/01/26", "0.00", "200.00", "10,100.00"],
+      ]);
+      const rows = parseStatementRows(pages, "hdfc_statement");
+      expect(rows).toHaveLength(2);
+      expect(rows.map((r) => ("error" in r ? r.error : r.date))).toEqual(["2025-12-30", "2026-01-02"]);
+      expect(rows.map((r) => ("error" in r ? r.error : r.amount))).toEqual([-100, 200]);
+    });
+  });
+
   describe("findStatementClosingBalance", () => {
     it("reads the statement's own closing balance off its last transaction row's stated balance", () => {
       const pages = onePage([
@@ -465,6 +534,20 @@ describe("parseStatementRows — hdfc_statement", () => {
     it("falls back to the statement's own Opening Balance when it has no transaction rows at all", () => {
       const pages = onePage([HEADER_ROW, ...SUMMARY_LINES("12,345.00", 0, "0.00", "12,345.00")]);
       expect(findStatementClosingBalance(pages, "hdfc_statement")).toBe(12345);
+    });
+
+    // Regression test for a real, production-reachable bug: when zero
+    // transaction rows are parsed off a document that DOES have real
+    // transactions (as this one's own Dr/Cr counts and Debits/Credits say),
+    // the fallback must read the summary block's own explicitly-labeled
+    // "Closing Bal" — never its "Opening Balance", which is only the same
+    // number by coincidence for a GENUINELY empty statement. Opening and
+    // closing are deliberately different here so a fallback that grabbed the
+    // wrong column (as the buggy code did — see `ANCHOR_RE`'s doc comment)
+    // would fail this test loudly instead of silently passing.
+    it("reads the summary's own Closing Bal specifically (not Opening Balance) when zero rows parse from an otherwise non-empty statement", () => {
+      const pages = onePage([HEADER_ROW, ...SUMMARY_LINES("2,50,230.40", 16, "9,11,293.91", "3,55,901.34")]);
+      expect(findStatementClosingBalance(pages, "hdfc_statement")).toBe(355901.34);
     });
 
     it("returns null when the document has neither transaction rows nor a summary block", () => {
@@ -483,6 +566,30 @@ describe("parseStatementRows — hdfc_statement", () => {
     it("returns null when no parserKey is given at all", () => {
       const pages = onePage([["15/08/2026", "SOME", "MERCHANT", "199.00"]]);
       expect(findStatementClosingBalance(pages)).toBeNull();
+    });
+  });
+
+  describe("findStatementOpeningBalance", () => {
+    it("reads the statement's own printed Opening Balance off the STATEMENT SUMMARY block (HDFC)", () => {
+      const pages = onePage([
+        HEADER_ROW,
+        ["30/07/2026", "NB", "Subscription", "-", "30/07/2026", "5,000.00", "5,000.00"],
+        ...SUMMARY_LINES("0.00", 1, "5,000.00", "5,000.00"),
+      ]);
+      expect(findStatementOpeningBalance(pages, "hdfc_statement")).toBe(0);
+    });
+
+    it("returns null for a parser with no opening-balance support at all (SBI's 'closing balance' isn't opening+rows-based)", () => {
+      const pages = onePage([
+        ["WDL TFR"],
+        ["01/08/2026", "01/08/2026", "UPI/DR/111111111111/TESTMERCHANT", "-", "500.00", "-", "10,000.00"],
+      ]);
+      expect(findStatementOpeningBalance(pages, "sbi_statement")).toBeNull();
+    });
+
+    it("returns null when no parserKey is given at all", () => {
+      const pages = onePage([["15/08/2026", "SOME", "MERCHANT", "199.00"]]);
+      expect(findStatementOpeningBalance(pages)).toBeNull();
     });
   });
 });

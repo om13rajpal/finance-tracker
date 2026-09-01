@@ -148,8 +148,15 @@ test("golden path: login, add account, add category, add transaction, see net wo
   await page.goto("/dashboard");
   // Scoped to the Net Worth figure itself. The panel now also prints what net
   // worth is made of ("in accounts", "in holdings", "owed on cards"), so with a
-  // single ₹10,000 bank account the same string legitimately appears twice on
-  // the screen and an unscoped getByText trips strict mode. The assertion this
+  // single account the same string could legitimately appear twice on the
+  // screen and an unscoped getByText trips strict mode. The assertion this
   // step is actually making is about the total.
-  await expect(page.locator("#net-worth-figure")).toHaveText(/₹10,000|₹10000/);
+  //
+  // ₹9,500, not ₹10,000: creating a transaction now applies its amount as a
+  // delta to the linked account's stored balance (₹10,000 starting balance -
+  // ₹500 expense above), so it's correctly reflected here instead of silently
+  // drifting from reality the way it used to before that balance-delta wiring
+  // existed. A stale ₹10,000 expectation here would mean this golden path was
+  // still exercising the exact double-counting/drift bug that fix corrects.
+  await expect(page.locator("#net-worth-figure")).toHaveText(/₹9,500|₹9500/);
 });

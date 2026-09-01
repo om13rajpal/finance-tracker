@@ -1,0 +1,1303 @@
+<!-- @moodforge
+schema: 1.0
+round: 3
+phase: screen-preview
+worker: moodforge-theme-iterator
+theme: sorted
+version: v1
+created_at: 2026-08-30T00:00:00Z
+sha256: 2af4e3d2b06efd42c4bcb61d62814e124a7cb4b903f70f7abadb0cb024c38f8c
+palette: [#FAF5F2, #1A1A1A, #E2D8D0, #7D7169, #6B5F57, #F9ACCE, #F1A007, #23B471, #5483D3, #8A4BD1, #C43C63, #14199C, #A61B2B]
+fonts: [Bricolage Grotesque 800, Geist 400/500/600, Geist Mono 500]
+tokens_used: [--bg, --ink, --rule, --dim, --dim-2, --food, --bills, --invest, --transport, --shop, --health, --focus, --alert, --disp, --ui, --num, --ease-out, --ease-in-out, --ease-drawer, --dur-press, --radius-panel, --stroke-panel, --stroke-hair]
+screen: login + dashboard
+summary: Round 3 screen preview for Direction C Sorted — real two-stage OTP login with hero constellation, real four-module dashboard, four required states, resolved six-chip taxonomy (two collisions fixed), and one optional signature moment.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sorted · Round 3 · Screen preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<style>
+/* ══════════════════════════════════════════════════════════════
+   SORTED · tokens
+   ══════════════════════════════════════════════════════════════ */
+:root{
+  /* surface */
+  --bg:#FAF5F2;
+  --ink:#1A1A1A;
+  --rule:#E2D8D0;
+  --dim:#7D7169;      /* locked. mono labels + ≥18px meta ONLY — 4.08:1 */
+  --dim-2:#6B5F57;    /* derived. body-size secondary text — 5.71:1 */
+
+  /* the six-chip taxonomy */
+  --food:#F9ACCE;
+  --bills:#F1A007;
+  --invest:#23B471;
+  --transport:#5483D3;
+  --shop:#8A4BD1;     /* re-spaced — was #FBA130 (collided with bills) */
+  --health:#C43C63;   /* re-spaced — was #14199C (collided with transport) */
+
+  /* system, never a category */
+  --focus:#14199C;
+  --alert:#A61B2B;
+
+  /* type */
+  --disp:"Bricolage Grotesque",sans-serif;
+  --ui:"Geist",system-ui,-apple-system,sans-serif;
+  --num:"Geist Mono",ui-monospace,SFMono-Regular,monospace;
+
+  /* form */
+  --radius-panel:22px;
+  --stroke-panel:1.5px;
+  --stroke-hair:1px;
+
+  /* motion */
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ease-in-out:cubic-bezier(.77,0,.175,1);
+  --ease-drawer:cubic-bezier(.32,.72,0,1);
+  --dur-press:110ms;
+
+  /* deliverable shell only */
+  --shell:#EFE6DF;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--shell);color:var(--ink);
+  font-family:var(--ui);font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+:focus-visible{outline:2.5px solid var(--focus);outline-offset:3px;border-radius:4px}
+a{color:var(--ink)}
+
+/* ── deliverable page furniture ─────────────────────────────── */
+.page{max-width:1300px;margin:0 auto;padding:0 30px 140px}
+.sec{margin-top:96px}
+.sec-head{display:flex;align-items:baseline;gap:16px;margin-bottom:8px;flex-wrap:wrap}
+.sec-num{font-family:var(--num);font-size:11px;font-weight:600;letter-spacing:.2em;color:var(--dim-2)}
+.sec-head h2{font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:40px;line-height:1;margin:0}
+.sec-note{font-size:14.5px;color:var(--dim-2);max-width:74ch;margin:6px 0 26px;line-height:1.6}
+.sec-note b{color:var(--ink);font-weight:600}
+.hr{height:var(--stroke-panel);background:var(--ink);border:0;margin:0 0 22px}
+
+.lab{font-family:var(--num);font-size:10px;font-weight:500;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.money{font-family:var(--num);font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.disp{font-family:var(--disp);font-weight:800;letter-spacing:-.035em}
+
+/* viewport that holds a real 1440×900 screen */
+.vp-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:10px;flex-wrap:wrap}
+.vp-head .t{font-size:14px;font-weight:600}
+.vp-head .t span{font-weight:400;color:var(--dim-2);margin-left:10px}
+.zoom{border:var(--stroke-panel) solid var(--ink);border-radius:999px;background:transparent;color:var(--ink);
+  font-family:var(--num);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:6px 14px;cursor:pointer;
+  transition:transform var(--dur-press) var(--ease-out),background 150ms ease,color 150ms ease}
+.zoom:active{transform:scale(.97)}
+.zoom[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.vp{border:var(--stroke-panel) solid var(--ink);border-radius:26px;overflow:hidden;background:var(--bg);position:relative}
+.vp .stage{width:1440px;height:900px;transform-origin:0 0;background:var(--bg)}
+.vp[data-fit="scaled"]{height:calc(900px * var(--s))}
+.vp[data-fit="scaled"] .stage{transform:scale(var(--s))}
+.vp[data-fit="full"]{overflow:auto;height:920px}
+.vp[data-fit="full"] .stage{transform:none}
+
+/* ══════════════════════════════════════════════════════════════
+   SORTED · product component language
+   ══════════════════════════════════════════════════════════════ */
+.app{font-family:var(--ui);color:var(--ink);background:var(--bg)}
+.panel{border:var(--stroke-panel) solid var(--ink);border-radius:var(--radius-panel);padding:22px 24px;background:var(--bg)}
+.pill{
+  border:var(--stroke-panel) solid var(--ink);border-radius:999px;background:var(--ink);color:var(--bg);
+  font-family:var(--ui);font-weight:600;font-size:15px;padding:15px 30px;box-shadow:0 2px 0 var(--ink);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  transition:transform var(--dur-press) var(--ease-out),opacity 150ms ease;
+}
+.pill:active{transform:translateY(2px);box-shadow:0 0 0 var(--ink)}
+.pill[disabled]{opacity:.55;cursor:default}
+.pill.ghost{background:transparent;color:var(--ink);box-shadow:0 2px 0 var(--ink)}
+.pill.sm{font-size:13px;padding:10px 20px}
+.fld{
+  border:var(--stroke-panel) solid var(--ink);border-radius:999px;background:transparent;padding:15px 22px;
+  font-family:var(--ui);font-size:16px;color:var(--ink);width:100%;
+  transition:box-shadow 150ms ease;
+}
+.fld::placeholder{color:var(--dim)}
+.fld:focus{outline:none;box-shadow:0 0 0 2.5px var(--focus)}
+.fld.err{box-shadow:0 0 0 2.5px var(--alert)}
+
+/* chip */
+.chip{width:30px;height:30px;border-radius:50%;border:var(--stroke-panel) solid var(--ink);
+  display:grid;place-items:center;flex:none;position:relative}
+.chip svg{width:17px;height:17px;display:block}
+.chip.sm{width:22px;height:22px}
+.chip.sm svg{width:13px;height:13px}
+.chip.food{background:var(--food)} .chip.bills{background:var(--bills)}
+.chip.invest{background:var(--invest)} .chip.transport{background:var(--transport)}
+.chip.shop{background:var(--shop)} .chip.health{background:var(--health)}
+.chip.hollow{background:transparent}
+.chip.solid{background:var(--ink)}
+
+/* row */
+.row{display:grid;grid-template-columns:30px 1fr auto;gap:14px;align-items:center;
+  padding:13px 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.row:last-child{border-bottom:0}
+.row .nm{font-size:14.5px;font-weight:600;line-height:1.25}
+.row .sub{font-family:var(--num);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-top:3px;display:block}
+
+/* sidebar */
+.side{width:232px;border-right:var(--stroke-panel) solid var(--ink);padding:26px 22px;display:flex;flex-direction:column;flex:none}
+.mark{display:flex;align-items:center;gap:10px}
+.mark .dots{display:flex}
+.mark .dots i{width:13px;height:13px;border-radius:50%;border:var(--stroke-panel) solid var(--ink);display:block}
+.mark .dots i+i{margin-left:-5px}
+.navrow{display:flex;align-items:center;gap:11px;padding:8px 10px;margin:0 -10px;font-size:14px;font-weight:500;
+  color:var(--dim-2);border-radius:999px;cursor:pointer;
+  transition:color 150ms ease,background 150ms ease}
+.navrow:hover{color:var(--ink);background:#F1E8E2}
+.navrow.on{color:var(--ink);font-weight:600;background:#F1E8E2}
+.navrow svg{width:14px;height:14px;flex:none}
+
+/* budget bar */
+.bar{height:20px;border:var(--stroke-panel) solid var(--ink);border-radius:999px;overflow:hidden;background:transparent}
+.bar > i{display:block;height:100%;transform-origin:0 50%;transform:scaleX(var(--p,1))}
+.bar.ink > i{background:var(--ink)}
+
+/* notice */
+.notice{display:flex;gap:12px;align-items:flex-start;border:var(--stroke-panel) solid var(--ink);
+  border-radius:18px;padding:13px 17px;background:transparent}
+.notice .bang{width:22px;height:22px;border-radius:50%;border:var(--stroke-panel) solid var(--ink);background:var(--alert);
+  color:var(--bg);font-family:var(--disp);font-weight:800;font-size:13px;display:grid;place-items:center;flex:none;margin-top:1px}
+.notice p{margin:0;font-size:13.5px;line-height:1.45}
+.notice .h{font-weight:600}
+.notice .d{color:var(--dim-2)}
+
+/* otp boxes */
+.otp{display:flex;gap:10px}
+.otp i{width:52px;height:60px;border:var(--stroke-panel) solid var(--ink);border-radius:16px;display:grid;place-items:center;
+  font-family:var(--num);font-weight:500;font-size:24px;font-style:normal}
+.otp i.cur{box-shadow:0 0 0 2.5px var(--focus)}
+.otp i.empty{color:var(--rule)}
+
+/* skeleton */
+@keyframes sk{0%,100%{opacity:.34}50%{opacity:.72}}
+.sk{background:var(--rule);border-radius:999px;animation:sk 1.15s var(--ease-in-out) infinite}
+.sk.c{border-radius:50%;background:transparent;border:var(--stroke-panel) dashed var(--ink)}
+@media (prefers-reduced-motion:reduce){.sk{animation:none;opacity:.5}}
+
+/* state cards grid on the deliverable page */
+.states{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.state-card{border:var(--stroke-panel) solid var(--ink);border-radius:26px;overflow:hidden;background:var(--bg)}
+.state-card .cap{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:12px 20px;border-bottom:var(--stroke-hair) solid var(--rule)}
+.state-card .cap b{font-size:13px;font-weight:600}
+.state-card .body{padding:24px}
+
+/* swatch table */
+.swrow{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.sw{border:var(--stroke-panel) solid var(--ink);border-radius:20px;padding:16px;background:var(--bg)}
+.sw .fill{height:64px;border-radius:14px;border:var(--stroke-panel) solid var(--ink);display:grid;place-items:center;margin-bottom:12px}
+.sw .fill svg{width:26px;height:26px}
+.sw b{display:block;font-size:13.5px;font-weight:600}
+.sw code{font-family:var(--num);font-size:11px;color:var(--dim-2);display:block;margin-top:3px}
+.sw .meta{font-family:var(--num);font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--dim);margin-top:8px;display:block}
+.sw .tag{display:inline-block;font-family:var(--num);font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;
+  border:1px solid var(--ink);border-radius:999px;padding:2px 8px;margin-top:9px}
+
+table.audit{width:100%;border-collapse:collapse;font-size:13px}
+table.audit th{text-align:left;font-family:var(--num);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--dim);font-weight:500;padding:0 12px 9px 0;border-bottom:var(--stroke-panel) solid var(--ink)}
+table.audit td{padding:9px 12px 9px 0;border-bottom:var(--stroke-hair) solid var(--rule);vertical-align:middle}
+table.audit td.n{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12px}
+.ok{color:#0E7C4E;font-weight:600} .no{color:var(--alert);font-weight:600}
+
+.callout{border:var(--stroke-panel) solid var(--ink);border-radius:var(--radius-panel);padding:22px 26px;background:transparent}
+.callout.opt{border-style:dashed;border-width:2px}
+.flag{display:inline-flex;align-items:center;gap:8px;font-family:var(--num);font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;border:var(--stroke-panel) solid var(--ink);border-radius:999px;padding:5px 13px;background:var(--bills)}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.three{display:grid;grid-template-columns:repeat(3,1fr);gap:26px}
+
+/* reveal */
+.rise{opacity:0}
+@media (prefers-reduced-motion:reduce){.rise{opacity:1 !important;transform:none !important}}
+
+@media (max-width:980px){
+  .two,.three,.states{grid-template-columns:1fr}
+  .swrow{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════ SVG ICON SPRITE ═══════════════════════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-food" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/><path d="M17 10a2.9 2.9 0 0 1 0 4.5"/>
+      <path d="M9 5.6V4.2M12.6 5.6V4.2"/>
+    </g>
+    <g id="i-bills" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/>
+    </g>
+    <g id="i-invest" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/><path d="M14.8 5h4.8v4.8"/>
+    </g>
+    <g id="i-transport" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.6 15.6V9.4h8.8l3.9 6.2"/><path d="M3.6 15.6h13.9"/>
+      <circle cx="7.4" cy="17.8" r="2.1"/><circle cx="16.2" cy="17.8" r="2.1"/>
+    </g>
+    <g id="i-shop" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.2 8h13.6l-1.3 12H6.5z"/><path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/>
+    </g>
+    <g id="i-health" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <g transform="rotate(-40 12 12)"><rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g>
+    </g>
+    <g id="i-up" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 19V5M6 11l6-6 6 6"/></g>
+    <g id="i-down" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14M6 13l6 6 6-6"/></g>
+    <g id="n-overview" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/>
+      <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></g>
+    <g id="n-accounts" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2.5" y="5.5" width="19" height="13" rx="3.5"/><path d="M2.5 10h19"/></g>
+    <g id="n-tx" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 7.5h13M14 4.5l3 3-3 3M20 16.5H7M10 13.5l-3 3 3 3"/></g>
+    <g id="n-budgets" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v8.5h8.5"/></g>
+    <g id="n-goals" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".4"/></g>
+    <g id="n-invest" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.5 20.5h17"/><path d="M6.5 16.5v-4M11 16.5V7M15.5 16.5v-6M20 16.5V4.5"/></g>
+    <g id="n-recurring" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20.4 3.6v4.8h-4.8"/></g>
+    <g id="n-tax" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.5 3.5h13v17l-3-2-3.5 2-3.5-2-3 2z"/><path d="M9 9h6M9 13.5h4"/></g>
+    <g id="n-settings" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></g>
+  </defs>
+</svg>
+
+<div class="page">
+
+<!-- ═══════════════════════ CONTEXT CARD ═══════════════════════ -->
+<header style="padding-top:64px">
+  <div class="mark" style="margin-bottom:34px">
+    <div class="dots"><i style="background:var(--food)"></i><i style="background:var(--invest)"></i><i style="background:var(--transport)"></i></div>
+    <span class="disp" style="font-size:19px">Sorted</span>
+    <span class="lab" style="margin-left:10px">Round 3 · screen preview · v1</span>
+  </div>
+
+  <h1 class="disp" style="font-size:clamp(52px,7.4vw,104px);line-height:.9;margin:0 0 20px;max-width:15ch">
+    Colour is the character.
+  </h1>
+  <p style="font-size:19px;line-height:1.5;color:var(--dim-2);max-width:56ch;margin:0 0 46px">
+    The layout stays quiet and the type stays disciplined. All of the personality lives in a fixed
+    six-chip taxonomy that runs the sidebar, tags every row and colours every bar.
+    Below: the two screens that actually exist — passwordless login and the four-module dashboard.
+  </p>
+
+  <div class="two" style="gap:26px;align-items:start">
+    <div class="panel">
+      <p class="lab" style="margin:0 0 16px">Palette · resolved</p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:9px"><span class="chip" style="background:var(--bg)"></span><code class="money" style="font-size:11px">#FAF5F2</code></div>
+        <div style="display:flex;align-items:center;gap:9px"><span class="chip" style="background:var(--ink)"></span><code class="money" style="font-size:11px">#1A1A1A</code></div>
+        <div style="display:flex;align-items:center;gap:9px"><span class="chip" style="background:var(--rule)"></span><code class="money" style="font-size:11px">#E2D8D0</code></div>
+        <div style="display:flex;align-items:center;gap:9px"><span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span><code class="money" style="font-size:11px">#F9ACCE</code></div>
+        <div style="display:flex;align-items:center;gap:9px"><span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span><code class="money" style="font-size:11px">#F1A007</code></div>
+        <div style="display:flex;align-items:center;gap:9px"><span class="chip invest"><svg viewBox="0 0 24 24"><use href="#i-invest"/></svg></span><code class="money" style="font-size:11px">#23B471</code></div>
+        <div style="display:flex;align-items:center;gap:9px"><span class="chip transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span><code class="money" style="font-size:11px">#5483D3</code></div>
+        <div style="display:flex;align-items:center;gap:9px"><span class="chip shop"><svg viewBox="0 0 24 24"><use href="#i-shop"/></svg></span><code class="money" style="font-size:11px">#8A4BD1</code></div>
+        <div style="display:flex;align-items:center;gap:9px"><span class="chip health"><svg viewBox="0 0 24 24"><use href="#i-health"/></svg></span><code class="money" style="font-size:11px">#C43C63</code></div>
+      </div>
+      <p style="font-size:13px;color:var(--dim-2);margin:16px 0 0;line-height:1.5">
+        Two hexes moved. <b style="color:var(--ink)">#FBA130</b> and <b style="color:var(--ink)">#14199C</b> are retired from the
+        taxonomy — see §05. <b style="color:var(--ink)">#14199C</b> survives as the system focus blue, which can never be a category.
+      </p>
+    </div>
+
+    <div class="panel">
+      <p class="lab" style="margin:0 0 14px">Type</p>
+      <p class="disp" style="font-size:44px;line-height:1;margin:0 0 4px">Sorted.</p>
+      <p class="money" style="font-size:44px;line-height:1.1;margin:0 0 14px;letter-spacing:-.045em">₹42,18,650</p>
+      <p style="font-size:15px;line-height:1.55;margin:0 0 12px;color:var(--dim-2)">
+        Body is Geist 400 at 15px. Long enough to read at a desk every morning without noticing it.
+      </p>
+      <p class="lab" style="margin:0">Bricolage Grotesque 800 · Geist 400/600 · Geist Mono 500 tabular</p>
+    </div>
+  </div>
+
+  <p class="disp" style="font-size:26px;line-height:1.25;margin:34px 0 0;max-width:44ch;border-left:2.5px solid var(--ink);padding-left:20px">
+    Every rupee gets a colour and an icon. Nothing on this screen is uncategorised, and nothing here relies on colour alone.
+  </p>
+</header>
+
+<!-- ═══════════════════════ §01 LOGIN ═══════════════════════ -->
+<section class="sec" id="s1">
+  <hr class="hr">
+  <div class="sec-head"><span class="sec-num">§ 01</span><h2>Login · stage one</h2></div>
+  <p class="sec-note">
+    There is no password field, because the product has no passwords. Stage one takes an email and sends a six-digit code.
+    The hero is <b>the chip constellation</b>: six categories in an off-centre arrangement around a ₹, drawn in 4px ink outlines with flat fills.
+    It does not rotate and it never loops — chips fly in once, snap into place, then the dotted connectors draw. A spinner loops; a filing system lands.
+    <b>The SVG is static by default</b>; GSAP only moves it, so with JS off or reduced-motion on, this is exactly what renders.
+  </p>
+
+  <div class="vp-head">
+    <span class="t">Login · stage 1 <span>1440 × 900 · live — type an email and press Send code</span></span>
+    <button class="zoom" data-zoom aria-pressed="false">View at 100%</button>
+  </div>
+  <div class="vp" data-fit="scaled" style="--s:.855">
+    <div class="stage app" id="login-stage">
+      <div style="display:grid;grid-template-columns:1fr 1fr;height:900px">
+
+        <!-- left: form -->
+        <div style="padding:54px 78px;display:flex;flex-direction:column">
+          <div class="mark">
+            <div class="dots"><i style="background:var(--food)"></i><i style="background:var(--invest)"></i><i style="background:var(--transport)"></i></div>
+            <span class="disp" style="font-size:19px">Sorted</span>
+          </div>
+
+          <div style="margin:auto 0;max-width:420px" id="lg-body">
+
+            <!-- STAGE 1 -->
+            <div id="lg-email">
+              <p class="lab" style="margin:0 0 16px;color:var(--invest)">Everything is where you left it</p>
+              <h1 class="disp" style="font-size:72px;line-height:.9;margin:0 0 20px">Six years<br>of money,<br>filed.</h1>
+              <p style="font-size:16px;line-height:1.6;color:var(--dim-2);margin:0 0 34px;max-width:36ch">
+                4,812 transactions across nine accounts, every one of them already in a category.
+                Sign in and pick up where you were.
+              </p>
+
+              <div id="lg-err-1" style="display:none;margin-bottom:16px">
+                <div class="notice">
+                  <span class="bang">!</span>
+                  <p><span class="h">We couldn't send that code.</span><br>
+                    <span class="d">The address <span class="money" style="font-size:12.5px">om@omrajpal</span> is missing a domain. Check it and try again.</span></p>
+                </div>
+              </div>
+
+              <label class="lab" for="lg-email-input" style="display:block;margin:0 0 8px">Email</label>
+              <input class="fld" id="lg-email-input" type="email" placeholder="you@example.com" value="om@omrajpal.in" style="margin-bottom:14px" autocomplete="email">
+              <button class="pill" id="lg-send" style="width:100%">Send code</button>
+              <p style="font-size:13px;color:var(--dim-2);margin:14px 0 0;text-align:center">
+                One code, valid for ten minutes. Asking for a second one cancels the first.
+              </p>
+            </div>
+
+            <!-- STAGE 2 -->
+            <div id="lg-code" style="display:none">
+              <button class="lab" id="lg-back" style="background:none;border:0;padding:0;cursor:pointer;display:flex;align-items:center;gap:8px;margin:0 0 16px">
+                <span aria-hidden="true">←</span> Change email
+              </button>
+              <h1 class="disp" style="font-size:72px;line-height:.9;margin:0 0 20px">Check<br>your inbox.</h1>
+              <p style="font-size:16px;line-height:1.6;color:var(--dim-2);margin:0 0 34px;max-width:38ch">
+                A six-digit code is on its way to
+                <span class="money" style="font-size:15px;color:var(--ink)">om@omrajpal.in</span>.
+                It expires in ten minutes.
+              </p>
+
+              <div id="lg-err-2" style="display:none;margin-bottom:16px">
+                <div class="notice">
+                  <span class="bang">!</span>
+                  <p><span class="h">That code didn't match.</span><br>
+                    <span class="d">Two attempts left. If you asked for a second code, only the newest one works.</span></p>
+                </div>
+              </div>
+
+              <p class="lab" style="margin:0 0 8px">Six-digit code</p>
+              <div class="otp" id="lg-otp" style="margin-bottom:16px">
+                <i>4</i><i>0</i><i>7</i><i class="cur empty">·</i><i class="empty">·</i><i class="empty">·</i>
+              </div>
+              <button class="pill" id="lg-verify" style="width:100%">Verify</button>
+              <p style="font-size:13px;color:var(--dim-2);margin:14px 0 0;text-align:center">
+                Didn't arrive? <span style="color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer">Send a new code</span> — the old one stops working.
+              </p>
+            </div>
+          </div>
+
+          <p class="lab" style="margin:0;max-width:52ch;line-height:1.7">
+            Signature motion · six chips fly in from off-canvas and snap, then the connectors draw. Once. No loop.
+          </p>
+        </div>
+
+        <!-- right: hero -->
+        <div style="background:#FCE4CA;border-left:var(--stroke-panel) solid var(--ink);display:grid;place-items:center;position:relative">
+          <svg id="hero" width="520" height="470" viewBox="0 0 420 380" fill="none" role="img"
+               aria-label="Six category chips — food, investments, bills, transport, health and shopping — arranged around a rupee symbol.">
+            <g id="hero-links" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round">
+              <path d="M208 126 L206 82"/>
+              <path d="M267 161 L325 132"/>
+              <path d="M266 221 L324 253"/>
+              <path d="M212 254 L213 306"/>
+              <path d="M156 224 L91 266"/>
+              <path d="M153 162 L85 129"/>
+            </g>
+            <g id="hero-core">
+              <circle cx="210" cy="190" r="64" fill="#FAF5F2" stroke="#1A1A1A" stroke-width="4.5"/>
+              <text x="210" y="215" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif"
+                    font-weight="800" font-size="66" fill="#1A1A1A">₹</text>
+            </g>
+            <g id="hero-chips">
+              <g class="hc" data-x="206" data-y="52">
+                <circle cx="206" cy="52" r="30" fill="#F9ACCE" stroke="#1A1A1A" stroke-width="4"/>
+                <g transform="translate(194 40) scale(1)" color="#1A1A1A"><use href="#i-food"/></g>
+              </g>
+              <g class="hc" data-x="352" data-y="118">
+                <circle cx="352" cy="118" r="30" fill="#23B471" stroke="#1A1A1A" stroke-width="4"/>
+                <g transform="translate(340 106)" color="#1A1A1A"><use href="#i-invest"/></g>
+              </g>
+              <g class="hc" data-x="350" data-y="268">
+                <circle cx="350" cy="268" r="30" fill="#F1A007" stroke="#1A1A1A" stroke-width="4"/>
+                <g transform="translate(338 256)" color="#1A1A1A"><use href="#i-bills"/></g>
+              </g>
+              <g class="hc" data-x="214" data-y="336">
+                <circle cx="214" cy="336" r="30" fill="#5483D3" stroke="#1A1A1A" stroke-width="4"/>
+                <g transform="translate(202 324)" color="#1A1A1A"><use href="#i-transport"/></g>
+              </g>
+              <g class="hc" data-x="66" data-y="282">
+                <circle cx="66" cy="282" r="30" fill="#C43C63" stroke="#1A1A1A" stroke-width="4"/>
+                <g transform="translate(54 270)" color="#1A1A1A"><use href="#i-health"/></g>
+              </g>
+              <g class="hc" data-x="58" data-y="116">
+                <circle cx="58" cy="116" r="30" fill="#8A4BD1" stroke="#1A1A1A" stroke-width="4"/>
+                <g transform="translate(46 104)" color="#1A1A1A"><use href="#i-shop"/></g>
+              </g>
+            </g>
+          </svg>
+          <p class="lab" style="position:absolute;bottom:52px;left:0;right:0;text-align:center;color:var(--ink);opacity:.62">
+            six categories · one colour and one icon each · never changes
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ §02 LOGIN STATES ═══════════════════════ -->
+<section class="sec" id="s2">
+  <hr class="hr">
+  <div class="sec-head"><span class="sec-num">§ 02</span><h2>The stage change, and everything that can go wrong</h2></div>
+  <p class="sec-note">
+    The email→code handoff is the only real motion opportunity on this screen, so it gets the whole budget:
+    the headline and form <b>leave to the left</b> over 150ms, the code stage <b>arrives from the right</b> over 240ms on
+    <code class="money" style="font-size:12px">--ease-out</code>, and the six OTP boxes stagger in at 45ms.
+    Direction carries meaning: <b>Change email</b> reverses it exactly. Under reduced motion it is a 120ms crossfade with no movement.
+    Errors are not raw red text — they are an ink-bordered notice that names the fix, and the field takes a 2.5px alert ring.
+  </p>
+
+  <div class="two">
+    <div class="state-card">
+      <div class="cap"><b>Stage 2 · idle</b><span class="lab">code</span></div>
+      <div class="body" style="max-width:none">
+        <button class="lab" style="background:none;border:0;padding:0;display:flex;align-items:center;gap:8px;margin:0 0 14px;cursor:pointer"><span aria-hidden="true">←</span> Change email</button>
+        <p class="disp" style="font-size:40px;line-height:.95;margin:0 0 12px">Check<br>your inbox.</p>
+        <p style="font-size:14.5px;color:var(--dim-2);margin:0 0 22px">Sent to <span class="money" style="font-size:13.5px;color:var(--ink)">om@omrajpal.in</span>.</p>
+        <div class="otp" style="margin-bottom:16px"><i>4</i><i>0</i><i>7</i><i>2</i><i>9</i><i>1</i></div>
+        <button class="pill" style="width:100%">Verify</button>
+      </div>
+    </div>
+
+    <div class="state-card">
+      <div class="cap"><b>Stage 2 · submitting</b><span class="lab">guarded</span></div>
+      <div class="body">
+        <button class="lab" style="background:none;border:0;padding:0;display:flex;align-items:center;gap:8px;margin:0 0 14px;opacity:.45"><span aria-hidden="true">←</span> Change email</button>
+        <p class="disp" style="font-size:40px;line-height:.95;margin:0 0 12px">Check<br>your inbox.</p>
+        <p style="font-size:14.5px;color:var(--dim-2);margin:0 0 22px">Sent to <span class="money" style="font-size:13.5px;color:var(--ink)">om@omrajpal.in</span>.</p>
+        <div class="otp" style="margin-bottom:16px;opacity:.55"><i>4</i><i>0</i><i>7</i><i>2</i><i>9</i><i>1</i></div>
+        <button class="pill" style="width:100%" disabled>
+          <span class="chip sm hollow" style="border-color:var(--bg);border-right-color:transparent;animation:sp .7s linear infinite" aria-hidden="true"></span>
+          Verifying…
+        </button>
+        <p style="font-size:13px;color:var(--dim-2);margin:14px 0 0;text-align:center">The button locks on the first click. A second request would silently kill the code already in your inbox.</p>
+      </div>
+    </div>
+
+    <div class="state-card">
+      <div class="cap"><b>Stage 1 · error</b><span class="lab">request failed</span></div>
+      <div class="body">
+        <div class="notice" style="margin-bottom:18px">
+          <span class="bang">!</span>
+          <p><span class="h">We couldn't send that code.</span><br>
+            <span class="d">The address <span class="money" style="font-size:12.5px">om@omrajpal</span> is missing a domain. Check it and try again.</span></p>
+        </div>
+        <p class="lab" style="margin:0 0 8px">Email</p>
+        <input class="fld err" value="om@omrajpal" style="margin-bottom:14px" aria-invalid="true">
+        <button class="pill" style="width:100%">Send code</button>
+      </div>
+    </div>
+
+    <div class="state-card">
+      <div class="cap"><b>Stage 2 · error</b><span class="lab">wrong code</span></div>
+      <div class="body">
+        <div class="notice" style="margin-bottom:18px">
+          <span class="bang">!</span>
+          <p><span class="h">That code didn't match.</span><br>
+            <span class="d">Two attempts left. If you asked for a second code, only the newest one works.</span></p>
+        </div>
+        <p class="lab" style="margin:0 0 8px">Six-digit code</p>
+        <div class="otp" style="margin-bottom:16px">
+          <i style="box-shadow:0 0 0 2.5px var(--alert)">4</i><i style="box-shadow:0 0 0 2.5px var(--alert)">0</i>
+          <i style="box-shadow:0 0 0 2.5px var(--alert)">7</i><i style="box-shadow:0 0 0 2.5px var(--alert)">2</i>
+          <i style="box-shadow:0 0 0 2.5px var(--alert)">9</i><i style="box-shadow:0 0 0 2.5px var(--alert)">0</i>
+        </div>
+        <button class="pill" style="width:100%">Verify</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ §03 DASHBOARD ═══════════════════════ -->
+<section class="sec" id="s3">
+  <hr class="hr">
+  <div class="sec-head"><span class="sec-num">§ 03</span><h2>Dashboard · the four real modules</h2></div>
+  <p class="sec-note">
+    Exactly what <code class="money" style="font-size:12px">/dashboard</code> returns — net worth, guilt-free money, budget vs spend, upcoming 30 days.
+    No recent-transactions feed, because there isn't one. <b>Guilt-Free Money is the emotional centre</b>, not net worth: it is the only number
+    on the page that answers a question you actually ask, so it gets the 108px figure and net worth gets a calm companion panel.
+    <b>Budget vs Spend is where the chip system earns its keep</b> — one row per category, one chip per row, the bar filled in that category's colour.
+    One rule keeps it from becoming a birthday card: <b>chips colour categories; ink colours totals.</b>
+  </p>
+
+  <div class="vp-head">
+    <span class="t">Dashboard <span>1440 × 900 · counters and bars animate on scroll</span></span>
+    <button class="zoom" data-zoom aria-pressed="false">View at 100%</button>
+  </div>
+  <div class="vp" data-fit="scaled" style="--s:.855">
+    <div class="stage app" id="dash">
+      <div style="display:flex;height:900px">
+
+        <!-- sidebar -->
+        <aside class="side">
+          <div class="mark" style="margin-bottom:30px">
+            <div class="dots"><i style="background:var(--food)"></i><i style="background:var(--invest)"></i><i style="background:var(--transport)"></i></div>
+            <span class="disp" style="font-size:18px">Sorted</span>
+          </div>
+          <nav style="display:flex;flex-direction:column;gap:1px">
+            <div class="navrow on"><svg viewBox="0 0 24 24"><use href="#n-overview"/></svg>Overview</div>
+            <div class="navrow"><svg viewBox="0 0 24 24"><use href="#n-accounts"/></svg>Accounts</div>
+            <div class="navrow"><svg viewBox="0 0 24 24"><use href="#n-tx"/></svg>Transactions</div>
+            <div class="navrow"><svg viewBox="0 0 24 24"><use href="#n-budgets"/></svg>Budgets</div>
+            <div class="navrow"><svg viewBox="0 0 24 24"><use href="#n-goals"/></svg>Goals</div>
+            <div class="navrow"><svg viewBox="0 0 24 24"><use href="#n-invest"/></svg>Investments</div>
+            <div class="navrow"><svg viewBox="0 0 24 24"><use href="#n-recurring"/></svg>Recurring</div>
+            <div class="navrow"><svg viewBox="0 0 24 24"><use href="#n-tax"/></svg>Tax</div>
+            <div class="navrow"><svg viewBox="0 0 24 24"><use href="#n-settings"/></svg>Settings</div>
+          </nav>
+
+          <p class="lab" style="margin:30px 0 13px">Categories</p>
+          <div style="display:grid;grid-template-columns:repeat(3,30px);gap:10px">
+            <span class="chip food" title="Food & Dining"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+            <span class="chip bills" title="Bills & Utilities"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+            <span class="chip invest" title="Investments"><svg viewBox="0 0 24 24"><use href="#i-invest"/></svg></span>
+            <span class="chip transport" title="Transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span>
+            <span class="chip shop" title="Shopping"><svg viewBox="0 0 24 24"><use href="#i-shop"/></svg></span>
+            <span class="chip health" title="Health"><svg viewBox="0 0 24 24"><use href="#i-health"/></svg></span>
+          </div>
+
+          <div style="margin-top:auto;border-top:var(--stroke-hair) solid var(--rule);padding-top:16px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="chip hollow" style="font-family:var(--disp);font-weight:800;font-size:12px">O</span>
+              <span style="font-size:13px;font-weight:600;line-height:1.2">Om Rajpal<span class="lab" style="display:block;font-size:9px;margin-top:2px">om@omrajpal.in</span></span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- main -->
+        <div style="flex:1;padding:30px 36px;overflow:hidden">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px">
+            <div>
+              <h1 class="disp" style="font-size:30px;margin:0;line-height:1.05">Sunday, 30 August</h1>
+              <p style="font-size:13.5px;color:var(--dim-2);margin:4px 0 0">Two days left in August.</p>
+            </div>
+            <button class="pill sm">Add transaction</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 392px;gap:22px;align-items:start">
+
+            <!-- LEFT COLUMN -->
+            <div style="display:flex;flex-direction:column;gap:22px">
+
+              <!-- GUILT-FREE MONEY -->
+              <div class="panel rise" style="padding:26px 30px 24px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:16px">
+                  <p class="lab" style="margin:0">Guilt-free money · this month</p>
+                  <p class="lab" style="margin:0;color:var(--ink)">2 days left</p>
+                </div>
+                <p class="money" data-count="22820" style="font-size:108px;line-height:.94;margin:8px 0 0;letter-spacing:-.055em">₹22,820</p>
+                <p style="font-size:16px;color:var(--dim-2);margin:2px 0 20px">
+                  left to spend on whatever you like — <span style="color:var(--ink);font-weight:600">₹11,410 a day</span> if you spend all of it.
+                </p>
+
+                <div class="bar ink" style="height:24px" data-bar="64.3"><i style="--p:0"></i></div>
+                <div style="display:flex;justify-content:space-between;margin-top:11px">
+                  <span class="lab">Planned <span class="money" style="font-size:11.5px;color:var(--ink);letter-spacing:0">₹64,000</span></span>
+                  <span class="lab">Spent <span class="money" style="font-size:11.5px;color:var(--ink);letter-spacing:0">₹41,180</span></span>
+                </div>
+              </div>
+
+              <!-- BUDGET VS SPEND -->
+              <div class="panel rise" style="padding:22px 30px 20px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+                  <p class="lab" style="margin:0">Budget vs spend · this month</p>
+                  <p class="money" style="margin:0;font-size:13px">₹52,307 <span style="color:var(--dim-2)">/ ₹61,000</span></p>
+                </div>
+
+                <div id="budget-rows">
+                  <!-- row -->
+                  <div class="row brow" style="grid-template-columns:30px 1fr;row-gap:9px;padding:15px 0">
+                    <span class="chip food" style="grid-row:span 2;align-self:center"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+                    <span style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                      <span class="nm">Food &amp; Dining</span>
+                      <span class="money" style="font-size:13.5px">₹16,412 <span style="color:var(--dim-2)">/ ₹15,000</span></span>
+                    </span>
+                    <span style="display:flex;align-items:center;gap:12px">
+                      <span class="bar" style="flex:1" data-bar="100"><i style="background:var(--food);--p:0"></i></span>
+                      <span class="lab" style="color:var(--ink);white-space:nowrap">Over by ₹1,412</span>
+                    </span>
+                  </div>
+
+                  <div class="row brow" style="grid-template-columns:30px 1fr;row-gap:9px;padding:15px 0">
+                    <span class="chip bills" style="grid-row:span 2;align-self:center"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+                    <span style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                      <span class="nm">Bills &amp; Utilities</span>
+                      <span class="money" style="font-size:13.5px">₹18,420 <span style="color:var(--dim-2)">/ ₹22,000</span></span>
+                    </span>
+                    <span style="display:flex;align-items:center;gap:12px">
+                      <span class="bar" style="flex:1" data-bar="83.7"><i style="background:var(--bills);--p:0"></i></span>
+                      <span class="lab" style="white-space:nowrap">84%</span>
+                    </span>
+                  </div>
+
+                  <div class="row brow" style="grid-template-columns:30px 1fr;row-gap:9px;padding:15px 0">
+                    <span class="chip shop" style="grid-row:span 2;align-self:center"><svg viewBox="0 0 24 24"><use href="#i-shop"/></svg></span>
+                    <span style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                      <span class="nm">Shopping</span>
+                      <span class="money" style="font-size:13.5px">₹9,640 <span style="color:var(--dim-2)">/ ₹14,000</span></span>
+                    </span>
+                    <span style="display:flex;align-items:center;gap:12px">
+                      <span class="bar" style="flex:1" data-bar="68.9"><i style="background:var(--shop);--p:0"></i></span>
+                      <span class="lab" style="white-space:nowrap">69%</span>
+                    </span>
+                  </div>
+
+                  <div class="row brow" style="grid-template-columns:30px 1fr;row-gap:9px;padding:15px 0">
+                    <span class="chip transport" style="grid-row:span 2;align-self:center"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span>
+                    <span style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                      <span class="nm">Transport</span>
+                      <span class="money" style="font-size:13.5px">₹4,905 <span style="color:var(--dim-2)">/ ₹6,000</span></span>
+                    </span>
+                    <span style="display:flex;align-items:center;gap:12px">
+                      <span class="bar" style="flex:1" data-bar="81.8"><i style="background:var(--transport);--p:0"></i></span>
+                      <span class="lab" style="white-space:nowrap">82%</span>
+                    </span>
+                  </div>
+
+                  <div class="row brow" style="grid-template-columns:30px 1fr;row-gap:9px;padding:15px 0">
+                    <span class="chip health" style="grid-row:span 2;align-self:center"><svg viewBox="0 0 24 24"><use href="#i-health"/></svg></span>
+                    <span style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                      <span class="nm">Health</span>
+                      <span class="money" style="font-size:13.5px">₹2,930 <span style="color:var(--dim-2)">/ ₹4,000</span></span>
+                    </span>
+                    <span style="display:flex;align-items:center;gap:12px">
+                      <span class="bar" style="flex:1" data-bar="73.3"><i style="background:var(--health);--p:0"></i></span>
+                      <span class="lab" style="white-space:nowrap">73%</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- RIGHT COLUMN -->
+            <div style="display:flex;flex-direction:column;gap:22px">
+
+              <!-- NET WORTH -->
+              <div class="panel rise" style="padding:24px 26px">
+                <p class="lab" style="margin:0 0 10px">Net worth</p>
+                <p class="money" data-count="4218650" style="font-size:52px;line-height:.98;margin:0;letter-spacing:-.05em">₹42,18,650</p>
+                <p class="lab" style="margin:12px 0 0">as of 30 Aug, 09:14</p>
+              </div>
+
+              <!-- UPCOMING -->
+              <div class="panel rise" style="padding:22px 26px 18px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:4px">
+                  <p class="lab" style="margin:0">Upcoming · next 30 days</p>
+                  <p class="lab" style="margin:0;color:var(--ink)">9 items</p>
+                </div>
+                <div id="up-rows">
+                  <div class="row urow">
+                    <span class="chip hollow" aria-label="Expense"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
+                    <span><span class="nm">Nippon India Small Cap SIP</span><span class="sub">Mon 1 Sep · Zerodha</span></span>
+                    <span class="money" style="font-size:14px">−₹10,000</span>
+                  </div>
+                  <div class="row urow">
+                    <span class="chip hollow" aria-label="Expense"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
+                    <span><span class="nm">Airtel Postpaid</span><span class="sub">Wed 2 Sep · Autopay</span></span>
+                    <span class="money" style="font-size:14px">−₹1,199</span>
+                  </div>
+                  <div class="row urow">
+                    <span class="chip hollow" aria-label="Expense"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
+                    <span><span class="nm">Netflix Premium</span><span class="sub">Sat 5 Sep · HDFC ••4412</span></span>
+                    <span class="money" style="font-size:14px">−₹649</span>
+                  </div>
+                  <div class="row urow">
+                    <span class="chip hollow" aria-label="Expense"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
+                    <span><span class="nm">HDFC Home Loan EMI</span><span class="sub">Mon 7 Sep · Auto-debit</span></span>
+                    <span class="money" style="font-size:14px">−₹48,320</span>
+                  </div>
+                  <div class="row urow">
+                    <span class="chip invest" aria-label="Income"><svg viewBox="0 0 24 24"><use href="#i-up"/></svg></span>
+                    <span><span class="nm">Salary</span><span class="sub">Thu 10 Sep · ICICI ••0071</span></span>
+                    <span class="money" style="font-size:14px">+₹2,85,000</span>
+                  </div>
+                  <div class="row urow">
+                    <span class="chip hollow" aria-label="Expense"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
+                    <span><span class="nm">BSES Rajdhani</span><span class="sub">Sat 12 Sep · Autopay</span></span>
+                    <span class="money" style="font-size:14px">−₹2,840</span>
+                  </div>
+                  <div class="row urow">
+                    <span class="chip hollow" aria-label="Expense"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
+                    <span><span class="nm">Parag Parikh Flexi Cap SIP</span><span class="sub">Tue 15 Sep · Groww</span></span>
+                    <span class="money" style="font-size:14px">−₹25,000</span>
+                  </div>
+                  <div class="row urow">
+                    <span class="chip hollow" aria-label="Expense"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
+                    <span><span class="nm">Spotify Family</span><span class="sub">Fri 18 Sep · Axis ••8830</span></span>
+                    <span class="money" style="font-size:14px">−₹199</span>
+                  </div>
+                  <div class="row urow">
+                    <span class="chip hollow" aria-label="Expense"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
+                    <span><span class="nm">Cult.fit Elite</span><span class="sub">Fri 25 Sep · Kotak ••2205</span></span>
+                    <span class="money" style="font-size:14px">−₹2,499</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:26px">
+    <p class="lab" style="margin:0 0 10px">One honest constraint, made into a rule</p>
+    <p style="margin:0;font-size:15px;line-height:1.6;max-width:80ch">
+      A recurring item carries <code class="money" style="font-size:12.5px">name · amount · nextDueDate · type</code> and
+      <b>no category</b>. So the chip in the Upcoming rail cannot be a category chip. It encodes direction instead —
+      hollow with a down arrow for an expense, invest-green with an up arrow for income.
+      <b>Chips never guess.</b> If the data doesn't know the category, the chip stays hollow rather than inventing a colour.
+    </p>
+  </div>
+</section>
+
+<!-- ═══════════════════════ §04 REQUIRED STATES ═══════════════════════ -->
+<section class="sec" id="s4">
+  <hr class="hr">
+  <div class="sec-head"><span class="sec-num">§ 04</span><h2>The four states that actually ship</h2></div>
+  <p class="sec-note">
+    Loading, error, and two empties. The skeleton keeps the chip rhythm exactly — 30px dashed rings on the same 14px grid —
+    so nothing jumps when data lands. The empties each get one small drawn moment, which is the only place past the login
+    where illustration is allowed.
+  </p>
+
+  <div class="states">
+
+    <!-- LOADING -->
+    <div class="state-card">
+      <div class="cap"><b>Loading</b><span class="lab">isLoading</span></div>
+      <div class="body">
+        <div class="panel" style="margin-bottom:16px">
+          <span class="sk" style="display:block;width:150px;height:9px;margin-bottom:16px"></span>
+          <span class="sk" style="display:block;width:66%;height:52px;border-radius:12px;margin-bottom:16px"></span>
+          <span class="sk" style="display:block;width:100%;height:22px"></span>
+        </div>
+        <div class="panel">
+          <span class="sk" style="display:block;width:170px;height:9px;margin-bottom:16px"></span>
+          <div style="display:grid;gap:16px">
+            <div style="display:grid;grid-template-columns:30px 1fr;gap:14px;align-items:center">
+              <span class="sk c" style="width:30px;height:30px"></span><span class="sk" style="height:14px;width:82%"></span></div>
+            <div style="display:grid;grid-template-columns:30px 1fr;gap:14px;align-items:center">
+              <span class="sk c" style="width:30px;height:30px;animation-delay:.09s"></span><span class="sk" style="height:14px;width:66%;animation-delay:.09s"></span></div>
+            <div style="display:grid;grid-template-columns:30px 1fr;gap:14px;align-items:center">
+              <span class="sk c" style="width:30px;height:30px;animation-delay:.18s"></span><span class="sk" style="height:14px;width:74%;animation-delay:.18s"></span></div>
+          </div>
+        </div>
+        <p class="lab" style="margin:16px 0 0">Dashed rings, never filled ones. An empty chip cannot be mistaken for a category.</p>
+      </div>
+    </div>
+
+    <!-- ERROR -->
+    <div class="state-card">
+      <div class="cap"><b>Error</b><span class="lab">isError</span></div>
+      <div class="body" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:34px 24px">
+        <svg width="200" height="132" viewBox="0 0 200 132" fill="none" aria-hidden="true" style="margin-bottom:22px">
+          <path d="M100 44 V22 M138 66 h24 M62 66 H38 M124 92 l18 16 M76 92 l-18 16" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round" opacity=".4"/>
+          <circle cx="100" cy="66" r="30" fill="#FAF5F2" stroke="#1A1A1A" stroke-width="3.4" stroke-dasharray="7 7"/>
+          <text x="100" y="79" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="30" fill="#1A1A1A" opacity=".3">₹</text>
+          <circle cx="100" cy="16" r="13" fill="#F9ACCE" stroke="#1A1A1A" stroke-width="3"/>
+          <circle cx="170" cy="60" r="13" fill="#23B471" stroke="#1A1A1A" stroke-width="3"/>
+          <circle cx="30" cy="60" r="13" fill="#8A4BD1" stroke="#1A1A1A" stroke-width="3"/>
+          <circle cx="150" cy="114" r="13" fill="#F1A007" stroke="#1A1A1A" stroke-width="3"/>
+          <circle cx="50" cy="114" r="13" fill="#5483D3" stroke="#1A1A1A" stroke-width="3"/>
+        </svg>
+        <p class="disp" style="font-size:26px;margin:0 0 8px;line-height:1.1">Could not load dashboard data.</p>
+        <p style="font-size:14.5px;color:var(--dim-2);margin:0 0 22px;max-width:38ch">
+          Your data is safe — this is only the read. Try again in a moment.
+        </p>
+        <button class="pill sm">Try again</button>
+      </div>
+    </div>
+
+    <!-- EMPTY BUDGETS -->
+    <div class="state-card">
+      <div class="cap"><b>Empty · budget vs spend</b><span class="lab">budgetVsSpend.length === 0</span></div>
+      <div class="body">
+        <p class="lab" style="margin:0 0 18px">Budget vs spend · this month</p>
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px 10px 6px">
+          <svg width="230" height="92" viewBox="0 0 230 92" fill="none" aria-hidden="true" style="margin-bottom:20px">
+            <g stroke="#1A1A1A" stroke-width="2.4">
+              <circle cx="19" cy="19" r="15" fill="#F9ACCE"/>
+              <circle cx="19" cy="63" r="15" fill="#F1A007"/>
+              <circle cx="19" cy="107" r="15" fill="#23B471" opacity="0"/>
+            </g>
+            <rect x="44" y="9" width="176" height="20" rx="10" stroke="#1A1A1A" stroke-width="2" fill="none" stroke-dasharray="5 6"/>
+            <rect x="44" y="53" width="176" height="20" rx="10" stroke="#1A1A1A" stroke-width="2" fill="none" stroke-dasharray="5 6"/>
+            <path d="M62 19h14M62 63h22" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" opacity=".28"/>
+          </svg>
+          <p class="disp" style="font-size:23px;margin:0 0 8px;line-height:1.15">No expense categories with budgets yet.</p>
+          <p style="font-size:14.5px;color:var(--dim-2);margin:0 0 20px;max-width:42ch">
+            Give a category a monthly limit and its bar shows up here, in its own colour.
+          </p>
+          <button class="pill sm">Set your first budget</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMPTY UPCOMING -->
+    <div class="state-card">
+      <div class="cap"><b>Empty · upcoming</b><span class="lab">upcoming.length === 0</span></div>
+      <div class="body">
+        <p class="lab" style="margin:0 0 18px">Upcoming · next 30 days</p>
+        <div style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:14px 10px 6px">
+          <svg width="184" height="104" viewBox="0 0 184 104" fill="none" aria-hidden="true" style="margin-bottom:20px">
+            <rect x="30" y="14" width="124" height="82" rx="14" stroke="#1A1A1A" stroke-width="2.6" fill="#FAF5F2"/>
+            <path d="M30 38h124" stroke="#1A1A1A" stroke-width="2.6"/>
+            <path d="M56 6v16M128 6v16" stroke="#1A1A1A" stroke-width="2.6" stroke-linecap="round"/>
+            <g stroke="#1A1A1A" stroke-width="1.6" opacity=".3">
+              <path d="M46 54h20M78 54h20M110 54h20M46 72h20M78 72h20M110 72h20" stroke-linecap="round" stroke-dasharray="3 6"/>
+            </g>
+            <circle cx="92" cy="63" r="15" fill="#23B471" stroke="#1A1A1A" stroke-width="2.6"/>
+            <path d="M85 63l5 5 9-10" stroke="#1A1A1A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+          <p class="disp" style="font-size:23px;margin:0 0 8px;line-height:1.15">Nothing upcoming in the next 30 days.</p>
+          <p style="font-size:14.5px;color:var(--dim-2);margin:0 0 20px;max-width:42ch">
+            No EMIs, no SIPs, no subscriptions due. Enjoy the quiet month.
+          </p>
+          <button class="pill sm ghost">Add a recurring item</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ §05 CHIP TAXONOMY ═══════════════════════ -->
+<section class="sec" id="s5">
+  <hr class="hr">
+  <div class="sec-head"><span class="sec-num">§ 05</span><h2>The taxonomy, resolved</h2></div>
+  <p class="sec-note">
+    The Round 2 palette shipped six chips with two collisions: <b>bills #F1A007 vs shopping #FBA130</b> (near-identical mustard/orange)
+    and <b>transport #5483D3 vs health #14199C</b> (two blues). I kept all six categories — they are all real — and re-spaced the two offenders
+    around the hue wheel instead of dropping any.
+    <b>The rule:</b> any two chips must differ by <b>≥45° of hue</b> or <b>≥25 points of lightness</b>. All fifteen pairs now pass.
+    And regardless of colour, <b>every chip carries a distinct icon</b> — under deuteranopia the amber, green and red chips converge,
+    so the icon is the primary carrier and colour is reinforcement, never the other way round.
+  </p>
+
+  <div class="swrow" style="margin-bottom:30px">
+    <div class="sw"><div class="fill food" style="background:var(--food)" ><svg viewBox="0 0 24 24" color="#1A1A1A"><use href="#i-food"/></svg></div>
+      <b>Food &amp; Dining</b><code>#F9ACCE</code><span class="meta">H 333 · L 83% · icon chai</span><span class="tag">kept</span></div>
+    <div class="sw"><div class="fill" style="background:var(--bills)"><svg viewBox="0 0 24 24" color="#1A1A1A"><use href="#i-bills"/></svg></div>
+      <b>Bills &amp; Utilities</b><code>#F1A007</code><span class="meta">H 39 · L 48% · icon bolt</span><span class="tag">kept</span></div>
+    <div class="sw"><div class="fill" style="background:var(--invest)"><svg viewBox="0 0 24 24" color="#1A1A1A"><use href="#i-invest"/></svg></div>
+      <b>Investments</b><code>#23B471</code><span class="meta">H 155 · L 42% · icon rise</span><span class="tag">kept</span></div>
+    <div class="sw"><div class="fill" style="background:var(--transport)"><svg viewBox="0 0 24 24" color="#1A1A1A"><use href="#i-transport"/></svg></div>
+      <b>Transport</b><code>#5483D3</code><span class="meta">H 219 · L 58% · icon auto</span><span class="tag">kept</span></div>
+    <div class="sw"><div class="fill" style="background:var(--shop)"><svg viewBox="0 0 24 24" color="#1A1A1A"><use href="#i-shop"/></svg></div>
+      <b>Shopping</b><code>#8A4BD1</code><span class="meta">H 268 · L 56% · icon bag</span>
+      <span class="tag" style="background:var(--shop);color:#FAF5F2">moved · was #FBA130</span></div>
+    <div class="sw"><div class="fill" style="background:var(--health)"><svg viewBox="0 0 24 24" color="#1A1A1A"><use href="#i-health"/></svg></div>
+      <b>Health</b><code>#C43C63</code><span class="meta">H 343 · L 50% · icon capsule</span>
+      <span class="tag" style="background:var(--health);color:#FAF5F2">moved · was #14199C</span></div>
+  </div>
+
+  <div class="two" style="align-items:start">
+    <div class="panel">
+      <p class="lab" style="margin:0 0 14px">Before → after · the two collisions</p>
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div>
+          <p style="font-size:13.5px;margin:0 0 9px;color:var(--dim-2)"><b style="color:var(--ink)">Collision 1 · mustard vs orange.</b> 5° of hue apart. Unreadable at 30px.</p>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="chip" style="background:#F1A007"></span><span class="chip" style="background:#FBA130"></span>
+            <span class="lab" style="margin:0 6px">→</span>
+            <span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span><span class="chip shop"><svg viewBox="0 0 24 24"><use href="#i-shop"/></svg></span>
+            <span class="lab" style="color:var(--ink)">131° apart</span>
+          </div>
+        </div>
+        <div style="border-top:var(--stroke-hair) solid var(--rule);padding-top:18px">
+          <p style="font-size:13.5px;margin:0 0 9px;color:var(--dim-2)"><b style="color:var(--ink)">Collision 2 · two blues.</b> 19° of hue and 24 points of lightness. Both read "blue".</p>
+          <div style="display:flex;align-items:center;gap:12px">
+            <span class="chip" style="background:#5483D3"></span><span class="chip" style="background:#14199C"></span>
+            <span class="lab" style="margin:0 6px">→</span>
+            <span class="chip transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span><span class="chip health"><svg viewBox="0 0 24 24"><use href="#i-health"/></svg></span>
+            <span class="lab" style="color:var(--ink)">124° apart</span>
+          </div>
+        </div>
+        <div style="border-top:var(--stroke-hair) solid var(--rule);padding-top:18px">
+          <p style="font-size:13.5px;margin:0;color:var(--dim-2)">
+            <b style="color:var(--ink)">#14199C is not wasted.</b> It becomes <code class="money" style="font-size:12px">--focus</code> —
+            focus rings and links only, 11.8:1 on cream. It can never be confused with a category because it is never a chip.
+          </p>
+          <div style="display:flex;gap:12px;align-items:center;margin-top:12px">
+            <input class="fld" value="Focus ring" style="width:170px;padding:10px 18px;font-size:14px;box-shadow:0 0 0 2.5px var(--focus)" readonly>
+            <span class="lab">#14199C · 11.8:1</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <p class="lab" style="margin:0 0 14px">The weakest three pairs, audited</p>
+      <table class="audit">
+        <thead><tr><th>Pair</th><th>Δ hue</th><th>Δ L</th><th>Verdict</th></tr></thead>
+        <tbody>
+          <tr><td><span style="display:inline-flex;gap:5px;vertical-align:middle"><span class="chip sm food"></span><span class="chip sm health"></span></span> Food / Health</td>
+              <td class="n">10°</td><td class="n">33</td><td class="ok">Pass · lightness</td></tr>
+          <tr><td><span style="display:inline-flex;gap:5px;vertical-align:middle"><span class="chip sm transport"></span><span class="chip sm shop"></span></span> Transport / Shopping</td>
+              <td class="n">49°</td><td class="n">2</td><td class="ok">Pass · hue</td></tr>
+          <tr><td><span style="display:inline-flex;gap:5px;vertical-align:middle"><span class="chip sm bills"></span><span class="chip sm health"></span></span> Bills / Health</td>
+              <td class="n">56°</td><td class="n">2</td><td class="ok">Pass · hue</td></tr>
+          <tr><td style="color:var(--dim-2)">Other 12 pairs</td><td class="n">64–180°</td><td class="n">—</td><td class="ok">Pass</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:13.5px;color:var(--dim-2);margin:18px 0 0;line-height:1.55">
+        Food and Health share a hue family and are separated by lightness alone — a pale rose against a deep raspberry.
+        That is a deliberate, single, audited exception, and it is exactly why the chai cup and the capsule are non-negotiable.
+      </p>
+    </div>
+  </div>
+
+  <!-- CONTRAST -->
+  <div class="panel" style="margin-top:26px">
+    <p class="lab" style="margin:0 0 16px">Contrast · every pair that carries meaning</p>
+    <div class="two" style="gap:34px">
+      <table class="audit">
+        <thead><tr><th>Text</th><th>On</th><th>Ratio</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Ink #1A1A1A</td><td class="n">#FAF5F2</td><td class="n">16.1:1</td><td class="ok">Pass AAA</td></tr>
+          <tr><td>Cream #FAF5F2</td><td class="n">#1A1A1A pill</td><td class="n">16.1:1</td><td class="ok">Pass AAA</td></tr>
+          <tr><td>Dim-2 #6B5F57</td><td class="n">#FAF5F2</td><td class="n">5.71:1</td><td class="ok">Pass AA</td></tr>
+          <tr><td>Alert #A61B2B</td><td class="n">#FAF5F2</td><td class="n">6.90:1</td><td class="ok">Pass AA</td></tr>
+          <tr><td>Focus #14199C</td><td class="n">#FAF5F2</td><td class="n">11.8:1</td><td class="ok">Pass AAA</td></tr>
+          <tr><td>Dim #7D7169 <span class="lab" style="display:block">locked value</span></td><td class="n">#FAF5F2</td><td class="n">4.08:1</td>
+              <td class="no">Fail at body size</td></tr>
+        </tbody>
+      </table>
+      <table class="audit">
+        <thead><tr><th>Icon</th><th>On chip</th><th>Ratio</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>Ink</td><td class="n">#F9ACCE food</td><td class="n">9.80:1</td><td class="ok">Pass</td></tr>
+          <tr><td>Ink</td><td class="n">#F1A007 bills</td><td class="n">8.14:1</td><td class="ok">Pass</td></tr>
+          <tr><td>Ink</td><td class="n">#23B471 invest</td><td class="n">6.53:1</td><td class="ok">Pass</td></tr>
+          <tr><td>Ink</td><td class="n">#5483D3 transport</td><td class="n">4.61:1</td><td class="ok">Pass</td></tr>
+          <tr><td>Ink</td><td class="n">#8A4BD1 shopping</td><td class="n">3.32:1</td><td class="ok">Pass 1.4.11</td></tr>
+          <tr><td>Ink</td><td class="n">#C43C63 health</td><td class="n">3.46:1</td><td class="ok">Pass 1.4.11</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="notice" style="margin-top:20px">
+      <span class="bang">!</span>
+      <p><span class="h">One locked value doesn't hold up, and you should know.</span><br>
+        <span class="d"><code class="money" style="font-size:12.5px">--dim #7D7169</code> is 4.08:1 on cream — it fails AA for body-size text.
+        I have kept it locked and restricted it to uppercase mono labels and non-essential meta, and introduced
+        <code class="money" style="font-size:12.5px">--dim-2 #6B5F57</code> (5.71:1) for every piece of secondary sentence text on both screens.
+        That is a new semantic role, not a replacement — say the word and I'll collapse them into one.</span></p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ §06 OPTIONAL SIGNATURE ═══════════════════════ -->
+<section class="sec" id="s6">
+  <hr class="hr">
+  <div class="sec-head">
+    <span class="sec-num">§ 06</span><h2>The tether</h2>
+    <span class="flag">Optional · not in the design above</span>
+  </div>
+  <p class="sec-note">
+    Sorted's most unusual feature is that it reads your bank alert emails and files transactions on its own —
+    and right now nothing on the dashboard says so. This is <b>C's own answer</b>, in C's own vocabulary. It is not the
+    Ledger&amp; rubber stamp and it does not import anything from Direction D.
+  </p>
+  <p class="sec-note" style="margin-top:-14px">
+    The idea: <b>the dotted connector from the login hero becomes the app's mark for "a connection did this, not you."</b>
+    Same 1.6px ink stroke, same <code class="money" style="font-size:12px">4 6</code> dash. A chip with a short dotted tether on its left
+    means the row filed itself. One meaning, one mark, reused — the constellation you saw at the door turns out to be the machinery.
+  </p>
+
+  <div class="two" style="align-items:start">
+    <div class="callout opt">
+      <p class="lab" style="margin:0 0 16px">Dashboard header · with the tether ribbon</p>
+      <div style="border:var(--stroke-panel) solid var(--ink);border-radius:var(--radius-panel);padding:18px 22px;background:var(--bg)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <p class="disp" style="font-size:26px;margin:0;line-height:1.05">Sunday, 30 August</p>
+            <p style="font-size:13px;color:var(--dim-2);margin:4px 0 0">Two days left in August.</p>
+          </div>
+          <button class="pill sm">Add transaction</button>
+        </div>
+        <div style="border-top:var(--stroke-hair) solid var(--rule);padding-top:14px;display:flex;align-items:center;gap:14px" id="tether-strip">
+          <span class="lab" style="white-space:nowrap">Filed themselves</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round"/></svg>
+            <span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+            <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round"/></svg>
+            <span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+            <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round"/></svg>
+            <span class="chip shop"><svg viewBox="0 0 24 24"><use href="#i-shop"/></svg></span>
+          </span>
+          <span style="font-size:13.5px;color:var(--dim-2)">3 transactions from your HDFC and Amex alerts this morning.</span>
+          <span class="lab" style="margin-left:auto;color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap">Review</span>
+        </div>
+      </div>
+      <p style="font-size:13.5px;color:var(--dim-2);margin:16px 0 0;line-height:1.55">
+        Three chips, three tethers, one sentence. The strip only appears on days the parser actually ran, so it can never
+        become permanent furniture. On a quiet day the header is exactly the header in §03.
+      </p>
+    </div>
+
+    <div class="callout opt">
+      <p class="lab" style="margin:0 0 16px">Where else it would live · transactions row</p>
+      <div style="border:var(--stroke-panel) solid var(--ink);border-radius:var(--radius-panel);padding:6px 22px 10px;background:var(--bg)">
+        <div class="row" style="grid-template-columns:22px 30px 1fr auto;gap:10px">
+          <svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><path d="M1 6h20" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round"/></svg>
+          <span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+          <span><span class="nm">Swiggy Instamart</span><span class="sub">Filed itself · HDFC alert · 3m ago</span></span>
+          <span class="money" style="font-size:14px">−₹1,284</span>
+        </div>
+        <div class="row" style="grid-template-columns:22px 30px 1fr auto;gap:10px">
+          <span></span>
+          <span class="chip transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span>
+          <span><span class="nm">Rapido</span><span class="sub">You added this · Sat 4:12 PM</span></span>
+          <span class="money" style="font-size:14px">−₹487</span>
+        </div>
+        <div class="row" style="grid-template-columns:22px 30px 1fr auto;gap:10px">
+          <svg width="22" height="12" viewBox="0 0 22 12" aria-hidden="true"><path d="M1 6h20" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round"/></svg>
+          <span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+          <span><span class="nm">BSES Rajdhani</span><span class="sub">Filed itself · HDFC alert · today 09:10</span></span>
+          <span class="money" style="font-size:14px">−₹2,847</span>
+        </div>
+      </div>
+      <p style="font-size:13.5px;color:var(--dim-2);margin:16px 0 0;line-height:1.55">
+        Transactions is out of scope for this round — shown only so you can see the mark scales past the dashboard.
+        A 22px gutter column carries the tether; manual rows leave it empty. No badge, no stamp, no extra colour.
+      </p>
+      <p style="font-size:13.5px;color:var(--dim-2);margin:12px 0 0;line-height:1.55">
+        <b style="color:var(--ink)">Say no and nothing breaks.</b> §03 is the design without it.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════ §07 MOTION ═══════════════════════ -->
+<section class="sec" id="s7">
+  <hr class="hr">
+  <div class="sec-head"><span class="sec-num">§ 07</span><h2>Motion · only the signature moments</h2></div>
+  <p class="sec-note">
+    Full motion review is a later gate. These five are here because the direction doesn't read correctly without them.
+    Everything is transform and opacity only, everything is gated on <code class="money" style="font-size:12px">prefers-reduced-motion</code>
+    via <code class="money" style="font-size:12px">gsap.matchMedia()</code>, and nothing loops.
+  </p>
+  <div class="panel">
+    <table class="audit">
+      <thead><tr><th>Moment</th><th>What moves</th><th>Duration</th><th>Easing</th><th>Reduced motion</th></tr></thead>
+      <tbody>
+        <tr><td><b>Login hero</b></td><td>6 chips translate in from off-canvas, stagger 60ms; core scales .92→1; connectors draw via dashoffset</td><td class="n">560ms + 400ms</td><td class="n">--ease-out</td><td>Renders final frame. SVG is already static.</td></tr>
+        <tr><td><b>OTP stage change</b></td><td>Stage 1 out −14px / opacity 0; stage 2 in +14px; OTP boxes stagger 45ms</td><td class="n">150ms out, 240ms in</td><td class="n">--ease-out</td><td>120ms opacity crossfade, no translate</td></tr>
+        <tr><td><b>Figure count-up</b></td><td>Guilt-free and net worth count from 0, re-formatted every frame through <code class="money" style="font-size:11.5px">Intl.NumberFormat("en-IN")</code> so lakh/crore commas land correctly mid-count</td><td class="n">1100ms</td><td class="n">power2.out</td><td>Final value, no count</td></tr>
+        <tr><td><b>Budget bars</b></td><td><code class="money" style="font-size:11.5px">scaleX</code> 0→p, origin left, stagger 55ms</td><td class="n">620ms</td><td class="n">--ease-out</td><td>Final width, no fill</td></tr>
+        <tr><td><b>Row entrance</b></td><td>translateY 10px → 0, opacity, stagger 40ms</td><td class="n">280ms</td><td class="n">--ease-out</td><td>Opacity only</td></tr>
+        <tr><td><b>Every pressable</b></td><td><code class="money" style="font-size:11.5px">translateY(2px) scale(.985)</code>, stamp shadow collapses to 0</td><td class="n">110ms</td><td class="n">--ease-out</td><td>Kept — it is feedback, not decoration</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13.5px;color:var(--dim-2);margin:20px 0 0;line-height:1.6;max-width:88ch">
+      <b style="color:var(--ink)">Not animated, deliberately:</b> nav row changes (used dozens of times a day), the sidebar chip legend,
+      panel hover. No <code class="money" style="font-size:12px">ease-in</code>, no <code class="money" style="font-size:12px">scale(0)</code>,
+      no bounce, no spring, nothing that animates width, height, padding or margin. The hero never spins, because a thing that
+      spins forever is a spinner.
+    </p>
+  </div>
+</section>
+
+<footer style="margin-top:96px;border-top:var(--stroke-panel) solid var(--ink);padding-top:22px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px">
+  <span class="lab">Sorted · round 3 · screen preview v1 · login + dashboard only</span>
+  <span class="lab">Bricolage Grotesque · Geist · Geist Mono</span>
+</footer>
+
+</div>
+
+<style>@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){[style*="animation:sp"]{animation:none !important}}</style>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var inr = new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:0});
+
+  /* ── zoom toggles ─────────────────────────────────────────── */
+  document.querySelectorAll("[data-zoom]").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var vp = btn.closest("section").querySelector(".vp");
+      var full = vp.getAttribute("data-fit") === "full";
+      vp.setAttribute("data-fit", full ? "scaled" : "full");
+      btn.setAttribute("aria-pressed", String(!full));
+      btn.textContent = full ? "View at 100%" : "Fit to page";
+    });
+  });
+
+  if (!window.gsap) return;
+  gsap.registerPlugin(ScrollTrigger);
+
+  /* ── login hero ───────────────────────────────────────────── */
+  var links = document.querySelectorAll("#hero-links path");
+  links.forEach(function(p){
+    var L = p.getTotalLength();
+    p.style.strokeDasharray = "4 6";
+    p.dataset.len = L;
+  });
+
+  function playHero(){
+    if (reduce) return;
+    var chips = gsap.utils.toArray("#hero .hc");
+    var offs = [[0,-190],[210,-140],[210,150],[0,200],[-210,150],[-210,-140]];
+    gsap.set("#hero-links", {opacity:0});
+    gsap.set("#hero-core", {transformOrigin:"210px 190px"});
+    var tl = gsap.timeline();
+    chips.forEach(function(c,i){
+      gsap.set(c, {x:offs[i][0], y:offs[i][1], opacity:0, transformOrigin:"center"});
+    });
+    tl.from("#hero-core", {scale:.9, opacity:0, duration:.42, ease:"power3.out"})
+      .to(chips, {x:0, y:0, opacity:1, duration:.56, ease:"power4.out", stagger:.06}, "-=0.2")
+      .to("#hero-links", {opacity:1, duration:.4, ease:"power2.out"}, "-=0.15");
+  }
+  ScrollTrigger.create({trigger:"#hero", start:"top 85%", once:true, onEnter:playHero});
+
+  /* ── login stage machine ──────────────────────────────────── */
+  var st1 = document.getElementById("lg-email");
+  var st2 = document.getElementById("lg-code");
+  var send = document.getElementById("lg-send");
+  var back = document.getElementById("lg-back");
+  var verify = document.getElementById("lg-verify");
+  var err1 = document.getElementById("lg-err-1");
+  var err2 = document.getElementById("lg-err-2");
+  var busy = false;
+
+  function swap(outEl, inEl, dir){
+    var d = reduce ? 0 : 14 * dir;
+    var tlOut = gsap.timeline();
+    tlOut.to(outEl, {x:-d, opacity:0, duration:reduce?.12:.15, ease:"power2.out",
+      onComplete:function(){
+        outEl.style.display = "none";
+        inEl.style.display = "block";
+        gsap.fromTo(inEl, {x:d, opacity:0}, {x:0, opacity:1, duration:reduce?.12:.24, ease:"power4.out"});
+        if (!reduce) gsap.from(inEl.querySelectorAll(".otp i"), {y:8, opacity:0, duration:.26, stagger:.045, ease:"power3.out", delay:.06});
+        gsap.set(outEl, {x:0, opacity:1});
+      }});
+  }
+
+  send.addEventListener("click", function(){
+    if (busy) return;
+    var v = document.getElementById("lg-email-input").value.trim();
+    busy = true; err1.style.display = "none";
+    send.disabled = true; send.textContent = "Sending…";
+    setTimeout(function(){
+      send.disabled = false; send.textContent = "Send code"; busy = false;
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v)) {
+        err1.style.display = "block";
+        document.getElementById("lg-email-input").classList.add("err");
+        if (!reduce) gsap.from(err1, {y:-6, opacity:0, duration:.22, ease:"power3.out"});
+        return;
+      }
+      document.getElementById("lg-email-input").classList.remove("err");
+      swap(st1, st2, 1);
+    }, 620);
+  });
+
+  back.addEventListener("click", function(){ if (!busy) swap(st2, st1, -1); });
+
+  verify.addEventListener("click", function(){
+    if (busy) return;
+    busy = true; err2.style.display = "none";
+    verify.disabled = true; verify.textContent = "Verifying…";
+    setTimeout(function(){
+      verify.disabled = false; verify.textContent = "Verify"; busy = false;
+      err2.style.display = "block";
+      if (!reduce) gsap.from(err2, {y:-6, opacity:0, duration:.22, ease:"power3.out"});
+    }, 700);
+  });
+
+  /* ── dashboard: counters, bars, rows ──────────────────────── */
+  ScrollTrigger.create({
+    trigger:"#dash", start:"top 78%", once:true,
+    onEnter:function(){
+      var panels = gsap.utils.toArray("#dash .rise");
+      if (reduce){
+        gsap.set(panels, {opacity:1});
+      } else {
+        gsap.fromTo(panels, {opacity:0, y:12}, {opacity:1, y:0, duration:.34, stagger:.07, ease:"power4.out"});
+      }
+
+      document.querySelectorAll("#dash [data-count]").forEach(function(el, i){
+        var target = parseFloat(el.getAttribute("data-count"));
+        if (reduce){ el.textContent = inr.format(target); return; }
+        var o = {v:0};
+        gsap.to(o, {v:target, duration:1.1, delay:.16 + i*.09, ease:"power2.out",
+          onUpdate:function(){ el.textContent = inr.format(Math.round(o.v)); }});
+      });
+
+      var bars = gsap.utils.toArray("#dash [data-bar]");
+      bars.forEach(function(b, i){
+        var p = parseFloat(b.getAttribute("data-bar")) / 100;
+        var fill = b.querySelector("i");
+        if (reduce){ fill.style.setProperty("--p", p); return; }
+        gsap.fromTo(fill, {"--p":0}, {"--p":p, duration:.62, delay:.24 + i*.055, ease:"power4.out"});
+      });
+
+      if (!reduce){
+        gsap.from("#up-rows .urow", {y:10, opacity:0, duration:.28, stagger:.04, ease:"power3.out", delay:.2});
+      }
+    }
+  });
+
+  /* ── optional tether strip ────────────────────────────────── */
+  ScrollTrigger.create({
+    trigger:"#tether-strip", start:"top 88%", once:true,
+    onEnter:function(){
+      if (reduce) return;
+      gsap.from("#tether-strip .chip", {scale:.9, opacity:0, duration:.3, stagger:.07, ease:"power4.out", transformOrigin:"center"});
+      gsap.from("#tether-strip svg", {opacity:0, duration:.3, stagger:.07, delay:.05, ease:"power2.out"});
+    }
+  });
+})();
+</script>
+</body>
+</html>

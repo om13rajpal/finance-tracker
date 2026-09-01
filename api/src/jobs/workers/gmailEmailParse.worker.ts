@@ -335,6 +335,7 @@ export async function processGmailNotification({
       note: parsed.note,
       merchant: parsed.merchant,
       source: "email_parsed",
+      emailBalance: parsed.availableBalance ?? null,
     });
 
     await EmailImportLog.findOneAndUpdate(

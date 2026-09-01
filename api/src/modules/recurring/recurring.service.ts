@@ -1,6 +1,7 @@
 import { RecurringTransaction } from "../../models/RecurringTransaction.js";
 import { Transaction } from "../../models/Transaction.js";
 import { invalidateDashboardCache } from "../dashboard/dashboard.service.js";
+import { applyBalanceDelta } from "../accounts/balance.service.js";
 
 /**
  * Adds `monthsToAdd` calendar months to `date` (all in UTC, since dates coming out of Mongo
@@ -58,17 +59,19 @@ export async function processDueRecurringTransactions(): Promise<void> {
       // created here - never a HoldingLot. Actual unit purchase requires a real price and
       // gets reconciled later via CSV/manual import, so fabricating a lot here would invent
       // a purchase price/unit count that was never real.
+      const amount = item.type === "expense" ? -Math.abs(item.amount) : Math.abs(item.amount);
       await Transaction.create({
         userId: item.userId,
         accountId: item.accountId,
         categoryId: item.categoryId,
-        amount: item.type === "expense" ? -Math.abs(item.amount) : Math.abs(item.amount),
+        amount,
         date: item.nextDueDate,
         note: `Recurring: ${item.name}`,
         merchant: item.name,
         source: "manual",
         status: "confirmed",
       });
+      await applyBalanceDelta(item.userId, item.accountId, amount);
       // This is a real Transaction changing (an auto-created recurring bill/income),
       // just triggered by the scheduled recurringDue worker instead of an HTTP
       // handler — the dashboard cache is just as stale here as after any other

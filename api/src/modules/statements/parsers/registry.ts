@@ -1,10 +1,11 @@
 import type { PDFExtractPage } from "pdf.js-extract";
 import type { StatementRowResult } from "../types.js";
 import { parseSbiStatement, findSbiClosingBalance } from "./sbi.parser.js";
-import { parseHdfcStatement, findHdfcClosingBalance } from "./hdfc.parser.js";
+import { parseHdfcStatement, findHdfcClosingBalance, findHdfcOpeningBalance } from "./hdfc.parser.js";
 
 export type StatementParser = (pages: PDFExtractPage[]) => StatementRowResult[];
 export type ClosingBalanceFinder = (pages: PDFExtractPage[]) => number | null;
+export type OpeningBalanceFinder = (pages: PDFExtractPage[]) => number | null;
 
 /**
  * Mirrors the existing `PARSER_REGISTRY` pattern in
@@ -28,4 +29,17 @@ export const STATEMENT_PARSER_REGISTRY: Record<string, StatementParser> = {
 export const STATEMENT_CLOSING_BALANCE_REGISTRY: Record<string, ClosingBalanceFinder> = {
   hdfc_statement: findHdfcClosingBalance,
   sbi_statement: findSbiClosingBalance,
+};
+
+/**
+ * A THIRD, narrower registry — HDFC only today. SBI's own "closing balance"
+ * (`findSbiClosingBalance`) is actually its page-1 Account Summary's "Clear
+ * Balance ... As on <today>", a current-as-of-generation-date figure, NOT
+ * derived from "opening balance + this statement's own transaction rows" the
+ * way HDFC's is — so an opening-balance-based sanity check would be comparing
+ * two unrelated numbers for SBI, not a real cross-check. See
+ * `findSbiClosingBalance`'s own doc comment for why that distinction exists.
+ */
+export const STATEMENT_OPENING_BALANCE_REGISTRY: Record<string, OpeningBalanceFinder> = {
+  hdfc_statement: findHdfcOpeningBalance,
 };

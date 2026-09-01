@@ -1,6 +1,10 @@
 import type { PDFExtractPage } from "pdf.js-extract";
 import type { StatementRowResult } from "./types.js";
-import { STATEMENT_PARSER_REGISTRY, STATEMENT_CLOSING_BALANCE_REGISTRY } from "./parsers/registry.js";
+import {
+  STATEMENT_PARSER_REGISTRY,
+  STATEMENT_CLOSING_BALANCE_REGISTRY,
+  STATEMENT_OPENING_BALANCE_REGISTRY,
+} from "./parsers/registry.js";
 import { parseGenericStatement } from "./parsers/generic.parser.js";
 
 export type { StatementRow, StatementRowError, StatementRowResult } from "./types.js";
@@ -27,5 +31,18 @@ export function parseStatementRows(pages: PDFExtractPage[], parserKey?: string):
  */
 export function findStatementClosingBalance(pages: PDFExtractPage[], parserKey?: string): number | null {
   const finder = parserKey ? STATEMENT_CLOSING_BALANCE_REGISTRY[parserKey] : undefined;
+  return finder ? finder(pages) : null;
+}
+
+/**
+ * The statement's own printed opening balance, when a finder is registered for
+ * this `parserKey` (HDFC only today — see `STATEMENT_OPENING_BALANCE_REGISTRY`'s
+ * doc comment for why SBI is deliberately excluded). `null` for no `parserKey`,
+ * an unregistered one, or a registered one that couldn't find one in this
+ * document — used only as a data-quality cross-check against the closing
+ * balance, never to reconcile the account directly.
+ */
+export function findStatementOpeningBalance(pages: PDFExtractPage[], parserKey?: string): number | null {
+  const finder = parserKey ? STATEMENT_OPENING_BALANCE_REGISTRY[parserKey] : undefined;
   return finder ? finder(pages) : null;
 }

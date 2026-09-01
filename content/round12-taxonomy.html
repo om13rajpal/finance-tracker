@@ -1,0 +1,494 @@
+<!-- @moodforge
+schema: 1.0
+round: 12
+phase: brand-kit
+worker: moodforge-queen
+theme: sorted
+version: v1
+created_at: 2026-08-31T00:00:00Z
+sha256: 47b087561236c83908e6d8c6453320cb65a9718f6ff330c21142880a22c03c63
+palette: [#FAF5F2, #1A1A1A, #E2D8D0, #7D7169, #6B5F57, #14199C, #A61B2B, #F1A007, #23B471, #5483D3, #F9ACCE]
+fonts: [Bricolage Grotesque 800, Geist 400/500/600, Geist Mono 500]
+tokens_used: [--bg, --ink, --rule, --dim, --dim-2, --focus, --alert, --disp, --ui, --num]
+artifact_role: decision
+summary: Chip taxonomy resolution — retires the invented six-category palette for the four fixed buckets, with queen-computed separation and contrast numbers, migration table and token diffs. Written by the queen after five sub-agent runs were lost to machine sleep.
+-->
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sorted · chip taxonomy decision</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Geist+Mono:wght@500&family=Geist:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAF5F2; --ink:#1A1A1A; --rule:#E2D8D0; --dim:#7D7169; --dim-2:#6B5F57;
+  --focus:#14199C; --alert:#A61B2B; --ink-wash:#F1E8E2;
+  --bucket-fixed:#F1A007; --bucket-invest:#23B471; --bucket-savings:#5483D3; --bucket-guiltfree:#F9ACCE;
+  --old-shop:#8A4BD1; --old-health:#C43C63;
+  --disp:"Bricolage Grotesque",sans-serif; --ui:"Geist",system-ui,sans-serif; --num:"Geist Mono",ui-monospace,monospace;
+  --stroke-hair:1px; --stroke-panel:1.5px;
+  --r-panel:22px; --r-sm:14px; --r-xs:4px; --r-pill:999px;
+  --ease-out:cubic-bezier(.23,1,.32,1); --dur-press:110ms;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.65;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 44px}
+h1,h2,h3{font-family:var(--disp);font-weight:800;letter-spacing:-.035em;margin:0}
+h1{font-size:78px;line-height:.95}
+h2{font-size:40px;line-height:1.05;margin-bottom:14px}
+h3{font-size:22px;margin-bottom:10px}
+p{margin:0 0 14px;max-width:74ch}
+.lab{font-family:var(--num);font-size:10px;letter-spacing:.15em;text-transform:uppercase;font-weight:500;color:var(--dim)}
+.mono{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:500}
+.sec{padding:64px 0;border-top:var(--stroke-panel) solid var(--ink)}
+.sec:first-of-type{border-top:0}
+.n{font-family:var(--num);font-size:11px;letter-spacing:.14em;color:var(--dim);margin-bottom:18px;display:block}
+.sub{color:var(--dim-2);font-size:16px;max-width:70ch}
+.panel{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);padding:26px 28px;background:var(--bg)}
+.panel + .panel{margin-top:18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+code{font-family:var(--num);font-size:13px;background:var(--ink-wash);padding:.12em .38em;border-radius:var(--r-xs)}
+pre{font-family:var(--num);font-size:12.5px;line-height:1.75;background:var(--ink-wash);
+  border:var(--stroke-hair) solid var(--rule);border-radius:var(--r-sm);padding:18px 20px;overflow-x:auto;margin:0 0 16px}
+pre b{font-weight:500;color:var(--alert)}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:0 0 16px}
+th{text-align:left;font-family:var(--num);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  font-weight:500;color:var(--dim);padding:0 14px 9px 0;border-bottom:var(--stroke-panel) solid var(--ink);white-space:nowrap}
+td{padding:11px 14px 11px 0;border-bottom:var(--stroke-hair) solid var(--rule);vertical-align:middle}
+td.num{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:500}
+.pass{font-family:var(--num);font-size:11px;font-weight:500;letter-spacing:.08em}
+.ok{color:#1B7A4C}.bad{color:var(--alert)}
+.chip{width:30px;height:30px;border-radius:50%;border:var(--stroke-panel) solid var(--ink);
+  display:inline-grid;place-items:center;flex:none;vertical-align:middle}
+.chip svg{width:17px;height:17px;color:var(--ink)}
+.chip.hollow{border-style:dashed;border-color:var(--dim-2);background:transparent!important}
+.chip.hollow svg{color:var(--dim-2)}
+.sw{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.sw:last-child{border-bottom:0}
+.sw .meta{flex:1;min-width:0}
+.sw .nm{font-weight:600;font-size:15px}
+.sw .hx{font-family:var(--num);font-size:11.5px;color:var(--dim-2);letter-spacing:.04em}
+.row{display:grid;grid-template-columns:30px 1fr auto;gap:14px;align-items:center;
+  padding:14px 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.row:last-child{border-bottom:0}
+.row .who{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .cat{font-size:12.5px;color:var(--dim-2);margin-top:1px}
+.row .amt{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+.pill{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);background:var(--ink);color:var(--bg);
+  font-family:var(--ui);font-weight:600;font-size:13px;padding:9px 18px;box-shadow:0 2px 0 var(--ink);
+  cursor:pointer;transition:transform var(--dur-press) var(--ease-out),box-shadow var(--dur-press) var(--ease-out)}
+.pill:active{transform:translateY(2px);box-shadow:0 0 0 var(--ink)}
+.pill.ghost{background:transparent;color:var(--ink)}
+a:focus-visible,button:focus-visible{outline:2.5px solid var(--focus);outline-offset:3px;border-radius:var(--r-xs)}
+.callout{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);
+  padding:24px 28px;background:var(--ink-wash);margin:22px 0}
+.callout .lab{color:var(--dim-2)}
+.tag{display:inline-block;font-family:var(--num);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  border:var(--stroke-hair) solid var(--ink);border-radius:var(--r-pill);padding:4px 10px;margin-right:6px}
+.strike{text-decoration:line-through;text-decoration-thickness:1.5px;color:var(--dim-2)}
+@media (max-width:900px){.wrap{padding:0 22px}h1{font-size:44px}h2{font-size:28px}.grid2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
+</style></head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="b-fixed" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4.5" y="10.5" width="15" height="9.5" rx="2.4"/><path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9"/></g>
+  <g id="b-invest" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/><path d="M14.8 5h4.8v4.8"/></g>
+  <g id="b-savings" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="12" cy="6.6" rx="7.2" ry="2.8"/><path d="M4.8 6.6v10.8c0 1.55 3.22 2.8 7.2 2.8s7.2-1.25 7.2-2.8V6.6"/>
+    <path d="M4.8 12c0 1.55 3.22 2.8 7.2 2.8s7.2-1.25 7.2-2.8"/></g>
+  <g id="b-guiltfree" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3.4v3.1M12 17.5v3.1M3.4 12h3.1M17.5 12h3.1"/>
+    <path d="M6.2 6.2 8.4 8.4M15.6 15.6l2.2 2.2M17.8 6.2 15.6 8.4M8.4 15.6l-2.2 2.2"/>
+    <circle cx="12" cy="12" r="3.1"/></g>
+  <g id="i-food" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/><path d="M17 10a2.9 2.9 0 0 1 0 4.5"/>
+    <path d="M9 5.6V4.2M12.6 5.6V4.2"/></g>
+  <g id="i-bills" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/></g>
+  <g id="i-transport" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3.6 15.6V9.4h8.8l3.9 6.2"/><path d="M3.6 15.6h13.9"/>
+    <circle cx="7.4" cy="17.8" r="2.1"/><circle cx="16.2" cy="17.8" r="2.1"/></g>
+  <g id="i-q" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9.1 9.2a3 3 0 1 1 3.9 2.87c-.6.2-1 .77-1 1.4v.83"/><path d="M12 17.6v.05"/></g>
+</defs></svg>
+
+<div class="wrap">
+
+<section class="sec" style="padding-top:72px">
+  <span class="lab">Sorted · round 12 · brand kit</span>
+  <h1 style="margin:14px 0 20px">The six chips<br>don't exist.</h1>
+  <p class="sub">The chip taxonomy was invented before anyone read the data model. This is the proposal to replace it with something the app actually has — and the numbers say the replacement is not a compromise but a strictly better system.</p>
+  <div style="margin-top:26px">
+    <span class="tag">decision document</span>
+    <span class="tag">pending approval</span>
+    <span class="tag">governs 8 remaining screens</span>
+  </div>
+</section>
+
+<section class="sec">
+  <span class="n">01</span>
+  <h2>The problem</h2>
+  <p>Round 2 invented a six-colour category taxonomy — <code>food</code>, <code>bills</code>, <code>invest</code>, <code>transport</code>, <code>shopping</code>, <code>health</code> — as a plausible set for a finance app. It was never checked against the codebase. It is now locked into <code>tokens.css</code>, <code>tokens.ts</code>, <code>tokens.json</code>, the Tailwind preset, the brand book, and both approved screens.</p>
+  <p>The app has nothing of the kind. From <code>web/app/budgets/page.tsx</code> and <code>web/app/transactions/page.tsx</code>:</p>
+<pre>type CategoryType = "expense" | "income";
+type Bucket = "fixed_costs" | "investments" | "savings" | "guilt_free";
+
+interface CategoryNode {
+  _id: string; name: string;
+  type: CategoryType; bucket: Bucket;
+  budgetLimit: number;
+  children: CategoryNode[];        <b>// unbounded depth</b>
+}
+
+interface Transaction {
+  _id; accountId;
+  categoryId: string | <b>null</b>;      <b>// nullable — the parser creates these</b>
+  amount; date; note?; merchant?;
+}</pre>
+  <div class="grid2">
+    <div class="panel">
+      <h3>Categories are unbounded</h3>
+      <p style="margin:0;color:var(--dim-2)">A user-defined tree. Arbitrary names, arbitrary depth, created at runtime. There is no fixed set of six, or of any number. A palette cannot enumerate it.</p>
+    </div>
+    <div class="panel">
+      <h3>Buckets are fixed</h3>
+      <p style="margin:0;color:var(--dim-2)">Exactly four, hard-coded in the type. Semantically meaningful. And <code>guilt_free</code> is where the dashboard's 108px hero figure comes from.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <span class="lab">the rule at stake</span>
+    <p style="margin:8px 0 0;font-size:17px"><b>“Chips never guess.”</b> Locked and user-approved. It already forced recurring rows onto direction chips on the dashboard, because <code>RecurringItem</code> has no category field. Colouring an unbounded user-defined tree from a fixed palette of six breaks that same rule — on the most-used screen in the product.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <span class="n">02</span>
+  <h2>The recommendation</h2>
+  <p class="sub" style="font-size:19px;color:var(--ink);max-width:66ch"><b>Chips colour the four fixed buckets. Category name carries in text.</b></p>
+  <p style="margin-top:18px">Colour is for the small closed set; language is for the unbounded one. That division is the whole idea. A bucket is knowable at compile time, so a chip can be assigned honestly — never guessed. A category name is a user's arbitrary string, so it belongs in text where arbitrary strings are free.</p>
+  <p>There is a second, better reason. <code>guilt_free</code> is not an arbitrary bucket — it is precisely where the dashboard's 108px hero figure comes from. Colouring by bucket points the entire colour system at the number the product is built around. The six invented chips pointed at nothing.</p>
+
+  <div class="callout">
+    <span class="lab">the finding that settles it</span>
+    <p style="margin:8px 0 0;font-size:17px">With four buckets, <b>every chip is textSafe (≥4.5:1)</b>. The six-chip set never was — <code>shopping</code> at 3.32 and <code>health</code> at 3.46 were graphics-only, and <code>food</code>/<code>health</code> sat just <b>9° apart in hue</b>, separating on lightness alone. That is what forced the “the icon is load-bearing” caveat into the brand kit.</p>
+    <p style="margin:12px 0 0;font-size:17px">The tightest pair in the new set is <b>65°</b>. Fewer chips is not a compromise here. It is a strictly more robust system that also retires a caveat.</p>
+  </div>
+
+  <h3 style="margin-top:34px">Rejected alternatives</h3>
+  <table>
+    <thead><tr><th style="width:32%">Alternative</th><th>Why not</th></tr></thead>
+    <tbody>
+      <tr><td><b>Colour top-level categories<br>by stable hash</b></td><td>A hash <i>is</i> guessing — it assigns meaning the user never chose, and it cannot guarantee the separation rule. Two adjacent categories can land 4° apart and the system has no recourse.</td></tr>
+      <tr><td><b>Colour top-level categories<br>by user choice</b></td><td>Pushes a colour-picker into settings for a single-user tool, and still cannot guarantee separation or contrast. It makes the user responsible for an accessibility property they cannot see.</td></tr>
+      <tr><td><b>Keep six as a presentation<br>mapping over top-level categories</b></td><td>Breaks the moment a seventh top-level category exists — which is a runtime certainty, not a risk. A system that fails on the user's own next action is not a system.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="sec">
+  <span class="n">03</span>
+  <h2>The proposed set</h2>
+  <p class="sub">Four chips. 30px circle, 1.5px ink border, flat fill, distinct icon. Every one carries an icon — colour is never the sole carrier of meaning.</p>
+
+  <div class="panel" style="margin-top:24px">
+    <div class="sw">
+      <span class="chip" style="background:var(--bucket-fixed)"><svg viewBox="0 0 24 24"><use href="#b-fixed"/></svg></span>
+      <span class="meta"><span class="nm">fixed_costs</span><br><span class="hx">#F1A007 · H39 L49 · was <span class="strike">--bills</span></span></span>
+      <span class="mono" style="font-size:13px">8.10<span style="color:var(--dim-2)">:1</span> <span class="pass ok">textSafe ✓</span></span>
+    </div>
+    <div class="sw">
+      <span class="chip" style="background:var(--bucket-invest)"><svg viewBox="0 0 24 24"><use href="#b-invest"/></svg></span>
+      <span class="meta"><span class="nm">investments</span><br><span class="hx">#23B471 · H152 L42 · was <span class="strike">--invest</span> — exact semantic match</span></span>
+      <span class="mono" style="font-size:13px">6.50<span style="color:var(--dim-2)">:1</span> <span class="pass ok">textSafe ✓</span></span>
+    </div>
+    <div class="sw">
+      <span class="chip" style="background:var(--bucket-savings)"><svg viewBox="0 0 24 24"><use href="#b-savings"/></svg></span>
+      <span class="meta"><span class="nm">savings</span><br><span class="hx">#5483D3 · H218 L58 · was <span class="strike">--transport</span></span></span>
+      <span class="mono" style="font-size:13px">4.61<span style="color:var(--dim-2)">:1</span> <span class="pass ok">textSafe ✓</span></span>
+    </div>
+    <div class="sw">
+      <span class="chip" style="background:var(--bucket-guiltfree)"><svg viewBox="0 0 24 24"><use href="#b-guiltfree"/></svg></span>
+      <span class="meta"><span class="nm">guilt_free</span><br><span class="hx">#F9ACCE · H334 L83 · was <span class="strike">--food</span> — the hero bucket</span></span>
+      <span class="mono" style="font-size:13px">9.80<span style="color:var(--dim-2)">:1</span> <span class="pass ok">textSafe ✓</span></span>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:26px">
+    <div>
+      <h3>Pairwise separation</h3>
+      <p style="font-size:13.5px;color:var(--dim-2);margin-bottom:12px">Rule: every pair ≥45° hue <b>or</b> ≥25 points lightness.</p>
+      <table>
+        <thead><tr><th>Pair</th><th>Δhue</th><th>Δlight</th><th></th></tr></thead>
+        <tbody>
+          <tr><td>fixed / investments</td><td class="num">113</td><td class="num">7</td><td class="pass ok">PASS</td></tr>
+          <tr><td>fixed / savings</td><td class="num">179</td><td class="num">9</td><td class="pass ok">PASS</td></tr>
+          <tr><td>fixed / guilt_free</td><td class="num">65</td><td class="num">34</td><td class="pass ok">PASS</td></tr>
+          <tr><td>investments / savings</td><td class="num">66</td><td class="num">16</td><td class="pass ok">PASS</td></tr>
+          <tr><td>investments / guilt_free</td><td class="num">178</td><td class="num">41</td><td class="pass ok">PASS</td></tr>
+          <tr><td>savings / guilt_free</td><td class="num">116</td><td class="num">25</td><td class="pass ok">PASS</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:13.5px;color:var(--dim-2)">All 6 pairs pass on <b>hue alone</b>. None depends on lightness to survive.</p>
+    </div>
+    <div>
+      <h3>Against the old set</h3>
+      <table>
+        <thead><tr><th></th><th>six chips</th><th>four buckets</th></tr></thead>
+        <tbody>
+          <tr><td>Pairs to separate</td><td class="num">15</td><td class="num">6</td></tr>
+          <tr><td>Tightest hue gap</td><td class="num bad">9°</td><td class="num ok">65°</td></tr>
+          <tr><td>Pairs passing on lightness only</td><td class="num bad">1</td><td class="num ok">0</td></tr>
+          <tr><td>Chips failing textSafe</td><td class="num bad">2</td><td class="num ok">0</td></tr>
+          <tr><td>Icon load-bearing?</td><td class="bad">yes, required</td><td class="ok">no, reinforcing</td></tr>
+          <tr><td>Survives a new user category</td><td class="bad">no</td><td class="ok">yes</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:13.5px;color:var(--dim-2)">Measured with a WCAG 2.1 relative-luminance script, not estimated.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <span class="n">04</span>
+  <h2>Rows, side by side</h2>
+  <p class="sub">Same six transactions. Real merchants, real amounts. The two rows that matter most are the last two.</p>
+
+  <div class="grid2" style="margin-top:26px">
+    <div class="panel">
+      <span class="lab">before · six invented chips</span>
+      <div style="margin-top:16px">
+        <div class="row">
+          <span class="chip" style="background:#F9ACCE"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+          <span><span class="who">Swiggy Instamart</span><div class="cat">food</div></span>
+          <span class="amt">−₹487</span>
+        </div>
+        <div class="row">
+          <span class="chip" style="background:#F1A007"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+          <span><span class="who">BSES Rajdhani</span><div class="cat">bills</div></span>
+          <span class="amt">−₹2,847.50</span>
+        </div>
+        <div class="row">
+          <span class="chip" style="background:#23B471"><svg viewBox="0 0 24 24"><use href="#b-invest"/></svg></span>
+          <span><span class="who">Parag Parikh Flexi Cap</span><div class="cat">invest</div></span>
+          <span class="amt">−₹25,000</span>
+        </div>
+        <div class="row">
+          <span class="chip" style="background:#8A4BD1"><svg viewBox="0 0 24 24"><use href="#i-q"/></svg></span>
+          <span><span class="who">Netflix</span><div class="cat" style="color:var(--alert)">shopping? bills? — guessed</div></span>
+          <span class="amt">−₹649</span>
+        </div>
+        <div class="row">
+          <span class="chip" style="background:#C43C63"><svg viewBox="0 0 24 24"><use href="#i-q"/></svg></span>
+          <span><span class="who">Groceries › Zepto</span><div class="cat" style="color:var(--alert)">nested — no colour exists for a child</div></span>
+          <span class="amt">−₹1,204</span>
+        </div>
+        <div class="row">
+          <span class="chip" style="background:#E2D8D0"><svg viewBox="0 0 24 24"><use href="#i-q"/></svg></span>
+          <span><span class="who">HDFC UPI/ Rapido</span><div class="cat" style="color:var(--alert)">categoryId: null — no chip defined</div></span>
+          <span class="amt">−₹118</span>
+        </div>
+      </div>
+      <p style="margin:16px 0 0;font-size:13.5px;color:var(--alert)">Three of six rows are wrong: two guessed, one undefined.</p>
+    </div>
+
+    <div class="panel">
+      <span class="lab">after · four buckets</span>
+      <div style="margin-top:16px">
+        <div class="row">
+          <span class="chip" style="background:var(--bucket-guiltfree)"><svg viewBox="0 0 24 24"><use href="#b-guiltfree"/></svg></span>
+          <span><span class="who">Swiggy Instamart</span><div class="cat">Eating out · guilt-free</div></span>
+          <span class="amt">−₹487</span>
+        </div>
+        <div class="row">
+          <span class="chip" style="background:var(--bucket-fixed)"><svg viewBox="0 0 24 24"><use href="#b-fixed"/></svg></span>
+          <span><span class="who">BSES Rajdhani</span><div class="cat">Electricity · fixed</div></span>
+          <span class="amt">−₹2,847.50</span>
+        </div>
+        <div class="row">
+          <span class="chip" style="background:var(--bucket-invest)"><svg viewBox="0 0 24 24"><use href="#b-invest"/></svg></span>
+          <span><span class="who">Parag Parikh Flexi Cap</span><div class="cat">SIP · investments</div></span>
+          <span class="amt">−₹25,000</span>
+        </div>
+        <div class="row">
+          <span class="chip" style="background:var(--bucket-fixed)"><svg viewBox="0 0 24 24"><use href="#b-fixed"/></svg></span>
+          <span><span class="who">Netflix</span><div class="cat">Subscriptions · fixed</div></span>
+          <span class="amt">−₹649</span>
+        </div>
+        <div class="row">
+          <span class="chip" style="background:var(--bucket-guiltfree)"><svg viewBox="0 0 24 24"><use href="#b-guiltfree"/></svg></span>
+          <span><span class="who">Zepto</span><div class="cat">Groceries › Zepto · guilt-free</div></span>
+          <span class="amt">−₹1,204</span>
+        </div>
+        <div class="row">
+          <span class="chip hollow"><svg viewBox="0 0 24 24"><use href="#i-q"/></svg></span>
+          <span><span class="who">HDFC UPI/ Rapido</span><div class="cat"><span style="border-bottom:1.5px solid var(--ink);cursor:pointer">Categorise</span> · from HDFC alert</div></span>
+          <span class="amt">−₹118</span>
+        </div>
+      </div>
+      <p style="margin:16px 0 0;font-size:13.5px;color:var(--dim-2)">Six of six honest. Nothing guessed. The uncategorised row is a task, not a defect.</p>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <span class="n">05</span>
+  <h2>Three sub-decisions</h2>
+
+  <div class="panel">
+    <h3>Uncategorised — <code>categoryId: null</code></h3>
+    <p><b>A hollow chip: 1.5px dashed <code>--dim-2</code>, no fill, question glyph.</b> The category slot becomes an underlined <i>Categorise</i> action rather than a label.</p>
+    <p style="margin-bottom:0;color:var(--dim-2)">This is the parser's normal output, not a failure — the Gmail ingest creates rows precisely so the owner can resolve them. Rendering it in <code>--alert</code> would cry wolf every morning. Dashed-and-hollow reads as <i>an empty slot awaiting a value</i>, which is exactly what it is, and it is the only chip in the system with no fill — so it is unmistakable at a glance down a long list.</p>
+  </div>
+
+  <div class="panel">
+    <h3>Depth — nested categories in a flat row</h3>
+    <p><b>The chip carries the bucket colour; the leaf name carries in text. The parent appears only when it disambiguates.</b></p>
+    <p style="margin-bottom:0;color:var(--dim-2)">A transaction references a leaf directly, but every leaf inherits its ancestor's bucket — so the chip is always answerable no matter how deep the tree goes. <code>Groceries › Zepto</code> shows the parent because "Zepto" alone is ambiguous against the merchant column; <code>Electricity</code> stands alone because it does not need help. Never a full breadcrumb in a dense row — the row has 1fr of space and the merchant owns it.</p>
+  </div>
+
+  <div class="panel">
+    <h3>Income rows — <code>type: "income"</code></h3>
+    <p><b>Income keeps the direction chip already locked on the dashboard: hollow with an up-arrow, ink stroke.</b> It does not take a bucket colour.</p>
+    <p style="margin-bottom:0;color:var(--dim-2)">Buckets describe where money <i>goes</i>. Income has no destination bucket, so colouring it would be guessing again. The dashboard already established hollow direction chips for recurring rows that lack a category; income inherits that vocabulary rather than inventing a fifth colour. One rule, applied twice.</p>
+  </div>
+</section>
+
+<section class="sec">
+  <span class="n">06</span>
+  <h2>Migration — every colour accounted for</h2>
+  <p class="sub">Four of the six are retained and remapped. Two are retired. The system is never left in two minds.</p>
+
+  <table style="margin-top:24px">
+    <thead><tr><th></th><th>Old token</th><th>Hex</th><th>Fate</th><th>New token</th><th>Note</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="chip" style="background:#F1A007;width:24px;height:24px"><svg viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#b-fixed"/></svg></span></td>
+        <td class="num">--bills</td><td class="num">#F1A007</td>
+        <td class="ok"><b>retained</b></td><td class="num">--bucket-fixed</td>
+        <td style="color:var(--dim-2)">Obligation reads as amber. Near-exact semantic carry.</td>
+      </tr>
+      <tr>
+        <td><span class="chip" style="background:#23B471;width:24px;height:24px"><svg viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#b-invest"/></svg></span></td>
+        <td class="num">--invest</td><td class="num">#23B471</td>
+        <td class="ok"><b>retained</b></td><td class="num">--bucket-invest</td>
+        <td style="color:var(--dim-2)">Exact semantic match. Icon survives unchanged.</td>
+      </tr>
+      <tr>
+        <td><span class="chip" style="background:#5483D3;width:24px;height:24px"><svg viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#b-savings"/></svg></span></td>
+        <td class="num">--transport</td><td class="num">#5483D3</td>
+        <td class="ok"><b>retained</b></td><td class="num">--bucket-savings</td>
+        <td style="color:var(--dim-2)">Colour kept, meaning reassigned. New vault icon.</td>
+      </tr>
+      <tr>
+        <td><span class="chip" style="background:#F9ACCE;width:24px;height:24px"><svg viewBox="0 0 24 24" style="width:13px;height:13px"><use href="#b-guiltfree"/></svg></span></td>
+        <td class="num">--food</td><td class="num">#F9ACCE</td>
+        <td class="ok"><b>retained</b></td><td class="num">--bucket-guiltfree</td>
+        <td style="color:var(--dim-2)">The hero bucket. Highest contrast in the set at 9.80:1.</td>
+      </tr>
+      <tr>
+        <td><span class="chip" style="background:#8A4BD1;width:24px;height:24px;opacity:.45"></span></td>
+        <td class="num strike">--shop</td><td class="num strike">#8A4BD1</td>
+        <td class="bad"><b>retired</b></td><td style="color:var(--dim-2)">—</td>
+        <td style="color:var(--dim-2)">Was <code>textSafe:false</code> (3.32:1).</td>
+      </tr>
+      <tr>
+        <td><span class="chip" style="background:#C43C63;width:24px;height:24px;opacity:.45"></span></td>
+        <td class="num strike">--health</td><td class="num strike">#C43C63</td>
+        <td class="bad"><b>retired</b></td><td style="color:var(--dim-2)">—</td>
+        <td style="color:var(--dim-2)">Was <code>textSafe:false</code> (3.46:1).</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    <span class="lab">note the symmetry</span>
+    <p style="margin:8px 0 0">The two colours being retired are <b>precisely the two that failed <code>textSafe</code></b> — and they were themselves added in round 3 to fix a collision the six-chip set had created. The invented taxonomy required a patch, and the patch is what we are now removing. Nothing of value is lost.</p>
+    <p style="margin:12px 0 0"><b>Token naming:</b> <code>--invest</code> would collide with the <code>investments</code> bucket. All four are renamed to the <code>--bucket-*</code> prefix so a token name can never be mistaken for a category name again.</p>
+  </div>
+
+  <p style="margin-top:22px"><b>Icon assets:</b> <code>invest.svg</code> carries over unchanged. <code>bills.svg</code>, <code>transport.svg</code> and <code>food.svg</code> are replaced by lock, vault and spark glyphs — the old ones describe categories, not buckets. <code>shopping.svg</code> and <code>health.svg</code> are retired with their colours. Net: four icons in the sprite, down from six.</p>
+</section>
+
+<section class="sec">
+  <span class="n">07</span>
+  <h2>Token diffs</h2>
+  <p class="sub">Exactly what an engineer applies. <b>Nothing has been written to these files</b> — this is a proposal pending approval.</p>
+
+  <h3 style="margin-top:26px">tokens.css</h3>
+<pre><b>- --food:      #F9ACCE;</b>
+<b>- --bills:     #F1A007;</b>
+<b>- --invest:    #23B471;</b>
+<b>- --transport: #5483D3;</b>
+<b>- --shop:      #8A4BD1;</b>
+<b>- --health:    #C43C63;</b>
++ /* Buckets — the four fixed values of CategoryNode.bucket.
++    Colour is for the closed set; category names carry in text. */
++ --bucket-fixed:     #F1A007;  /* fixed_costs  · ink 8.10:1 */
++ --bucket-invest:    #23B471;  /* investments  · ink 6.50:1 */
++ --bucket-savings:   #5483D3;  /* savings      · ink 4.61:1 */
++ --bucket-guiltfree: #F9ACCE;  /* guilt_free   · ink 9.80:1 */</pre>
+
+  <h3>tokens.ts</h3>
+<pre>export const bucket = {
+  fixed_costs: "#F1A007",
+  investments: "#23B471",
+  savings:     "#5483D3",
+  guilt_free:  "#F9ACCE",
+} as const;
+
+export const bucketMeta = {
+  fixed_costs: { icon: "b-fixed",     label: "Fixed",      contrast: 8.10, textSafe: true },
+  investments: { icon: "b-invest",    label: "Investments", contrast: 6.50, textSafe: true },
+  savings:     { icon: "b-savings",   label: "Savings",     contrast: 4.61, textSafe: true },
+  guilt_free:  { icon: "b-guiltfree", label: "Guilt-free",  contrast: 9.80, textSafe: true },
+} as const;
+
+<b>// every bucket is textSafe — chipMeta's textSafe:false cases are gone</b></pre>
+
+  <h3>tailwind.preset.js</h3>
+<pre>colors: {
+<b>-   food: 'var(--food)', bills: 'var(--bills)', invest: 'var(--invest)',</b>
+<b>-   transport: 'var(--transport)', shop: 'var(--shop)', health: 'var(--health)',</b>
++   bucket: {
++     fixed:     'var(--bucket-fixed)',
++     invest:    'var(--bucket-invest)',
++     savings:   'var(--bucket-savings)',
++     guiltfree: 'var(--bucket-guiltfree)',
++   },
+}</pre>
+
+  <h3>Downstream edits</h3>
+  <table>
+    <thead><tr><th>File</th><th>Change</th></tr></thead>
+    <tbody>
+      <tr><td class="num">tokens.json</td><td>Same four under <code>chip</code> → rename group to <code>bucket</code>; drop the two retired entries and their <code>textSafe:false</code> extensions.</td></tr>
+      <tr><td class="num">brand-kit/index.html</td><td>Section 04 chip taxonomy: replace the six-swatch row and its 15-pair separation table with the four-bucket set and its 6-pair table. Remove the "icon is load-bearing" caveat — it no longer applies.</td></tr>
+      <tr><td class="num">assets/chips/</td><td>Keep <code>invest.svg</code>. Add <code>fixed.svg</code>, <code>savings.svg</code>, <code>guiltfree.svg</code>. Retire <code>food/bills/transport/shopping/health.svg</code>.</td></tr>
+      <tr><td class="num">round10-dashboard.html</td><td>Budget vs Spend rows re-chip to buckets. The sidebar legend drops from six chips to four. <b>No layout change</b> — the row grid is unchanged at <code>30px 1fr auto</code>.</td></tr>
+      <tr><td class="num">round8-login.html</td><td>The hero constellation currently orbits <b>six</b> chips around the rupee core. It becomes four. Worth a look — a four-point constellation may read cleaner than six, but it is a visible change to an approved screen.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout" style="border-color:var(--alert)">
+    <span class="lab" style="color:var(--alert)">the one thing to look at</span>
+    <p style="margin:8px 0 0">Everything above is contained except the <b>login hero</b>. It is an approved screen, and its constellation is built from the six chips. Dropping to four changes it. Options: rebuild the constellation with four, or keep six orbs as pure ornament decoupled from the taxonomy. <b>This is the only place the migration touches something already signed off.</b></p>
+  </div>
+</section>
+
+<section class="sec" style="padding-bottom:88px">
+  <span class="n">08</span>
+  <h2>What I need from you</h2>
+  <div class="panel">
+    <p style="font-size:17px;margin-bottom:18px"><b>1 · Approve the move to four buckets?</b> If yes, I apply the token diffs, update the brand kit, and re-chip the dashboard before continuing to transactions.</p>
+    <p style="font-size:17px;margin-bottom:0"><b>2 · The login hero — four orbs, or keep six as ornament?</b> The only approved thing this touches.</p>
+  </div>
+  <p style="margin-top:24px;color:var(--dim-2);font-size:13.5px">All contrast and separation figures on this page were computed with a WCAG 2.1 relative-luminance script, not estimated. Six chip pairs, four contrast ratios, all printed above.</p>
+</section>
+
+</div>
+</body></html>

@@ -1,13 +1,16 @@
 import { Router } from "express";
+import { z } from "zod";
 import multer from "multer";
 import { requireAuth } from "../auth/auth.middleware.js";
 import { HoldingLot } from "../../models/HoldingLot.js";
 import { ImportBatch } from "../../models/ImportBatch.js";
+import { Transaction } from "../../models/Transaction.js";
 import { getHoldingsRollup } from "./holdings.service.js";
 import { parseZerodhaCsv } from "./csv-import/zerodha.parser.js";
 import { parseGrowwCsv } from "./csv-import/groww.parser.js";
 import { invalidateDashboardCache } from "../dashboard/dashboard.service.js";
 import { recordSale } from "../tax/capital-gains.service.js";
+import { applyBalanceDelta } from "../accounts/balance.service.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 export const investmentsRouter = Router();
@@ -28,6 +31,155 @@ investmentsRouter.get("/holding-lots", async (req, res, next) => {
     const limit = Math.min(Number(req.query.limit) || 50, 200);
     const items = await HoldingLot.find({ userId }).sort({ buyDate: -1 }).limit(limit);
     res.json({ items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const buySchema = z.object({
+  symbol: z.string().min(1),
+  platform: z.enum(["zerodha", "groww", "other"]),
+  instrumentType: z.enum(["stock", "mutual_fund"]),
+  buyDate: z.string(),
+  buyPrice: z.number().positive(),
+  units: z.number().positive(),
+  isElss: z.boolean().optional(),
+  // OPTIONAL, deliberately: existing callers (Zerodha/Groww CSV import) have no
+  // account context available at import time at all — a historical trade
+  // statement says nothing about which of this app's own bank accounts funded
+  // it — and must keep working exactly as before, without gaining the
+  // linked-transaction behavior below. Only when a caller (this manual "add
+  // holding" route, used going forward) actually knows and supplies one does a
+  // purchase get wired into the transaction/balance system, closing the
+  // double-counting gap without touching any historical CSV-imported data.
+  accountId: z.string().optional(),
+});
+
+/**
+ * Manually records a BUY: always creates a `HoldingLot` (unconditionally, same
+ * as the CSV import path), and — ONLY when `accountId` is supplied — ALSO
+ * creates a real linked expense `Transaction` (so the cash outflow is visible
+ * in transaction history and budget calculations, not just a silent balance
+ * adjustment) and applies its cost as a balance delta to that account, exactly
+ * as if the purchase had been manually entered as an expense.
+ *
+ * This is what actually fixes the net-worth double-count for a NEW purchase:
+ * before this route existed, buying a holding never touched any account, so
+ * the cash spent was still counted as sitting in the account AND as the new
+ * holding's value. With the funding account wired up, the account's own
+ * `currentBalance` now genuinely drops by the purchase cost, so
+ * `computeFullNetWorth` (accounts total + holdings value) sums to the correct
+ * figure with no special-casing needed there at all — the fix is in the data,
+ * not the aggregate math.
+ */
+investmentsRouter.post("/holdings", async (req, res, next) => {
+  try {
+    const userId = (req as any).userId;
+    const data = buySchema.parse(req.body);
+    // Upper-cased, matching the CSV import parsers' own normalization — `symbol`
+    // is the join key for FIFO sell-matching, the holdings rollup, and price
+    // lookups, so a case variant here would silently fork a position in two.
+    const symbol = data.symbol.trim().toUpperCase();
+    const buyDate = new Date(data.buyDate);
+    const cost = Math.round(data.buyPrice * data.units * 100) / 100;
+
+    const lot = await HoldingLot.create({
+      userId,
+      symbol,
+      platform: data.platform,
+      instrumentType: data.instrumentType,
+      buyDate,
+      buyPrice: data.buyPrice,
+      units: data.units,
+      remainingUnits: data.units,
+      isElss: data.isElss ?? false,
+    });
+
+    let transaction = null;
+    if (data.accountId) {
+      transaction = await Transaction.create({
+        userId,
+        accountId: data.accountId,
+        categoryId: null,
+        amount: -cost,
+        date: buyDate,
+        note: `Bought ${data.units} ${symbol} @ ${data.buyPrice}`,
+        merchant: symbol,
+        source: "manual",
+        status: "confirmed",
+      });
+      await applyBalanceDelta(userId, data.accountId, -cost);
+    }
+
+    await invalidateDashboardCache(userId);
+    res.status(201).json({ lot, transaction });
+  } catch (err) {
+    next(err);
+  }
+});
+
+const sellSchema = z.object({
+  symbol: z.string().min(1),
+  instrumentType: z.enum(["stock", "mutual_fund"]),
+  sellDate: z.string(),
+  sellPrice: z.number().positive(),
+  unitsSold: z.number().positive(),
+  // Same reasoning as `buySchema.accountId` above — optional, and only wires up
+  // a linked Transaction when actually supplied.
+  accountId: z.string().optional(),
+});
+
+/**
+ * Manually records a SELL: always runs the existing FIFO/capital-gains
+ * pipeline (`recordSale` — same one the CSV import path already uses,
+ * untouched here), and — ONLY when `accountId` is supplied — ALSO creates a
+ * real linked INCOME `Transaction` for the sale proceeds and credits that
+ * account, symmetric with the buy route above.
+ *
+ * `recordSale` (via `applySellFifo`) guarantees a failed sell (asking for more
+ * units than are held) leaves every `HoldingLot` completely untouched before
+ * it ever throws — caught here and reported as a clean 400, never a partial
+ * lot mutation with no linked Transaction to match it.
+ */
+investmentsRouter.post("/holdings/sell", async (req, res, next) => {
+  try {
+    const userId = (req as any).userId;
+    const data = sellSchema.parse(req.body);
+    const symbol = data.symbol.trim().toUpperCase();
+    const sellDate = new Date(data.sellDate);
+    const proceeds = Math.round(data.sellPrice * data.unitsSold * 100) / 100;
+
+    let events;
+    try {
+      events = await recordSale(userId, {
+        symbol,
+        instrumentType: data.instrumentType,
+        sellDate,
+        sellPrice: data.sellPrice,
+        unitsSold: data.unitsSold,
+      });
+    } catch (err) {
+      return res.status(400).json({ error: (err as Error).message });
+    }
+
+    let transaction = null;
+    if (data.accountId) {
+      transaction = await Transaction.create({
+        userId,
+        accountId: data.accountId,
+        categoryId: null,
+        amount: proceeds,
+        date: sellDate,
+        note: `Sold ${data.unitsSold} ${symbol} @ ${data.sellPrice}`,
+        merchant: symbol,
+        source: "manual",
+        status: "confirmed",
+      });
+      await applyBalanceDelta(userId, data.accountId, proceeds);
+    }
+
+    await invalidateDashboardCache(userId);
+    res.status(201).json({ events, transaction });
   } catch (err) {
     next(err);
   }

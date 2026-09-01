@@ -7,6 +7,7 @@ import { findLikelyDuplicate } from "../duplicate-detection.js";
 import { applyCategorizationRules } from "../../categorization/categorization.engine.js";
 import { parseGenericBankCsv } from "./parsers/genericBank.parser.js";
 import { invalidateDashboardCache } from "../../dashboard/dashboard.service.js";
+import { applyBalanceDelta } from "../../accounts/balance.service.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 export const csvImportRouter = Router();
@@ -50,6 +51,8 @@ csvImportRouter.post("/import", upload.single("file"), async (req, res, next) =>
         source: "csv_import",
         status: "confirmed",
       });
+
+      await applyBalanceDelta(userId, accountId, row.amount);
 
       resultingIds.push(transaction._id.toString());
       rowResults.push({ row: i + 1, status: "success", transactionId: transaction._id.toString() });

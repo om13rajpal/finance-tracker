@@ -11,6 +11,10 @@ web/test-results
 web/playwright-report
 .worktrees
 .playwright-mcp
+# Claude Code / agent tooling — local skills, agent configs, and brainstorming
+# server state, none of which are project source
+.claude
+.superpowers
 # ad-hoc screenshots dropped at repo root by Playwright MCP verification runs —
 # scoped to root only (leading /) so real project assets under web/public/ etc. aren't affected
 /*.png

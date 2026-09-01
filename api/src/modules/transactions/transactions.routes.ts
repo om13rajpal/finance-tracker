@@ -6,6 +6,7 @@ import { applyCategorizationRules } from "../categorization/categorization.engin
 import { maybeCreateRuleFromCorrection, encodeCursor, decodeCursor } from "./transactions.service.js";
 import { findLikelyDuplicate } from "./duplicate-detection.js";
 import { invalidateDashboardCache } from "../dashboard/dashboard.service.js";
+import { applyBalanceDelta } from "../accounts/balance.service.js";
 
 export const transactionsRouter = Router();
 transactionsRouter.use(requireAuth);
@@ -87,6 +88,7 @@ transactionsRouter.post("/", async (req, res, next) => {
       source: "manual",
       status: "confirmed",
     });
+    await applyBalanceDelta((req as any).userId, data.accountId, data.amount);
     await invalidateDashboardCache((req as any).userId);
     res.status(201).json(transaction);
   } catch (err) {
@@ -108,24 +110,34 @@ transactionsRouter.patch("/:id", async (req, res, next) => {
   try {
     const data = updateSchema.parse(req.body);
     const { createRule, matchValue, ...updateFields } = data;
+    const userId = (req as any).userId;
 
     const update: Record<string, unknown> = { ...updateFields };
     if (updateFields.date) {
       update.date = new Date(updateFields.date);
     }
 
-    const transaction = await Transaction.findOneAndUpdate(
-      { _id: req.params.id, userId: (req as any).userId },
-      update,
-      { new: true }
-    );
+    // Read the PRE-edit transaction first — `accountId` is never editable (not in
+    // `updateSchema`), so the account this balance change applies to is fixed, but
+    // the amount's DELTA (new minus old) can only be known by comparing against
+    // what it used to be.
+    const existing = await Transaction.findOne({ _id: req.params.id, userId });
+    if (!existing) return res.status(404).json({ error: "Not found" });
+
+    const transaction = await Transaction.findOneAndUpdate({ _id: req.params.id, userId }, update, {
+      new: true,
+    });
     if (!transaction) return res.status(404).json({ error: "Not found" });
 
-    if (createRule && matchValue && data.categoryId) {
-      await maybeCreateRuleFromCorrection((req as any).userId, matchValue, data.categoryId);
+    if (data.amount !== undefined && data.amount !== existing.amount) {
+      await applyBalanceDelta(userId, existing.accountId, data.amount - existing.amount);
     }
 
-    await invalidateDashboardCache((req as any).userId);
+    if (createRule && matchValue && data.categoryId) {
+      await maybeCreateRuleFromCorrection(userId, matchValue, data.categoryId);
+    }
+
+    await invalidateDashboardCache(userId);
     res.json(transaction);
   } catch (err) {
     next(err);
@@ -134,9 +146,15 @@ transactionsRouter.patch("/:id", async (req, res, next) => {
 
 transactionsRouter.delete("/:id", async (req, res, next) => {
   try {
-    const result = await Transaction.deleteOne({ _id: req.params.id, userId: (req as any).userId });
-    if (result.deletedCount === 0) return res.status(404).json({ error: "Not found" });
-    await invalidateDashboardCache((req as any).userId);
+    const userId = (req as any).userId;
+    // Read before delete — the balance reversal needs the transaction's own
+    // amount/accountId, which are gone the instant `deleteOne` succeeds.
+    const transaction = await Transaction.findOne({ _id: req.params.id, userId });
+    if (!transaction) return res.status(404).json({ error: "Not found" });
+
+    await Transaction.deleteOne({ _id: req.params.id, userId });
+    await applyBalanceDelta(userId, transaction.accountId, -transaction.amount);
+    await invalidateDashboardCache(userId);
     res.status(204).send();
   } catch (err) {
     next(err);

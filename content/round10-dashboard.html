@@ -1,0 +1,1599 @@
+<!-- @moodforge
+schema: 1.0
+round: 10
+phase: all-screens
+worker: moodforge-screen-designer
+theme: sorted
+version: v1
+created_at: 2026-08-30T01:10:00Z
+sha256: 6f0d0c6bfd2009706be9429dec7ca1ce07ca2b3a3b07fab13cce3d82b7b69dff
+palette: [#FAF5F2, #1A1A1A, #E2D8D0, #7D7169, #6B5F57, #F1E8E2, #FCE4CA, #F9ACCE, #F1A007, #23B471, #5483D3, #8A4BD1, #C43C63, #14199C, #A61B2B]
+fonts: [Bricolage Grotesque 800, Geist 400/500/600, Geist Mono 500]
+tokens_used: [--bg, --ink, --rule, --dim, --dim-2, --ink-wash, --food, --bills, --invest, --transport, --shop, --health, --focus, --alert, --disp, --ui, --num, --tracking-disp, --tracking-num, --tracking-label, --tracking-micro, --weight-disp, --weight-strong, --weight-num, --weight-body, --type-micro, --type-label, --type-meta, --type-caption, --type-body-s, --type-body, --type-h2, --type-h1, --type-figure-2, --type-figure-1, --leading-tight, --leading-snug, --leading-body, --sp-4, --sp-6, --sp-8, --sp-10, --sp-12, --sp-14, --sp-18, --sp-22, --sp-26, --sp-32, --sp-44, --stroke-hair, --stroke-panel, --stroke-tether, --stroke-icon, --stroke-focus, --dash-tether, --r-xs, --r-sm, --r-notice, --r-panel, --r-card, --r-pill, --stamp, --stamp-pressed, --stamp-offset, --focus-ring, --focus-offset, --ease-out, --ease-in-out, --ease-drawer, --dur-press, --dur-hover, --dur-dropdown, --dur-drawer, --dur-skeleton]
+screen: dashboard
+summary: Sorted dashboard at 1440x900 and 390x844 — the real four modules, Guilt-Free Money at 108px over a 52px Net Worth companion, over-budget row, all four required states, the tether on parser-filed rows, and the implementation strip.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sorted · Dashboard · round 10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Geist:wght@400;500;600&family=Geist+Mono:wght@500&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════════════════
+   TOKENS · verbatim from docs/design/brand-kit/tokens.css
+   Inlined only so this review file is portable and works over file://.
+   In web/ these arrive from the single import in app/layout.tsx.
+   Nothing below was invented, recomputed or nudged.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root{
+  --bg:#FAF5F2; --ink:#1A1A1A; --rule:#E2D8D0; --ink-wash:#F1E8E2; --hero-field:#FCE4CA;
+  --dim:#7D7169; --dim-2:#6B5F57;
+  --food:#F9ACCE; --bills:#F1A007; --invest:#23B471;
+  --transport:#5483D3; --shop:#8A4BD1; --health:#C43C63;
+  --focus:#14199C; --alert:#A61B2B;
+
+  --disp:"Bricolage Grotesque","Geist",system-ui,sans-serif;
+  --ui:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --num:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+
+  --tracking-disp:-0.035em; --tracking-num:-0.02em;
+  --tracking-label:0.16em; --tracking-micro:0.13em;
+  --weight-disp:800; --weight-strong:600; --weight-num:500; --weight-body:400;
+
+  --type-micro:9.5px; --type-label:10px; --type-meta:11px; --type-caption:13.5px;
+  --type-body-s:14.5px; --type-body:15px; --type-input:16px;
+  --type-h3:22px; --type-h2:26px; --type-h1:40px;
+  --type-figure-2:52px; --type-figure-1:108px;
+
+  --leading-tight:1.05; --leading-snug:1.25; --leading-body:1.55;
+
+  --sp-2:2px; --sp-4:4px; --sp-6:6px; --sp-8:8px; --sp-10:10px; --sp-12:12px;
+  --sp-14:14px; --sp-18:18px; --sp-22:22px; --sp-26:26px; --sp-32:32px;
+  --sp-44:44px; --sp-64:64px; --sp-96:96px;
+
+  --stroke-hair:1px; --stroke-panel:1.5px; --stroke-tether:1.6px;
+  --stroke-icon:2px; --stroke-focus:2.5px;
+  --dash-tether:4 6;
+
+  --r-xs:4px; --r-sm:14px; --r-otp:16px; --r-notice:18px;
+  --r-panel:22px; --r-card:26px; --r-pill:999px;
+
+  --stamp:0 2px 0 var(--ink); --stamp-pressed:0 0 0 var(--ink); --stamp-offset:2px;
+  --focus-ring:var(--stroke-focus) solid var(--focus); --focus-offset:3px;
+
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ease-in-out:cubic-bezier(.77,0,.175,1);
+  --ease-drawer:cubic-bezier(.32,.72,0,1);
+
+  --dur-press:110ms; --dur-hover:150ms; --dur-tooltip:160ms;
+  --dur-dropdown:200ms; --dur-drawer:320ms; --dur-modal:400ms; --dur-skeleton:1150ms;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--ui);
+  font-size:var(--type-body);line-height:var(--leading-body)}
+
+/* Global floor, verbatim from tokens.css. The ring is drawn OUTWARD so it
+   lands on cream at 11.77:1 — never inset, never box-shadow-as-ring.
+   There is no `outline:none` anywhere in this file except inside prose. */
+:focus-visible{outline:var(--focus-ring);outline-offset:var(--focus-offset);border-radius:var(--r-xs)}
+::selection{background:var(--food);color:var(--ink)}
+
+/* ═══ THE STAMP · locked press ═══════════════════════════════════════════
+   translateY exactly the shadow offset, shadow collapsed, BOTH properties
+   on one duration and one curve. Never scale(). */
+.stamp{box-shadow:var(--stamp);
+  transition:transform var(--dur-press) var(--ease-out),
+             box-shadow var(--dur-press) var(--ease-out)}
+.stamp:active:not([disabled]):not([aria-disabled="true"]){
+  transform:translateY(var(--stamp-offset));box-shadow:var(--stamp-pressed)}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   REVIEW CHROME · everything with a .rv- prefix is scaffolding for this
+   document only. None of it ships. It is deliberately set in a different
+   register so it cannot be mistaken for product surface.
+   ═══════════════════════════════════════════════════════════════════════ */
+.rv-shell{padding:var(--sp-44) var(--sp-44) var(--sp-96)}
+.rv-mast{border-bottom:var(--stroke-panel) solid var(--ink);padding-bottom:var(--sp-22);
+  margin-bottom:var(--sp-32);display:flex;align-items:flex-end;justify-content:space-between;
+  gap:var(--sp-32);flex-wrap:wrap}
+.rv-mast h1{font-family:var(--disp);font-weight:var(--weight-disp);font-size:var(--type-h1);
+  letter-spacing:var(--tracking-disp);line-height:var(--leading-tight);margin:0}
+.rv-mast p{margin:var(--sp-8) 0 0;color:var(--dim-2);font-size:var(--type-caption);max-width:62ch}
+.rv-kicker{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-label);
+  letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--dim);
+  display:block;margin-bottom:var(--sp-10)}
+.rv-controls{display:flex;gap:var(--sp-10);align-items:center;flex-wrap:wrap}
+.rv-btn{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;cursor:pointer;
+  background:transparent;color:var(--ink);border:var(--stroke-panel) solid var(--ink);
+  border-radius:var(--r-pill);padding:9px 16px}
+.rv-btn[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.rv-sec{margin:var(--sp-96) 0 0}
+.rv-sec:first-of-type{margin-top:0}
+.rv-h{display:flex;align-items:baseline;gap:var(--sp-14);flex-wrap:wrap;
+  border-bottom:var(--stroke-hair) solid var(--rule);padding-bottom:var(--sp-12);
+  margin-bottom:var(--sp-22)}
+.rv-h h2{font-family:var(--disp);font-weight:var(--weight-disp);font-size:var(--type-h2);
+  letter-spacing:var(--tracking-disp);margin:0}
+.rv-h .n{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-meta);
+  color:var(--dim);letter-spacing:var(--tracking-micro)}
+.rv-note{max-width:74ch;color:var(--dim-2);font-size:var(--type-caption);
+  line-height:var(--leading-body);margin:0 0 var(--sp-22)}
+.rv-note strong{color:var(--ink);font-weight:var(--weight-strong)}
+.rv-note code,.rv-inline{font-family:var(--num);font-size:.92em;background:var(--ink-wash);
+  padding:1px 5px;border-radius:var(--r-xs);color:var(--ink)}
+.rv-rail{display:flex;gap:var(--sp-32);align-items:flex-start;flex-wrap:wrap}
+.rv-cap{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);
+  margin:var(--sp-10) 0 0;display:block}
+.rv-scroll{overflow-x:auto;padding-bottom:var(--sp-14)}
+.rv-callouts{list-style:none;margin:var(--sp-22) 0 0;padding:0;max-width:78ch;
+  display:grid;gap:var(--sp-10)}
+.rv-callouts li{display:grid;grid-template-columns:auto 1fr;gap:var(--sp-12);
+  font-size:var(--type-caption);color:var(--dim-2);line-height:var(--leading-body)}
+.rv-callouts b{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--ink);
+  padding-top:3px;white-space:nowrap}
+.rv-tbl{width:100%;border-collapse:collapse;font-size:var(--type-caption);max-width:1000px}
+.rv-tbl th,.rv-tbl td{text-align:left;padding:10px 14px 10px 0;
+  border-bottom:var(--stroke-hair) solid var(--rule);vertical-align:top}
+.rv-tbl th{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim)}
+.rv-tbl td{color:var(--dim-2)}
+.rv-tbl td:first-child{color:var(--ink);font-weight:var(--weight-strong);white-space:nowrap}
+pre{background:var(--ink);color:var(--bg);border-radius:var(--r-panel);padding:var(--sp-22) var(--sp-26);
+  overflow-x:auto;font-family:var(--num);font-size:12.5px;line-height:1.7;margin:0 0 var(--sp-18);
+  font-weight:var(--weight-num)}
+pre .c{color:#A79F99}
+pre .k{color:var(--food)}
+pre .s{color:var(--bills)}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   THE VIEWPORT FRAMES
+   ═══════════════════════════════════════════════════════════════════════ */
+.vp{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-card);
+  background:var(--bg);overflow:hidden;flex:none;position:relative}
+.vp-d{width:1440px;height:900px}
+.vp-m{width:390px;height:844px}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   APP SHELL · sidebar 232px, 1.5px ink right border, main column scrolls
+   ═══════════════════════════════════════════════════════════════════════ */
+.app{display:grid;grid-template-columns:232px 1fr;height:100%}
+
+/* ── sidebar ──────────────────────────────────────────────────────────
+   POSITION TAKEN. The locked chip system says the chip set "runs the
+   sidebar". It does — but not as route icons. A route is not a category,
+   and chips never guess. So the nine nav rows carry ink-stroke glyphs in
+   the chip's 30px circular form with NO fill, and the six coloured chips
+   appear below them as a fixed taxonomy legend. That is the rail: the
+   colour language stated once, permanently, as furniture. */
+.side{border-right:var(--stroke-panel) solid var(--ink);
+  display:flex;flex-direction:column;padding:var(--sp-26) var(--sp-18) var(--sp-18)}
+.wordmark{font-family:var(--disp);font-weight:var(--weight-disp);font-size:var(--type-h3);
+  letter-spacing:var(--tracking-disp);line-height:1;margin:0 0 var(--sp-26);padding-left:var(--sp-10)}
+.nav{display:flex;flex-direction:column;gap:2px;list-style:none;margin:0;padding:0}
+.nrow{display:grid;grid-template-columns:30px 1fr;align-items:center;gap:var(--sp-12);
+  padding:6px var(--sp-12) 6px 6px;border-radius:var(--r-pill);text-decoration:none;
+  color:var(--dim-2);font-size:var(--type-body-s);font-weight:var(--weight-body);
+  transition:background var(--dur-hover) var(--ease-out),color var(--dur-hover) var(--ease-out)}
+.nrow .ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  border:var(--stroke-panel) solid transparent;color:var(--dim-2)}
+.nrow .ic svg{width:17px;height:17px}
+@media (hover:hover) and (pointer:fine){
+  .nrow:hover{background:var(--ink-wash);color:var(--ink)}
+  .nrow:hover .ic{color:var(--ink)}
+}
+.nrow[aria-current="page"]{background:var(--ink-wash);color:var(--ink);font-weight:var(--weight-strong)}
+.nrow[aria-current="page"] .ic{border-color:var(--ink);color:var(--ink)}
+.side-legend{margin-top:auto;padding-top:var(--sp-22);border-top:var(--stroke-hair) solid var(--rule)}
+.legend-list{list-style:none;margin:var(--sp-12) 0 0;padding:0;display:flex;flex-direction:column;gap:var(--sp-8)}
+.legend-list li{display:grid;grid-template-columns:22px 1fr;align-items:center;gap:var(--sp-12);
+  font-size:var(--type-caption);color:var(--dim-2)}
+.side-foot{margin-top:var(--sp-18);padding-top:var(--sp-12);border-top:var(--stroke-hair) solid var(--rule);
+  font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── chip · the bespoke primitive ─────────────────────────────────────
+   30px circle, 1.5px ink border, flat fill, and ALWAYS a glyph. A chip
+   with no icon is a bug, not a variant. */
+.chip{width:30px;height:30px;border-radius:50%;border:var(--stroke-panel) solid var(--ink);
+  display:grid;place-items:center;flex:none;color:var(--ink)}
+.chip svg{width:17px;height:17px;display:block}
+.chip.s22{width:22px;height:22px}
+.chip.s22 svg{width:12.5px;height:12.5px}
+.c-food{background:var(--food)} .c-bills{background:var(--bills)}
+.c-invest{background:var(--invest)} .c-transport{background:var(--transport)}
+.c-shop{background:var(--shop)} .c-health{background:var(--health)}
+/* Direction chips. RecurringItem carries no category, so Upcoming rows get
+   direction, not taxonomy. Hollow = money out, green = money in — and the
+   ARROW is the carrier, not the hue. Under deuteranopia the arrow survives. */
+.c-out{background:transparent} .c-in{background:var(--invest)}
+
+/* ── main column ──────────────────────────────────────────────────────
+   The shell is h-screen; the sidebar is fixed and the main column is the
+   only thing that scrolls. That is how it is built, so that is how it is
+   drawn here — scroll inside the frame. */
+.main{overflow-y:auto;padding:var(--sp-32) var(--sp-44) var(--sp-44)}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:var(--sp-32);
+  margin-bottom:var(--sp-22);flex-wrap:wrap}
+.top h1{font-family:var(--disp);font-weight:var(--weight-disp);font-size:var(--type-h1);
+  letter-spacing:var(--tracking-disp);line-height:var(--leading-tight);margin:0}
+.top .meta{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);
+  margin:var(--sp-8) 0 0}
+.parser{display:flex;align-items:center;gap:var(--sp-8);
+  font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);
+  padding-bottom:var(--sp-6)}
+
+/* ── the grid · 7fr / 5fr, one gutter, both rows aligned ─────────────── */
+.grid{display:grid;grid-template-columns:7fr 5fr;gap:var(--sp-22);align-items:stretch}
+.grid+.grid{margin-top:var(--sp-22);align-items:start}
+
+/* ── panel · shadcn Card with shadow-none ─────────────────────────────── */
+.panel{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);
+  padding:var(--sp-22);background:var(--bg);display:flex;flex-direction:column;min-width:0}
+.sec{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-label);
+  letter-spacing:var(--tracking-label);text-transform:uppercase;color:var(--dim);display:block}
+.panel-h{display:flex;align-items:baseline;justify-content:space-between;gap:var(--sp-14);
+  margin-bottom:var(--sp-14)}
+
+/* ── the two figures ───────────────────────────────────────────────────
+   Ink colours totals. Neither of these is ever tinted, ever. */
+.fig1{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-figure-1);
+  letter-spacing:var(--tracking-num);line-height:var(--leading-tight);
+  font-variant-numeric:tabular-nums;margin:var(--sp-10) 0 0}
+.fig2{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-figure-2);
+  letter-spacing:var(--tracking-num);line-height:var(--leading-tight);
+  font-variant-numeric:tabular-nums;margin:0}
+.gf-sub{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-22);
+  border-top:var(--stroke-hair) solid var(--rule);margin-top:var(--sp-18);padding-top:var(--sp-14)}
+.gf-sub .k{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);display:block}
+.gf-sub .v{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-body);
+  letter-spacing:var(--tracking-num);font-variant-numeric:tabular-nums;display:block;margin-top:3px}
+.nw-foot{margin-top:auto;padding-top:var(--sp-14);border-top:var(--stroke-hair) solid var(--rule);
+  font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim)}
+
+/* ── budget row ────────────────────────────────────────────────────────
+   grid 30px 1fr auto. Line two is the bar, spanning the name + amount
+   columns so the chip gutter stays clean. */
+.brow{display:grid;grid-template-columns:30px 1fr auto;gap:var(--sp-8) var(--sp-14);
+  align-items:center;padding:var(--sp-12) 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.brow:last-of-type{border-bottom:0;padding-bottom:var(--sp-4)}
+.brow .nm{font-size:var(--type-body-s);font-weight:var(--weight-body);min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .amt{display:flex;align-items:baseline;gap:var(--sp-14);
+  font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-body-s);
+  letter-spacing:var(--tracking-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.brow .amt .lim{color:var(--dim-2)}
+.brow .over{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--alert)}
+.bar{grid-column:2/4;height:16px;border:var(--stroke-panel) solid var(--ink);
+  border-radius:var(--r-pill);background:transparent;overflow:hidden;position:relative}
+/* shadcn Progress mechanics: the indicator is full width and slides in from
+   the left with translateX. transform only — never width, never fill-from-zero. */
+.bar i{display:block;height:100%;width:100%;border-radius:0;
+  transform:translateX(calc(var(--p) - 100%))}
+.bar.live i{transition:transform var(--dur-dropdown) var(--ease-in-out)}
+/* Over budget: the bar clamps at 100% and hits a wall. The wall is ink,
+   because a total is never coloured. The overage is named in words. */
+.bar.over::after{content:"";position:absolute;right:0;top:0;bottom:0;width:7px;background:var(--ink)}
+.b-food i{background:var(--food)} .b-bills i{background:var(--bills)}
+.b-transport i{background:var(--transport)} .b-shop i{background:var(--shop)}
+.b-health i{background:var(--health)} .b-invest i{background:var(--invest)}
+.panel-f{margin-top:var(--sp-14);padding-top:var(--sp-12);
+  border-top:var(--stroke-hair) solid var(--rule);
+  font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);
+  display:flex;align-items:center;gap:var(--sp-8)}
+
+/* ── upcoming row · 22px tether gutter, then the chip ─────────────────── */
+.urow{display:grid;grid-template-columns:22px 30px 1fr auto;align-items:center;
+  column-gap:0;padding:var(--sp-10) 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.urow:last-of-type{border-bottom:0}
+.urow>.chip{margin-right:var(--sp-14)}
+.urow .nm{font-size:var(--type-body-s);min-width:0;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;padding-right:var(--sp-14)}
+.urow .sub{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);
+  display:block;margin-top:2px}
+.urow .amt{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-body-s);
+  letter-spacing:var(--tracking-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* ── THE TETHER · static provenance mark, never an event ───────────────
+   Identical stroke to the login constellation connectors: 1.6px ink,
+   dash 4 6, round caps. It leads into the chip. It does not animate —
+   when a parser-filed row arrives live the WHOLE ROW fades and the tether
+   comes along inside it. */
+.tether{display:block;margin-right:var(--sp-4);color:var(--ink)}
+.tether path{stroke:currentColor;stroke-width:var(--stroke-tether);
+  stroke-dasharray:var(--dash-tether);stroke-linecap:round;fill:none}
+.urow[data-arrived]{animation:rowin 200ms var(--ease-out) both}
+@keyframes rowin{from{opacity:0}to{opacity:1}}
+
+/* ── notice · the only error surface ──────────────────────────────────── */
+.notice{display:flex;gap:var(--sp-12);align-items:flex-start;
+  border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-notice);
+  padding:var(--sp-14) 17px;background:transparent;max-width:520px}
+.notice .bang{width:22px;height:22px;border-radius:50%;
+  border:var(--stroke-panel) solid var(--ink);background:var(--alert);color:var(--bg);
+  font-family:var(--disp);font-weight:var(--weight-disp);font-size:13px;
+  display:grid;place-items:center;flex:none;margin-top:1px}
+.notice p{margin:0;font-size:var(--type-caption);line-height:1.45}
+.notice .h{font-weight:var(--weight-strong);display:block}
+.notice .d{color:var(--dim-2);display:block;margin-top:3px}
+
+/* ── pill CTA ─────────────────────────────────────────────────────────── */
+.pill{appearance:none;border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);
+  background:var(--ink);color:var(--bg);font-family:var(--ui);font-weight:var(--weight-strong);
+  font-size:var(--type-body);padding:15px 30px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;line-height:1;
+  text-decoration:none;box-shadow:var(--stamp);
+  transition:transform var(--dur-press) var(--ease-out),box-shadow var(--dur-press) var(--ease-out)}
+.pill:active:not([disabled]){transform:translateY(var(--stamp-offset));box-shadow:var(--stamp-pressed)}
+.pill svg{width:17px;height:17px;flex:none}
+.pill.ghost{background:transparent;color:var(--ink)}
+.pill.sm{font-size:var(--type-caption);padding:11px 20px}
+
+/* ── skeleton · the one keyframe in the system ────────────────────────
+   1150ms, --ease-in-out, opacity .34 → .72, on --dim so the pulse is
+   actually visible on cream. Column one is a DASHED CIRCLE at the chip's
+   exact 30px, so nothing reflows when the data lands. */
+@keyframes sk{0%,100%{opacity:.34}50%{opacity:.72}}
+.sk{background:var(--dim);border-radius:var(--r-pill);
+  animation:sk var(--dur-skeleton) var(--ease-in-out) infinite}
+.sk-chip{width:30px;height:30px;border-radius:50%;background:transparent;
+  border:var(--stroke-panel) dashed var(--dim);
+  animation:sk var(--dur-skeleton) var(--ease-in-out) infinite}
+.sk-chip.s22{width:22px;height:22px}
+.sk-fig{height:78px;width:340px;border-radius:var(--r-sm);margin:var(--sp-14) 0 0}
+.sk-fig2{height:38px;width:230px;border-radius:var(--r-sm)}
+.sk-bar{grid-column:2/4;height:16px;border-radius:var(--r-pill);
+  border:var(--stroke-panel) dashed var(--dim);background:transparent;
+  animation:sk var(--dur-skeleton) var(--ease-in-out) infinite}
+
+/* ── budget row stagger · 24ms, opacity only, skeleton swap only ─────── */
+@keyframes bfade{from{opacity:0}to{opacity:1}}
+[data-stagger] .brow{animation:bfade 190ms var(--ease-out) both;
+  animation-delay:calc(var(--i,0) * 24ms)}
+
+/* ── empty states · the one place the authenticated app gets delight ─── */
+.empty{display:flex;flex-direction:column;align-items:flex-start;gap:var(--sp-14);
+  padding:var(--sp-26) 0 var(--sp-18)}
+.empty h3{font-family:var(--disp);font-weight:var(--weight-disp);font-size:var(--type-h3);
+  letter-spacing:var(--tracking-disp);margin:0;line-height:var(--leading-snug)}
+.empty p{margin:0;color:var(--dim-2);font-size:var(--type-caption);
+  line-height:var(--leading-body);max-width:38ch}
+.empty-art{color:var(--ink)}
+
+/* ── mobile ───────────────────────────────────────────────────────────── */
+.m-app{height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+.m-top{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-12);
+  padding:var(--sp-14) var(--sp-18);border-bottom:var(--stroke-panel) solid var(--ink);flex:none}
+.m-menu{width:44px;height:44px;border-radius:50%;border:var(--stroke-panel) solid var(--ink);
+  background:transparent;color:var(--ink);display:grid;place-items:center;cursor:pointer;
+  transition:background var(--dur-hover) var(--ease-out)}
+.m-menu svg{width:20px;height:20px}
+.m-main{flex:1;overflow-y:auto;padding:var(--sp-18) var(--sp-18) var(--sp-32);
+  display:flex;flex-direction:column;gap:var(--sp-14)}
+.m-fig{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-figure-2);
+  letter-spacing:var(--tracking-num);line-height:var(--leading-tight);
+  font-variant-numeric:tabular-nums;margin:var(--sp-8) 0 0}
+.m-nw{display:flex;align-items:center;justify-content:space-between;gap:var(--sp-14);
+  border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);
+  padding:var(--sp-14) var(--sp-18)}
+.m-nw .v{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-h2);
+  letter-spacing:var(--tracking-num);font-variant-numeric:tabular-nums}
+.m-sheet{position:absolute;inset:0 auto 0 0;width:288px;background:var(--bg);
+  border-right:var(--stroke-panel) solid var(--ink);z-index:3;
+  display:flex;flex-direction:column;padding:var(--sp-18) var(--sp-14);
+  transform:translateX(-100%);transition:transform var(--dur-drawer) var(--ease-drawer)}
+.m-scrim{position:absolute;inset:0;background:rgba(26,26,26,.34);opacity:0;pointer-events:none;
+  z-index:2;transition:opacity var(--dur-drawer) var(--ease-drawer)}
+[data-sheet="open"] .m-sheet{transform:translateX(0)}
+[data-sheet="open"] .m-scrim{opacity:1;pointer-events:auto}
+.m-sheet-top{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:var(--sp-18);padding-left:var(--sp-10)}
+.m-close{width:36px;height:36px;border-radius:50%;border:var(--stroke-panel) solid var(--ink);
+  background:transparent;color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.m-close svg{width:16px;height:16px}
+.m-urow{grid-template-columns:18px 30px 1fr auto}
+.m-urow>.chip{margin-right:var(--sp-10)}
+
+/* ── reduced motion ────────────────────────────────────────────────────
+   Fewer and gentler, not zero. Colour survives; movement and the skeleton
+   pulse do not. The Net Worth count-up is disabled outright. */
+@media (prefers-reduced-motion:reduce){
+  :root{--dur-press:1ms;--dur-tooltip:1ms;--dur-dropdown:1ms;--dur-drawer:1ms;--dur-modal:1ms}
+  .stamp:active:not([disabled]),.pill:active:not([disabled]){transform:none;box-shadow:var(--stamp-pressed)}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}
+  .sk,.sk-chip,.sk-bar{animation:none!important;opacity:.5}
+}
+/* Review-only mirror of the same rules, driven by the toggle above. */
+[data-rm="on"] .sk,[data-rm="on"] .sk-chip,[data-rm="on"] .sk-bar{animation:none!important;opacity:.5}
+[data-rm="on"] *,[data-rm="on"] *::before,[data-rm="on"] *::after{
+  animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:1ms!important}
+[data-rm="on"] .pill:active:not([disabled]){transform:none;box-shadow:var(--stamp-pressed)}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     ICON SPRITE · every glyph is a <g> authored in a 24 × 24 space.
+     A <g> carries NO intrinsic viewBox, so EVERY consuming <svg> must
+     write viewBox="0 0 24 24" itself. The sprite host takes none — it
+     renders nothing and is never followed directly by a <use>.
+     ═══════════════════════════════════════════════════════════════════ -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <g id="i-food" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/><path d="M17 10a2.9 2.9 0 0 1 0 4.5"/><path d="M9 5.6V4.2M12.6 5.6V4.2"/>
+    </g>
+    <g id="i-bills" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/>
+    </g>
+    <g id="i-invest" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/><path d="M14.8 5h4.8v4.8"/>
+    </g>
+    <g id="i-transport" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.6 15.6V9.4h8.8l3.9 6.2"/><path d="M3.6 15.6h13.9"/><circle cx="7.4" cy="17.8" r="2.1"/><circle cx="16.2" cy="17.8" r="2.1"/>
+    </g>
+    <g id="i-shop" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.2 8h13.6l-1.3 12H6.5z"/><path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/>
+    </g>
+    <g id="i-health" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <g transform="rotate(-40 12 12)"><rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g>
+    </g>
+    <g id="i-out" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4.5v14"/><path d="M5.8 12.3 12 18.5l6.2-6.2"/>
+    </g>
+    <g id="i-in" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 19.5v-14"/><path d="M5.8 11.7 12 5.5l6.2 6.2"/>
+    </g>
+    <g id="i-overview" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3.5" y="3.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.6"/>
+      <rect x="3.5" y="13.5" width="7" height="7" rx="1.6"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.6"/>
+    </g>
+    <g id="i-accounts" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.5 9.5 12 4.2l8.5 5.3"/><path d="M6 9.8v8.4M10 9.8v8.4M14 9.8v8.4M18 9.8v8.4"/><path d="M3.5 19.6h17"/>
+    </g>
+    <g id="i-transactions" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 8.4h13"/><path d="M13.6 5 17 8.4 13.6 11.8"/><path d="M20 15.6H7"/><path d="M10.4 12.2 7 15.6l3.4 3.4"/>
+    </g>
+    <g id="i-budgets" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3.8 17.6a8.2 8.2 0 1 1 16.4 0"/><path d="M12 17.6 16.2 10.4"/><circle cx="12" cy="17.6" r="1.3"/>
+    </g>
+    <g id="i-goals" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="8.2"/><circle cx="12" cy="12" r="3.4"/>
+    </g>
+    <g id="i-recurring" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4.2V9.2h-5"/>
+    </g>
+    <g id="i-tax" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5.6 3.6h8.6l4.2 4.3v12.5H5.6z"/><path d="M14 3.6v4.3h4.4"/><path d="M9 17.4 14.6 11.8"/>
+      <circle cx="9.6" cy="12.4" r=".9"/><circle cx="14" cy="16.8" r=".9"/>
+    </g>
+    <g id="i-settings" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 7.2h9.4M18.6 7.2h1.4M4 16.8h4.4M13.6 16.8h6.4"/>
+      <circle cx="16" cy="7.2" r="2.4"/><circle cx="11" cy="16.8" r="2.4"/>
+    </g>
+    <g id="i-menu" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 7h16M4 12h16M4 17h16"/>
+    </g>
+    <g id="i-close" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"/>
+    </g>
+    <g id="i-plus" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5.2v13.6M5.2 12h13.6"/>
+    </g>
+  </defs>
+</svg>
+
+<main class="rv-shell">
+
+<header class="rv-mast">
+  <div>
+    <span class="rv-kicker">Sorted · round 10 · all-screens · screen 2 of 2</span>
+    <h1>Dashboard</h1>
+    <p>The four real modules from <span class="rv-inline">web/app/dashboard/page.tsx</span> — Net Worth, Guilt-Free
+       Money, Budget vs Spend, and Upcoming. Guilt-Free Money is the emotional centre at 108px; Net Worth is a calm
+       52px companion. There is no recent-transactions feed, because the endpoint does not return one.</p>
+  </div>
+  <div class="rv-controls">
+    <button class="rv-btn" id="rv-replay" type="button">Replay entrance</button>
+    <button class="rv-btn" id="rv-rm" type="button" aria-pressed="false">Reduced motion · off</button>
+  </div>
+</header>
+
+<!-- ═══ § 01 · DESKTOP 1440 × 900 · LOADED ═══════════════════════════ -->
+<section class="rv-sec" id="s01">
+  <div class="rv-h"><span class="n">§ 01</span><h2>Desktop · 1440 × 900 · loaded</h2></div>
+  <p class="rv-note">Sunday 30 August 2026, the last day of the month. The shell is <code>h-screen</code>:
+     the 232px sidebar is fixed and only the main column scrolls, so the frame below scrolls internally the
+     way the app does. <strong>Guilt-Free Money is the only 108px figure on the screen</strong> — Net Worth sits
+     beside it at 52px, exactly half the weight of attention. Both are ink. Every colour on this screen belongs
+     to a chip.</p>
+
+  <div class="rv-scroll">
+  <div class="vp vp-d" id="frame-01">
+    <div class="app">
+
+      <!-- ── sidebar ─────────────────────────────────────────────── -->
+      <aside class="side">
+        <p class="wordmark">Sorted</p>
+        <nav aria-label="Primary">
+          <ul class="nav">
+            <li><a class="nrow" href="#s01" aria-current="page"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-overview"/></svg></span>Overview</a></li>
+            <li><a class="nrow" href="#s01"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-accounts"/></svg></span>Accounts</a></li>
+            <li><a class="nrow" href="#s01"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transactions"/></svg></span>Transactions</a></li>
+            <li><a class="nrow" href="#s01"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-budgets"/></svg></span>Budgets</a></li>
+            <li><a class="nrow" href="#s01"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-goals"/></svg></span>Goals</a></li>
+            <li><a class="nrow" href="#s01"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>Investments</a></li>
+            <li><a class="nrow" href="#s01"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-recurring"/></svg></span>Recurring</a></li>
+            <li><a class="nrow" href="#s01"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tax"/></svg></span>Tax</a></li>
+            <li><a class="nrow" href="#s01"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a></li>
+          </ul>
+        </nav>
+        <div class="side-legend">
+          <span class="sec">§ Sorted into</span>
+          <ul class="legend-list">
+            <li><span class="chip s22 c-food"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>Food &amp; Dining</li>
+            <li><span class="chip s22 c-bills"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bills"/></svg></span>Bills &amp; Utilities</li>
+            <li><span class="chip s22 c-transport"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transport"/></svg></span>Transport</li>
+            <li><span class="chip s22 c-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-shop"/></svg></span>Shopping</li>
+            <li><span class="chip s22 c-health"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-health"/></svg></span>Health</li>
+            <li><span class="chip s22 c-invest"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>Investments</li>
+          </ul>
+        </div>
+        <p class="side-foot">om@omrajpal.in</p>
+      </aside>
+
+      <!-- ── main ────────────────────────────────────────────────── -->
+      <div class="main">
+        <div class="top">
+          <div>
+            <h1>Sunday, 30 August</h1>
+            <p class="meta">August 2026 · day 30 of 31</p>
+          </div>
+          <p class="parser">
+            <svg class="tether" width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+            Inbox parser · last run 09:12
+          </p>
+        </div>
+
+        <!-- row 1 · the hierarchy -->
+        <div class="grid">
+          <section class="panel" aria-labelledby="gf-h">
+            <span class="sec" id="gf-h">§ Guilt-free money this month</span>
+            <p class="fig1">₹16,415</p>
+            <div class="gf-sub">
+              <div><span class="k">Planned</span><span class="v">₹96,000</span></div>
+              <div><span class="k">Spent</span><span class="v">₹79,585</span></div>
+            </div>
+          </section>
+
+          <section class="panel" aria-labelledby="nw-h">
+            <span class="sec" id="nw-h">§ Net worth</span>
+            <p class="fig2" id="nw-fig" data-value="4218650">₹42,18,650</p>
+            <p class="nw-foot">Last synced today 09:12 IST</p>
+          </section>
+        </div>
+
+        <!-- row 2 · the working modules -->
+        <div class="grid">
+          <section class="panel" aria-labelledby="bd-h">
+            <div class="panel-h">
+              <span class="sec" id="bd-h">§ Budget vs spend this month</span>
+              <span class="sec">1 – 31 Aug</span>
+            </div>
+            <div id="budget-rows">
+              <div class="brow" style="--i:0">
+                <span class="chip c-food"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>
+                <span class="nm">Food &amp; Dining</span>
+                <span class="amt"><span class="over">Over by ₹2,820</span><span>₹14,820 <span class="lim">/ ₹12,000</span></span></span>
+                <div class="bar b-food over" role="img" aria-label="Food and Dining: ₹14,820 spent of a ₹12,000 limit, over by ₹2,820"><i style="--p:100%"></i></div>
+              </div>
+              <div class="brow" style="--i:1">
+                <span class="chip c-bills"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bills"/></svg></span>
+                <span class="nm">Bills &amp; Utilities</span>
+                <span class="amt"><span>₹8,215 <span class="lim">/ ₹9,000</span></span></span>
+                <div class="bar b-bills" role="img" aria-label="Bills and Utilities: ₹8,215 spent of a ₹9,000 limit"><i style="--p:91%"></i></div>
+              </div>
+              <div class="brow" style="--i:2">
+                <span class="chip c-invest"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>
+                <span class="nm">Investments</span>
+                <span class="amt"><span>₹22,000 <span class="lim">/ ₹25,000</span></span></span>
+                <div class="bar b-invest" role="img" aria-label="Investments: ₹22,000 spent of a ₹25,000 limit"><i style="--p:88%"></i></div>
+              </div>
+              <div class="brow" style="--i:3">
+                <span class="chip c-transport"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transport"/></svg></span>
+                <span class="nm">Transport</span>
+                <span class="amt"><span>₹4,940 <span class="lim">/ ₹6,000</span></span></span>
+                <div class="bar b-transport" role="img" aria-label="Transport: ₹4,940 spent of a ₹6,000 limit"><i style="--p:82%"></i></div>
+              </div>
+              <div class="brow" style="--i:4">
+                <span class="chip c-health"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-health"/></svg></span>
+                <span class="nm">Health</span>
+                <span class="amt"><span>₹2,450 <span class="lim">/ ₹4,500</span></span></span>
+                <div class="bar b-health" role="img" aria-label="Health: ₹2,450 spent of a ₹4,500 limit"><i style="--p:54%"></i></div>
+              </div>
+              <div class="brow" style="--i:5">
+                <span class="chip c-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-shop"/></svg></span>
+                <span class="nm">Shopping</span>
+                <span class="amt"><span>₹3,180 <span class="lim">/ ₹10,000</span></span></span>
+                <div class="bar b-shop" role="img" aria-label="Shopping: ₹3,180 spent of a ₹10,000 limit"><i style="--p:32%"></i></div>
+              </div>
+            </div>
+            <p class="panel-f">6 of 9 categories have a limit</p>
+          </section>
+
+          <section class="panel" aria-labelledby="up-h">
+            <div class="panel-h">
+              <span class="sec" id="up-h">§ Upcoming</span>
+              <span class="sec">Next 30 days</span>
+            </div>
+            <div id="upcoming-rows">
+              <div class="urow">
+                <span></span>
+                <span class="chip c-in"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-in"/></svg></span>
+                <span class="nm">Salary<span class="sub">Nova Design Studio · Tue 1 Sep</span></span>
+                <span class="amt">+₹2,86,000</span>
+              </div>
+              <div class="urow">
+                <span></span>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">Home rent<span class="sub">Indiranagar · Tue 1 Sep</span></span>
+                <span class="amt">−₹28,000</span>
+              </div>
+              <div class="urow">
+                <span></span>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">Parag Parikh Flexi Cap<span class="sub">SIP · Groww · Fri 4 Sep</span></span>
+                <span class="amt">−₹15,000</span>
+              </div>
+              <div class="urow">
+                <span></span>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">Nippon India Small Cap<span class="sub">SIP · Zerodha Coin · Fri 4 Sep</span></span>
+                <span class="amt">−₹7,000</span>
+              </div>
+              <div class="urow">
+                <svg class="tether" width="16" height="12" viewBox="0 0 16 12" role="img" aria-label="Filed automatically from a bank email"><title>Filed automatically from an HDFC alert</title><path d="M1 6h14"/></svg>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">HDFC Millennia card bill<span class="sub">Autopay · 4218 · Sat 5 Sep</span></span>
+                <span class="amt">−₹23,480</span>
+              </div>
+              <div class="urow">
+                <svg class="tether" width="16" height="12" viewBox="0 0 16 12" role="img" aria-label="Filed automatically from a bank email"><title>Filed automatically from an HDFC alert</title><path d="M1 6h14"/></svg>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">Airtel Fiber<span class="sub">Autopay · Mon 7 Sep</span></span>
+                <span class="amt">−₹1,499</span>
+              </div>
+              <div class="urow">
+                <span></span>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">Netflix Premium<span class="sub">Wed 9 Sep</span></span>
+                <span class="amt">−₹649</span>
+              </div>
+              <div class="urow">
+                <span></span>
+                <span class="chip c-in"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-in"/></svg></span>
+                <span class="nm">Rent received<span class="sub">Whitefield 2BHK · Thu 10 Sep</span></span>
+                <span class="amt">+₹32,000</span>
+              </div>
+              <div class="urow">
+                <svg class="tether" width="16" height="12" viewBox="0 0 16 12" role="img" aria-label="Filed automatically from a bank email"><title>Filed automatically from an ICICI alert</title><path d="M1 6h14"/></svg>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">Cult.fit Elite<span class="sub">Autopay · ICICI 1006 · Sat 12 Sep</span></span>
+                <span class="amt">−₹2,399</span>
+              </div>
+            </div>
+            <p class="panel-f">
+              <svg class="tether" width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+              Filed automatically from a bank email
+            </p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <span class="rv-cap">1440 × 900 · main column scrolls · sidebar fixed</span>
+
+  <ul class="rv-callouts">
+    <li><b>Hierarchy</b><span>108px against 52px is a 2.08&times; ratio. The eye lands on ₹16,415 first every
+        single morning, which is the point — it is the number that decides whether you order in tonight. Net Worth
+        is placed where you can admire it without being asked to act on it.</span></li>
+    <li><b>Colour discipline</b><span>Six chips, six bars, one hue each. Not one total is tinted, not one panel
+        is filled, and the only non-chip colour anywhere on the screen is the six words <em>Over by ₹2,820</em> in
+        <code>--alert</code>. That is one accent block in the numeric core, which is the ceiling.</span></li>
+    <li><b>The tether</b><span>Three of nine upcoming rows were filed by the Gmail parser, so they carry the dotted
+        lead-in in the 22px gutter — the same 1.6px / dash 4 6 / round-cap stroke as the login constellation
+        connectors. The header carries it once more against <em>Inbox parser · last run 09:12</em>, so the mark is
+        explained before it is used. Untethered rows leave the gutter empty rather than shifting left, so the chip
+        column never wavers.</span></li>
+    <li><b>Chips never guess</b><span><code>RecurringItem</code> has no category field. Upcoming rows therefore get
+        hollow (out) and green (in) <em>direction</em> chips, and direction is carried three ways — arrow glyph,
+        fill, and the sign on the amount — so it survives deuteranopia and a greyscale print.</span></li>
+    <li><b>Sidebar</b><span>Nine routes, nine ink-stroke glyphs in the chip's circular form with no fill, because a
+        route is not a category. The six coloured chips run underneath as a fixed legend. It gets no entrance
+        animation in either place — it is furniture on a screen opened every day.</span></li>
+    <li><b>Round numbers</b><span>SIPs, rent and salary genuinely are round; card bills and subscriptions are not.
+        ₹15,000 and ₹23,480 sitting in the same column is what a real recurring list looks like.</span></li>
+  </ul>
+</section>
+
+<!-- ═══ § 02 · THE OVER-BUDGET ROW ═════════════════════════════════ -->
+<section class="rv-sec" id="s02">
+  <div class="rv-h"><span class="n">§ 02</span><h2>The over-budget row</h2></div>
+  <p class="rv-note">The real code clamps with <code>Math.min(100, (spent / budgetLimit) * 100)</code>, so the bar
+     physically cannot say how far past the line you went. That makes this the one row on the screen where the bar
+     stops being the whole story — and it is also the row you feel something about. Three signals, none of them a
+     coloured total: <strong>the bar runs to 100%</strong>, <strong>it hits an ink wall</strong>, and
+     <strong>the overage is named in words</strong>.</p>
+
+  <div class="rv-rail">
+    <div>
+      <div class="panel" style="width:644px">
+        <div class="brow">
+          <span class="chip c-food"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>
+          <span class="nm">Food &amp; Dining</span>
+          <span class="amt"><span class="over">Over by ₹2,820</span><span>₹14,820 <span class="lim">/ ₹12,000</span></span></span>
+          <div class="bar b-food over"><i style="--p:100%"></i></div>
+        </div>
+        <div class="brow">
+          <span class="chip c-bills"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bills"/></svg></span>
+          <span class="nm">Bills &amp; Utilities</span>
+          <span class="amt"><span>₹8,215 <span class="lim">/ ₹9,000</span></span></span>
+          <div class="bar b-bills"><i style="--p:91%"></i></div>
+        </div>
+      </div>
+      <span class="rv-cap">Over at 123.5% (clamped) against a near-miss at 91%</span>
+    </div>
+
+    <div>
+      <div class="panel" style="width:340px">
+        <span class="sec">§ Why not a red bar</span>
+        <ul class="rv-callouts" style="margin-top:14px">
+          <li><b>1</b><span>The bar is a category, so it wears the category's colour. Repainting it red would break
+              the one rule the whole screen rests on.</span></li>
+          <li><b>2</b><span>Six bars in six hues plus a seventh state hue is where the birthday-card dashboard
+              starts.</span></li>
+          <li><b>3</b><span>Red bar and red text is one signal said twice. The wall is a different signal: it is
+              shape, so it reads in greyscale, at a glance, and under any colour vision.</span></li>
+        </ul>
+      </div>
+      <span class="rv-cap">The wall is 7px of ink inside the clipped track</span>
+    </div>
+  </div>
+
+  <table class="rv-tbl" style="margin-top:32px">
+    <tr><th>Considered</th><th>Why it is not here</th></tr>
+    <tr><td>Bar overflows the track</td><td>Breaks the panel's 1.5px boundary and makes six rows stop aligning. The
+        clamp in the code is correct; the design should not fight it.</td></tr>
+    <tr><td>A second, darker segment past 100%</td><td>Needs an unclamped percentage the component does not receive,
+        and invents a second scale inside a bar that already has one.</td></tr>
+    <tr><td>Alert-tinted row background</td><td>A colour block behind live figures. Explicitly the failure mode.</td></tr>
+    <tr><td>A warning chip in the gutter</td><td>The gutter is the tether's. One gutter, one meaning — a warning
+        glyph there would make provenance and state look like the same class of mark.</td></tr>
+  </table>
+</section>
+
+<!-- ═══ § 03 · LOADING ═════════════════════════════════════════════ -->
+<section class="rv-sec" id="s03">
+  <div class="rv-h"><span class="n">§ 03</span><h2>State · loading</h2></div>
+  <p class="rv-note">The shell is not data, so the shell does not wait: sidebar, wordmark, legend, nav and the date
+     heading all render immediately. Only the four modules are skeletons. Column one of every skeleton row is a
+     <strong>dashed circle at the chip's exact 30px</strong> and every bar keeps its real 16px track, so when the
+     data lands nothing moves — the pulse stops and content appears in place. One keyframe, 1150ms,
+     <code>--ease-in-out</code>, opacity .34 → .72, and it is the one thing removed outright under reduced motion.</p>
+
+  <div class="rv-scroll">
+  <div class="vp vp-d">
+    <div class="app">
+      <aside class="side">
+        <p class="wordmark">Sorted</p>
+        <nav aria-label="Primary">
+          <ul class="nav">
+            <li><a class="nrow" href="#s03" aria-current="page"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-overview"/></svg></span>Overview</a></li>
+            <li><a class="nrow" href="#s03"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-accounts"/></svg></span>Accounts</a></li>
+            <li><a class="nrow" href="#s03"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transactions"/></svg></span>Transactions</a></li>
+            <li><a class="nrow" href="#s03"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-budgets"/></svg></span>Budgets</a></li>
+            <li><a class="nrow" href="#s03"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-goals"/></svg></span>Goals</a></li>
+            <li><a class="nrow" href="#s03"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>Investments</a></li>
+            <li><a class="nrow" href="#s03"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-recurring"/></svg></span>Recurring</a></li>
+            <li><a class="nrow" href="#s03"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tax"/></svg></span>Tax</a></li>
+            <li><a class="nrow" href="#s03"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a></li>
+          </ul>
+        </nav>
+        <div class="side-legend">
+          <span class="sec">§ Sorted into</span>
+          <ul class="legend-list">
+            <li><span class="chip s22 c-food"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>Food &amp; Dining</li>
+            <li><span class="chip s22 c-bills"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bills"/></svg></span>Bills &amp; Utilities</li>
+            <li><span class="chip s22 c-transport"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transport"/></svg></span>Transport</li>
+            <li><span class="chip s22 c-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-shop"/></svg></span>Shopping</li>
+            <li><span class="chip s22 c-health"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-health"/></svg></span>Health</li>
+            <li><span class="chip s22 c-invest"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>Investments</li>
+          </ul>
+        </div>
+        <p class="side-foot">om@omrajpal.in</p>
+      </aside>
+
+      <div class="main" aria-busy="true">
+        <div class="top">
+          <div>
+            <h1>Sunday, 30 August</h1>
+            <p class="meta">August 2026 · day 30 of 31</p>
+          </div>
+          <p class="parser">
+            <svg class="tether" width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+            Inbox parser · last run 09:12
+          </p>
+        </div>
+
+        <div class="grid">
+          <section class="panel">
+            <span class="sec">§ Guilt-free money this month</span>
+            <div class="sk sk-fig"></div>
+            <div class="gf-sub">
+              <div><span class="k">Planned</span><div class="sk" style="height:14px;width:88px;margin-top:6px"></div></div>
+              <div><span class="k">Spent</span><div class="sk" style="height:14px;width:88px;margin-top:6px"></div></div>
+            </div>
+          </section>
+          <section class="panel">
+            <span class="sec">§ Net worth</span>
+            <div class="sk sk-fig2" style="margin-top:14px"></div>
+            <p class="nw-foot"><span class="sk" style="display:inline-block;height:9px;width:150px;vertical-align:middle"></span></p>
+          </section>
+        </div>
+
+        <div class="grid">
+          <section class="panel">
+            <div class="panel-h"><span class="sec">§ Budget vs spend this month</span><span class="sec">1 – 31 Aug</span></div>
+            <div class="brow"><span class="sk-chip"></span><span class="sk" style="height:13px;width:132px"></span><span class="sk" style="height:13px;width:118px"></span><div class="sk-bar"></div></div>
+            <div class="brow"><span class="sk-chip"></span><span class="sk" style="height:13px;width:158px"></span><span class="sk" style="height:13px;width:110px"></span><div class="sk-bar"></div></div>
+            <div class="brow"><span class="sk-chip"></span><span class="sk" style="height:13px;width:104px"></span><span class="sk" style="height:13px;width:126px"></span><div class="sk-bar"></div></div>
+            <div class="brow"><span class="sk-chip"></span><span class="sk" style="height:13px;width:88px"></span><span class="sk" style="height:13px;width:108px"></span><div class="sk-bar"></div></div>
+            <div class="brow"><span class="sk-chip"></span><span class="sk" style="height:13px;width:70px"></span><span class="sk" style="height:13px;width:112px"></span><div class="sk-bar"></div></div>
+            <div class="brow"><span class="sk-chip"></span><span class="sk" style="height:13px;width:96px"></span><span class="sk" style="height:13px;width:120px"></span><div class="sk-bar"></div></div>
+            <p class="panel-f"><span class="sk" style="display:inline-block;height:9px;width:190px;vertical-align:middle"></span></p>
+          </section>
+
+          <section class="panel">
+            <div class="panel-h"><span class="sec">§ Upcoming</span><span class="sec">Next 30 days</span></div>
+            <div class="urow"><span></span><span class="sk-chip"></span><span class="nm"><span class="sk" style="display:block;height:13px;width:118px"></span><span class="sk" style="display:block;height:9px;width:158px;margin-top:6px"></span></span><span class="sk" style="height:13px;width:82px"></span></div>
+            <div class="urow"><span></span><span class="sk-chip"></span><span class="nm"><span class="sk" style="display:block;height:13px;width:96px"></span><span class="sk" style="display:block;height:9px;width:134px;margin-top:6px"></span></span><span class="sk" style="height:13px;width:70px"></span></div>
+            <div class="urow"><span></span><span class="sk-chip"></span><span class="nm"><span class="sk" style="display:block;height:13px;width:150px"></span><span class="sk" style="display:block;height:9px;width:170px;margin-top:6px"></span></span><span class="sk" style="height:13px;width:66px"></span></div>
+            <div class="urow"><span></span><span class="sk-chip"></span><span class="nm"><span class="sk" style="display:block;height:13px;width:142px"></span><span class="sk" style="display:block;height:9px;width:186px;margin-top:6px"></span></span><span class="sk" style="height:13px;width:60px"></span></div>
+            <div class="urow"><span></span><span class="sk-chip"></span><span class="nm"><span class="sk" style="display:block;height:13px;width:160px"></span><span class="sk" style="display:block;height:9px;width:144px;margin-top:6px"></span></span><span class="sk" style="height:13px;width:74px"></span></div>
+            <div class="urow"><span></span><span class="sk-chip"></span><span class="nm"><span class="sk" style="display:block;height:13px;width:88px"></span><span class="sk" style="display:block;height:9px;width:120px;margin-top:6px"></span></span><span class="sk" style="height:13px;width:58px"></span></div>
+            <div class="urow"><span></span><span class="sk-chip"></span><span class="nm"><span class="sk" style="display:block;height:13px;width:126px"></span><span class="sk" style="display:block;height:9px;width:100px;margin-top:6px"></span></span><span class="sk" style="height:13px;width:54px"></span></div>
+            <div class="urow"><span></span><span class="sk-chip"></span><span class="nm"><span class="sk" style="display:block;height:13px;width:110px"></span><span class="sk" style="display:block;height:9px;width:164px;margin-top:6px"></span></span><span class="sk" style="height:13px;width:68px"></span></div>
+            <div class="urow"><span></span><span class="sk-chip"></span><span class="nm"><span class="sk" style="display:block;height:13px;width:98px"></span><span class="sk" style="display:block;height:9px;width:178px;margin-top:6px"></span></span><span class="sk" style="height:13px;width:62px"></span></div>
+            <p class="panel-f"><span class="sk" style="display:inline-block;height:9px;width:210px;vertical-align:middle"></span></p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+  <span class="rv-cap">Skeleton widths are irregular on purpose — six identical bars read as a broken component</span>
+
+  <ul class="rv-callouts">
+    <li><b>Delight, spent here</b><span>The rich-media policy allows small delight in exactly two places in the
+        authenticated app, and this is one. It is spent on <em>rhythm</em> rather than on a character: the dashed
+        chip circles beating at 1150ms are unmistakably Sorted, and they cost nothing to load and nothing to
+        read. A mascot here would be a face you see on every cold start.</span></li>
+    <li><b>No spinner</b><span>There is no spinner anywhere in this product. A skeleton that matches the row grid
+        tells you what is coming; a spinner tells you only that something is wrong with the network.</span></li>
+    <li><b>The swap</b><span>When data lands, budget rows fade in on a 24ms opacity-only stagger — six rows, 120ms
+        end to end. Opacity only: nothing slides, because these rows are already where they will be.</span></li>
+  </ul>
+</section>
+
+<!-- ═══ § 04 · ERROR ═══════════════════════════════════════════════ -->
+<section class="rv-sec" id="s04">
+  <div class="rv-h"><span class="n">§ 04</span><h2>State · error</h2></div>
+  <p class="rv-note">The dashboard fetches as one query, so it fails as one screen. The message is
+     <strong>an ink-bordered notice that names the fix</strong> — never raw red text, never a full-page apology,
+     never a shrug illustration. The only red on the surface is the 22px bang, which is a graphic, not a mood.
+     The heading and the shell stay exactly where they were, because they never depended on the request.</p>
+
+  <div class="rv-scroll">
+  <div class="vp vp-d" style="height:560px">
+    <div class="app">
+      <aside class="side">
+        <p class="wordmark">Sorted</p>
+        <nav aria-label="Primary">
+          <ul class="nav">
+            <li><a class="nrow" href="#s04" aria-current="page"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-overview"/></svg></span>Overview</a></li>
+            <li><a class="nrow" href="#s04"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-accounts"/></svg></span>Accounts</a></li>
+            <li><a class="nrow" href="#s04"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transactions"/></svg></span>Transactions</a></li>
+            <li><a class="nrow" href="#s04"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-budgets"/></svg></span>Budgets</a></li>
+            <li><a class="nrow" href="#s04"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-goals"/></svg></span>Goals</a></li>
+            <li><a class="nrow" href="#s04"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>Investments</a></li>
+            <li><a class="nrow" href="#s04"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-recurring"/></svg></span>Recurring</a></li>
+            <li><a class="nrow" href="#s04"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tax"/></svg></span>Tax</a></li>
+            <li><a class="nrow" href="#s04"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a></li>
+          </ul>
+        </nav>
+        <p class="side-foot" style="margin-top:auto">om@omrajpal.in</p>
+      </aside>
+
+      <div class="main">
+        <div class="top">
+          <div>
+            <h1>Sunday, 30 August</h1>
+            <p class="meta">August 2026 · day 30 of 31</p>
+          </div>
+          <p class="parser">
+            <svg class="tether" width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+            Inbox parser · last run 09:12
+          </p>
+        </div>
+
+        <div class="notice" role="alert" style="max-width:600px">
+          <span class="bang" aria-hidden="true">!</span>
+          <p>
+            <span class="h">Could not load dashboard data</span>
+            <span class="d">The API did not answer at <code>/api/dashboard</code>. Check that the server is running
+              on port 3001, then try again. Nothing has changed on your side.</span>
+          </p>
+        </div>
+        <p style="margin:22px 0 0"><button class="pill sm" type="button">Try again</button></p>
+        <p class="parser" style="padding:22px 0 0">Failed 09:41 · request id 8f2c-41ab</p>
+      </div>
+    </div>
+  </div>
+  </div>
+  <span class="rv-cap">Frame cropped to 560px — the rest of the column is empty in this state</span>
+
+  <ul class="rv-callouts">
+    <li><b>Names the fix</b><span>"Check that the server is running on port 3001" is something the one person who
+        uses this app can actually act on. "Something went wrong" is not.</span></li>
+    <li><b>Absolves the reader</b><span>"Nothing has changed on your side" is the sentence that stops you
+        wondering whether you just lost data. It is the only reassurance in the copy and it is factual.</span></li>
+    <li><b>Retry is a real CTA</b><span>Full stamp, full press. It carries the request id below it in mono so a
+        second failure is diagnosable rather than merely annoying.</span></li>
+    <li><b>Not a partial render</b><span>Showing three modules and one error would leave you doing arithmetic on
+        half-loaded figures. A finance screen is all-or-nothing.</span></li>
+  </ul>
+</section>
+
+<!-- ═══ § 05 / § 06 · THE TWO EMPTY STATES ═════════════════════════ -->
+<section class="rv-sec" id="s05">
+  <div class="rv-h"><span class="n">§ 05 · 06</span><h2>States · empty</h2></div>
+  <p class="rv-note">Both empties are <em>module</em>-scoped, not page-scoped — the rest of the dashboard is fine
+     and keeps rendering, so these are drawn at their real panel widths, 644 and 454. This is the second and last
+     place the authenticated app is allowed any delight, and it is spent on <strong>drawing the missing component
+     rather than a mascot</strong>: the budget panel shows two rows in ghost outline, and the upcoming panel shows
+     the parser's own line running out and arriving at nothing. Both read in a quarter of a second and neither
+     puts a character on a finance screen you open every day.</p>
+
+  <div class="rv-rail">
+    <!-- ── empty · budgets ─────────────────────────────────────── -->
+    <div>
+      <section class="panel" style="width:644px">
+        <div class="panel-h">
+          <span class="sec">§ Budget vs spend this month</span>
+          <span class="sec">1 – 31 Aug</span>
+        </div>
+        <div class="empty">
+          <svg class="empty-art" width="380" height="86" viewBox="0 0 380 86" aria-hidden="true">
+            <g fill="none" stroke="#7D7169" stroke-width="1.5" stroke-dasharray="2 5" stroke-linecap="round">
+              <circle cx="15" cy="15" r="14.25"/>
+              <rect x="44" y="7" width="316" height="16" rx="8"/>
+              <circle cx="15" cy="61" r="14.25"/>
+              <rect x="44" y="53" width="316" height="16" rx="8"/>
+            </g>
+          </svg>
+          <h3>No expense categories with budgets yet.</h3>
+          <p>Give a category a monthly limit and it shows up here with a bar — spent against planned, redrawn every
+             time a transaction is filed against it.</p>
+          <button class="pill sm ghost" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plus"/></svg>Set a budget
+          </button>
+        </div>
+      </section>
+      <span class="rv-cap">644px · "No expense categories with budgets yet"</span>
+    </div>
+
+    <!-- ── empty · upcoming ────────────────────────────────────── -->
+    <div>
+      <section class="panel" style="width:454px">
+        <div class="panel-h">
+          <span class="sec">§ Upcoming</span>
+          <span class="sec">Next 30 days</span>
+        </div>
+        <div class="empty">
+          <svg class="empty-art" width="224" height="40" viewBox="0 0 224 40" aria-hidden="true">
+            <path d="M4 20h164" fill="none" stroke="#1A1A1A" stroke-width="1.6"
+                  stroke-dasharray="4 6" stroke-linecap="round"/>
+            <circle cx="196" cy="20" r="14.25" fill="none" stroke="#1A1A1A" stroke-width="1.5"
+                    stroke-dasharray="2 5" stroke-linecap="round"/>
+          </svg>
+          <h3>Nothing upcoming in the next 30 days.</h3>
+          <p>Recurring bills and income appear here as they come due — including the ones the inbox parser finds in
+             your bank emails and files for you.</p>
+          <button class="pill sm ghost" type="button">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plus"/></svg>Add a recurring item
+          </button>
+        </div>
+      </section>
+      <span class="rv-cap">454px · "Nothing upcoming in the next 30 days"</span>
+    </div>
+  </div>
+
+  <ul class="rv-callouts">
+    <li><b>Empty is an invitation</b><span>Each has exactly one action, and the action is the sentence's verb. Set a
+        budget. Add a recurring item. Neither says "get started", which means nothing.</span></li>
+    <li><b>Ghost, not grey</b><span>The budget ghost rows use <code>2 5</code> dashes at 1.5px in <code>--dim</code>
+        — deliberately <em>not</em> the tether's <code>4 6</code> round-cap ink stroke, so an outline that means
+        "not filled in yet" can never be misread as an outline that means "filed by the parser".</span></li>
+    <li><b>The one place the tether is literal</b><span>In the upcoming empty it <em>is</em> the parser's line, and
+        it runs out at an empty slot. That is the only illustration in the authenticated app, it is 224 × 40, and
+        it is made entirely of the product's own stroke.</span></li>
+    <li><b>Both sentences are <code>--dim-2</code></b><span>They contain verbs, so they are read rather than
+        glanced, so they take the 5.71:1 token, not the 4.37:1 one. The mono panel labels above them keep
+        <code>--dim</code>.</span></li>
+  </ul>
+</section>
+
+<style>
+/* mobile-only rules, kept beside the mobile section so it reads as one piece */
+.m-panel{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);padding:var(--sp-18)}
+.m-brow{display:grid;grid-template-columns:30px 1fr auto;gap:var(--sp-8) var(--sp-12);
+  align-items:center;padding:var(--sp-10) 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.m-brow:last-of-type{border-bottom:0;padding-bottom:0}
+.m-brow .nm{font-size:var(--type-body-s);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.m-brow .amt{display:flex;flex-direction:column;align-items:flex-end;gap:2px;
+  font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-caption);
+  letter-spacing:var(--tracking-num);font-variant-numeric:tabular-nums;white-space:nowrap}
+.m-brow .amt .lim{color:var(--dim-2)}
+.m-brow .over{font-family:var(--num);font-weight:var(--weight-num);font-size:var(--type-micro);
+  letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--alert)}
+.m-brow .bar{grid-column:2/4}
+.m-panel .panel-h{display:flex;align-items:baseline;justify-content:space-between;
+  gap:var(--sp-12);margin-bottom:var(--sp-10)}
+.m-panel .panel-f{margin-top:var(--sp-12);padding-top:var(--sp-10);
+  border-top:var(--stroke-hair) solid var(--rule)}
+.m-sheet .nav{gap:0}
+.m-sheet .nrow{padding:8px var(--sp-12) 8px 6px}
+</style>
+
+<!-- ═══ § 07 · MOBILE 390 × 844 ════════════════════════════════════ -->
+<section class="rv-sec" id="s07">
+  <div class="rv-h"><span class="n">§ 07</span><h2>Mobile · 390 × 844</h2></div>
+  <p class="rv-note"><strong>Position on the sidebar.</strong> It does not become a bottom tab bar — nine routes do
+     not survive five slots, and picking five would silently demote four real parts of the product. It becomes a
+     <em>left sheet</em> (shadcn Sheet) holding the same nine rows in the same order, opened from a 44px control,
+     320ms on <code>--ease-drawer</code>, scrim <code>rgba(26,26,26,.34)</code> with no blur. The chip legend goes
+     with it, because on a 390px screen the legend is a thing you consult once, not furniture you live beside.</p>
+  <p class="rv-note"><strong>Position on the 108px figure.</strong> ₹16,415 at 108px is 455px wide and does not fit
+     in a 354px column, and 108 has no neighbour on the locked scale. So Guilt-Free steps to
+     <code>--type-figure-2</code> 52px and <strong>Net Worth steps with it</strong>, down to
+     <code>--type-h2</code> 26px in mono. 52 : 26 is a 2.0&times; ratio against the desktop's 2.08&times; — the
+     hierarchy is preserved by moving both rungs, not by shrinking one and letting them converge.</p>
+
+  <div class="rv-rail">
+    <!-- ── mobile · loaded ─────────────────────────────────────── -->
+    <div>
+      <div class="vp vp-m">
+        <div class="m-app" id="m-shell">
+          <header class="m-top">
+            <button class="m-menu" type="button" id="m-open" aria-label="Open navigation" aria-expanded="false" aria-controls="m-nav">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-menu"/></svg>
+            </button>
+            <p class="wordmark" style="margin:0;font-size:var(--type-h3);padding:0">Sorted</p>
+            <span class="parser" style="padding:0" aria-label="Inbox parser last run 09:12">
+              <svg class="tether" width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+              09:12
+            </span>
+          </header>
+
+          <div class="m-main">
+            <p class="meta" style="font-family:var(--num);font-weight:500;font-size:var(--type-micro);letter-spacing:var(--tracking-micro);text-transform:uppercase;color:var(--dim);margin:0">
+              Sun 30 Aug · day 30 of 31</p>
+
+            <section class="m-panel">
+              <span class="sec">§ Guilt-free money this month</span>
+              <p class="m-fig">₹16,415</p>
+              <div class="gf-sub">
+                <div><span class="k">Planned</span><span class="v">₹96,000</span></div>
+                <div><span class="k">Spent</span><span class="v">₹79,585</span></div>
+              </div>
+            </section>
+
+            <div class="m-nw">
+              <span class="sec">§ Net worth</span>
+              <span class="v">₹42,18,650</span>
+            </div>
+
+            <section class="m-panel">
+              <div class="panel-h"><span class="sec">§ Budget vs spend</span><span class="sec">1 – 31 Aug</span></div>
+              <div class="m-brow">
+                <span class="chip c-food"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>
+                <span class="nm">Food &amp; Dining</span>
+                <span class="amt"><span>₹14,820 <span class="lim">/ ₹12,000</span></span><span class="over">Over by ₹2,820</span></span>
+                <div class="bar b-food over"><i style="--p:100%"></i></div>
+              </div>
+              <div class="m-brow">
+                <span class="chip c-bills"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bills"/></svg></span>
+                <span class="nm">Bills &amp; Utilities</span>
+                <span class="amt"><span>₹8,215 <span class="lim">/ ₹9,000</span></span></span>
+                <div class="bar b-bills"><i style="--p:91%"></i></div>
+              </div>
+              <div class="m-brow">
+                <span class="chip c-invest"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>
+                <span class="nm">Investments</span>
+                <span class="amt"><span>₹22,000 <span class="lim">/ ₹25,000</span></span></span>
+                <div class="bar b-invest"><i style="--p:88%"></i></div>
+              </div>
+              <div class="m-brow">
+                <span class="chip c-transport"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transport"/></svg></span>
+                <span class="nm">Transport</span>
+                <span class="amt"><span>₹4,940 <span class="lim">/ ₹6,000</span></span></span>
+                <div class="bar b-transport"><i style="--p:82%"></i></div>
+              </div>
+              <div class="m-brow">
+                <span class="chip c-health"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-health"/></svg></span>
+                <span class="nm">Health</span>
+                <span class="amt"><span>₹2,450 <span class="lim">/ ₹4,500</span></span></span>
+                <div class="bar b-health"><i style="--p:54%"></i></div>
+              </div>
+              <div class="m-brow">
+                <span class="chip c-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-shop"/></svg></span>
+                <span class="nm">Shopping</span>
+                <span class="amt"><span>₹3,180 <span class="lim">/ ₹10,000</span></span></span>
+                <div class="bar b-shop"><i style="--p:32%"></i></div>
+              </div>
+              <p class="panel-f">6 of 9 categories have a limit</p>
+            </section>
+
+            <section class="m-panel">
+              <div class="panel-h"><span class="sec">§ Upcoming</span><span class="sec">Next 30 days</span></div>
+              <div class="urow m-urow">
+                <span></span>
+                <span class="chip c-in"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-in"/></svg></span>
+                <span class="nm">Salary<span class="sub">Nova Design Studio · Tue 1 Sep</span></span>
+                <span class="amt">+₹2,86,000</span>
+              </div>
+              <div class="urow m-urow">
+                <span></span>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">Home rent<span class="sub">Indiranagar · Tue 1 Sep</span></span>
+                <span class="amt">−₹28,000</span>
+              </div>
+              <div class="urow m-urow">
+                <span></span>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">Parag Parikh Flexi Cap<span class="sub">SIP · Groww · Fri 4 Sep</span></span>
+                <span class="amt">−₹15,000</span>
+              </div>
+              <div class="urow m-urow">
+                <svg class="tether" width="16" height="12" viewBox="0 0 16 12" role="img" aria-label="Filed automatically from a bank email"><path d="M1 6h14"/></svg>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">HDFC Millennia card bill<span class="sub">Autopay · 4218 · Sat 5 Sep</span></span>
+                <span class="amt">−₹23,480</span>
+              </div>
+              <div class="urow m-urow">
+                <svg class="tether" width="16" height="12" viewBox="0 0 16 12" role="img" aria-label="Filed automatically from a bank email"><path d="M1 6h14"/></svg>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">Airtel Fiber<span class="sub">Autopay · Mon 7 Sep</span></span>
+                <span class="amt">−₹1,499</span>
+              </div>
+              <div class="urow m-urow">
+                <span></span>
+                <span class="chip c-out"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-out"/></svg></span>
+                <span class="nm">Netflix Premium<span class="sub">Wed 9 Sep</span></span>
+                <span class="amt">−₹649</span>
+              </div>
+              <p class="panel-f">
+                <svg class="tether" width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+                Filed automatically from a bank email
+              </p>
+            </section>
+          </div>
+
+          <!-- the sheet, closed -->
+          <div class="m-scrim" id="m-scrim" hidden></div>
+          <nav class="m-sheet" id="m-nav" aria-label="Primary" aria-hidden="true">
+            <div class="m-sheet-top">
+              <p class="wordmark" style="margin:0;padding:0">Sorted</p>
+              <button class="m-close" type="button" id="m-close" aria-label="Close navigation">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-close"/></svg>
+              </button>
+            </div>
+            <ul class="nav">
+              <li><a class="nrow" href="#s07" aria-current="page"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-overview"/></svg></span>Overview</a></li>
+              <li><a class="nrow" href="#s07"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-accounts"/></svg></span>Accounts</a></li>
+              <li><a class="nrow" href="#s07"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transactions"/></svg></span>Transactions</a></li>
+              <li><a class="nrow" href="#s07"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-budgets"/></svg></span>Budgets</a></li>
+              <li><a class="nrow" href="#s07"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-goals"/></svg></span>Goals</a></li>
+              <li><a class="nrow" href="#s07"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>Investments</a></li>
+              <li><a class="nrow" href="#s07"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-recurring"/></svg></span>Recurring</a></li>
+              <li><a class="nrow" href="#s07"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tax"/></svg></span>Tax</a></li>
+              <li><a class="nrow" href="#s07"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a></li>
+            </ul>
+            <div class="side-legend">
+              <span class="sec">§ Sorted into</span>
+              <ul class="legend-list">
+                <li><span class="chip s22 c-food"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>Food &amp; Dining</li>
+                <li><span class="chip s22 c-bills"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bills"/></svg></span>Bills &amp; Utilities</li>
+                <li><span class="chip s22 c-transport"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transport"/></svg></span>Transport</li>
+                <li><span class="chip s22 c-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-shop"/></svg></span>Shopping</li>
+                <li><span class="chip s22 c-health"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-health"/></svg></span>Health</li>
+                <li><span class="chip s22 c-invest"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>Investments</li>
+              </ul>
+            </div>
+            <p class="side-foot">om@omrajpal.in</p>
+          </nav>
+        </div>
+      </div>
+      <span class="rv-cap">390 × 844 · tap the menu control — the sheet is live</span>
+    </div>
+
+    <!-- ── mobile · sheet open, drawn ─────────────────────────────── -->
+    <div>
+      <div class="vp vp-m" data-sheet="open">
+        <div class="m-app">
+          <header class="m-top">
+            <button class="m-menu" type="button" aria-label="Open navigation" tabindex="-1">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-menu"/></svg>
+            </button>
+            <p class="wordmark" style="margin:0;font-size:var(--type-h3);padding:0">Sorted</p>
+            <span class="parser" style="padding:0">
+              <svg class="tether" width="16" height="12" viewBox="0 0 16 12" aria-hidden="true"><path d="M1 6h14"/></svg>
+              09:12
+            </span>
+          </header>
+          <div class="m-main">
+            <section class="m-panel">
+              <span class="sec">§ Guilt-free money this month</span>
+              <p class="m-fig">₹16,415</p>
+            </section>
+            <div class="m-nw"><span class="sec">§ Net worth</span><span class="v">₹42,18,650</span></div>
+          </div>
+          <div class="m-scrim"></div>
+          <nav class="m-sheet" aria-label="Primary (open)">
+            <div class="m-sheet-top">
+              <p class="wordmark" style="margin:0;padding:0">Sorted</p>
+              <button class="m-close" type="button" tabindex="-1" aria-label="Close navigation">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-close"/></svg>
+              </button>
+            </div>
+            <ul class="nav">
+              <li><a class="nrow" href="#s07" aria-current="page" tabindex="-1"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-overview"/></svg></span>Overview</a></li>
+              <li><a class="nrow" href="#s07" tabindex="-1"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-accounts"/></svg></span>Accounts</a></li>
+              <li><a class="nrow" href="#s07" tabindex="-1"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transactions"/></svg></span>Transactions</a></li>
+              <li><a class="nrow" href="#s07" tabindex="-1"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-budgets"/></svg></span>Budgets</a></li>
+              <li><a class="nrow" href="#s07" tabindex="-1"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-goals"/></svg></span>Goals</a></li>
+              <li><a class="nrow" href="#s07" tabindex="-1"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>Investments</a></li>
+              <li><a class="nrow" href="#s07" tabindex="-1"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-recurring"/></svg></span>Recurring</a></li>
+              <li><a class="nrow" href="#s07" tabindex="-1"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-tax"/></svg></span>Tax</a></li>
+              <li><a class="nrow" href="#s07" tabindex="-1"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-settings"/></svg></span>Settings</a></li>
+            </ul>
+            <div class="side-legend">
+              <span class="sec">§ Sorted into</span>
+              <ul class="legend-list">
+                <li><span class="chip s22 c-food"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-food"/></svg></span>Food &amp; Dining</li>
+                <li><span class="chip s22 c-bills"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-bills"/></svg></span>Bills &amp; Utilities</li>
+                <li><span class="chip s22 c-transport"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-transport"/></svg></span>Transport</li>
+                <li><span class="chip s22 c-shop"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-shop"/></svg></span>Shopping</li>
+                <li><span class="chip s22 c-health"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-health"/></svg></span>Health</li>
+                <li><span class="chip s22 c-invest"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#i-invest"/></svg></span>Investments</li>
+              </ul>
+            </div>
+            <p class="side-foot">om@omrajpal.in</p>
+          </nav>
+        </div>
+      </div>
+      <span class="rv-cap">Sheet open · 288px · scrim rgba(26,26,26,.34), no blur</span>
+    </div>
+  </div>
+
+  <ul class="rv-callouts">
+    <li><b>Net worth is a strip</b><span>A full-width panel holding one 26px figure would be a large box saying a
+        small thing. As a single-line strip — label left, figure right — the companion relationship survives the
+        stack, and it is the only module on mobile that is not a panel.</span></li>
+    <li><b>The bar stays 16px</b><span>It is the only element that is identical across both viewports. Same track,
+        same wall, same clamp. A budget you are over on should look the same on the phone as on the desk.</span></li>
+    <li><b>Over-budget wraps, does not truncate</b><span>At 354px the alert label moves under the figures instead
+        of competing with them. It is the one row allowed two lines.</span></li>
+    <li><b>The tether gutter narrows to 18px</b><span>Enough for the 16px mark. It does not disappear on mobile —
+        provenance is not a desktop luxury.</span></li>
+  </ul>
+</section>
+
+<!-- ═══ § 08 · MOTION INVENTORY ════════════════════════════════════ -->
+<section class="rv-sec" id="s08">
+  <div class="rv-h"><span class="n">§ 08</span><h2>Motion on this screen</h2></div>
+  <p class="rv-note">Seven entries. Four of them deliberately animate nothing. Every position below was approved at
+     the round-7 gate and is reproduced here as built, not re-argued.</p>
+  <table class="rv-tbl">
+    <tr><th>Element</th><th>Motion</th><th>Reduced motion</th></tr>
+    <tr><td>Net Worth</td><td>Count-up, 600ms, <code>power4.out</code>, once per session. The sole carve-out to
+        rule 12. Formatted through <code>Intl</code> on every frame so the lakh/crore commas are correct
+        mid-count, never a raw integer that regroups when it lands.</td><td>Disabled entirely — the final value is
+        set synchronously.</td></tr>
+    <tr><td>Guilt-Free Money</td><td><strong>None, ever.</strong> It is the decision number. Rule 12 in full.</td><td>n/a</td></tr>
+    <tr><td>Budget bar</td><td>Renders at its final value on load — never fills from zero. Transitions
+        <code>transform</code> at 200ms <code>--ease-in-out</code> only when the value changes mid-session.</td>
+        <td>Transition collapses to 1ms; the value is still correct.</td></tr>
+    <tr><td>Budget rows</td><td>24ms opacity-only stagger, on the skeleton swap only. Six rows, 120ms end to
+        end.</td><td>Removed.</td></tr>
+    <tr><td>Sidebar chip rail</td><td><strong>None.</strong> No entrance, no stagger, no reveal. It is furniture on
+        a screen opened every morning.</td><td>n/a</td></tr>
+    <tr><td>Focus rings</td><td><strong>None.</strong> Instant on the frame focus lands.</td><td>n/a</td></tr>
+    <tr><td>Tether</td><td><strong>None.</strong> Static provenance. When a parser-filed row arrives live the whole
+        row fades as one unit at 200ms and the tether comes along inside it.</td><td>Row fade survives — it is
+        opacity, not movement.</td></tr>
+    <tr><td>Skeleton</td><td>The one keyframe in the system. 1150ms, <code>--ease-in-out</code>, opacity .34 → .72,
+        infinite.</td><td>Removed outright, held at .5.</td></tr>
+    <tr><td>Mobile nav sheet</td><td>320ms <code>--ease-drawer</code>, <code>translateX</code> only. Scrim
+        cross-fades on the same curve.</td><td>1ms; the sheet appears in place.</td></tr>
+  </table>
+  <p class="rv-note" style="margin-top:22px">GSAP footprint on this screen is <strong>one tween</strong>. Everything
+     else is a CSS transition or nothing at all, so the dashboard is fully correct with JavaScript disabled — the
+     figures are server-rendered text, the bars are inline custom properties, and the tether is markup.</p>
+</section>
+
+<!-- ═══ § 09 · IMPLEMENTATION ══════════════════════════════════════ -->
+<section class="rv-sec" id="s09">
+  <div class="rv-h"><span class="n">§ 09</span><h2>Implementation</h2></div>
+  <p class="rv-note">What an engineer actually writes in <code>web/app/dashboard/</code>. Nothing below contains a
+     hex value, a bezier, or a bare pixel radius — those all come from
+     <code>docs/design/brand-kit/tokens.css</code> via the Tailwind preset.</p>
+
+  <span class="rv-kicker">01 · Net worth · the sole rule-12 carve-out</span>
+<pre><span class="c">// components/dashboard/NetWorth.tsx</span>
+<span class="k">'use client'</span>;
+<span class="k">import</span> { useRef } <span class="k">from</span> <span class="s">'react'</span>;
+<span class="k">import</span> { useGSAP } <span class="k">from</span> <span class="s">'@gsap/react'</span>;
+<span class="k">import</span> gsap <span class="k">from</span> <span class="s">'gsap'</span>;
+
+<span class="k">const</span> inr = <span class="k">new</span> Intl.NumberFormat(<span class="s">'en-IN'</span>, {
+  style: <span class="s">'currency'</span>, currency: <span class="s">'INR'</span>, maximumFractionDigits: 0,
+});
+
+<span class="k">const</span> SEEN = <span class="s">'sorted:netWorthCounted'</span>;
+
+<span class="k">export function</span> NetWorth({ value }: { value: number }) {
+  <span class="k">const</span> el = useRef&lt;HTMLParagraphElement&gt;(<span class="k">null</span>);
+
+  useGSAP(() =&gt; {
+    <span class="c">// Once per session. Not once per mount — TanStack refetches, route</span>
+    <span class="c">// changes and Fast Refresh must never replay it.</span>
+    <span class="k">if</span> (sessionStorage.getItem(SEEN)) <span class="k">return</span>;
+
+    <span class="k">const</span> mm = gsap.matchMedia();
+    mm.add(<span class="s">'(prefers-reduced-motion: no-preference)'</span>, () =&gt; {
+      <span class="k">const</span> o = { v: 0 };
+      gsap.to(o, {
+        v: value,
+        duration: 0.6,                 <span class="c">// the approved cap, not a target</span>
+        ease: <span class="s">'power4.out'</span>,          <span class="c">// === --ease-out</span>
+        <span class="c">// Format every frame. A raw integer counting up and then</span>
+        <span class="c">// suddenly growing two commas is worse than no animation.</span>
+        onUpdate() { el.current!.textContent = inr.format(Math.round(o.v)); },
+        onComplete() { el.current!.textContent = inr.format(value); },
+      });
+    });
+    sessionStorage.setItem(SEEN, <span class="s">'1'</span>);
+    <span class="k">return</span> () =&gt; mm.revert();
+  }, { dependencies: [value], scope: el });
+
+  <span class="c">// Server-rendered final value. If JS never runs, this is already right.</span>
+  <span class="k">return</span> &lt;p ref={el} className=<span class="s">"fig-1 tabular-nums"</span>&gt;{inr.format(value)}&lt;/p&gt;;
+}</pre>
+
+  <span class="rv-kicker">02 · Budget bar · never fills from zero</span>
+<pre><span class="c">/* globals.css — shadcn Progress, retuned */</span>
+.bar        { height:16px; border:var(--stroke-panel) solid var(--ink);
+              border-radius:var(--r-pill); background:transparent;
+              overflow:hidden; position:relative; }
+.bar &gt; i    { display:block; height:100%; width:100%;
+              transform:translateX(calc(var(--p) - 100%)); }
+<span class="c">/* Transition is opt-in. On first paint the row has no .live class, so the
+   bar is simply THERE at its value. Add .live after mount, and only a real
+   mid-session change animates. */</span>
+.bar.live &gt; i { transition: transform var(--dur-dropdown) var(--ease-in-out); }
+<span class="c">/* Over budget: Math.min(100, …) clamps the fill, so the wall says the rest. */</span>
+.bar.over::after { content:''; position:absolute; right:0; top:0; bottom:0;
+                   width:7px; background:var(--ink); }</pre>
+<pre><span class="c">// BudgetRow.tsx — the percentage is clamped exactly as the API consumer does</span>
+<span class="k">const</span> pct = Math.min(100, (row.spent / row.budgetLimit) * 100);
+<span class="k">const</span> over = row.spent &gt; row.budgetLimit;
+
+&lt;div className={cn(<span class="s">'bar'</span>, `b-${cat}`, over &amp;&amp; <span class="s">'over'</span>, mounted &amp;&amp; <span class="s">'live'</span>)}
+     role=<span class="s">"img"</span>
+     aria-label={`${row.name}: ${inr.format(row.spent)} spent of a ${inr.format(row.budgetLimit)} limit${
+       over ? `, over by ${inr.format(row.spent - row.budgetLimit)}` : <span class="s">''</span>}`}&gt;
+  &lt;i style={{ <span class="s">'--p'</span>: `${pct}%` } <span class="k">as</span> React.CSSProperties} /&gt;
+&lt;/div&gt;</pre>
+
+  <span class="rv-kicker">03 · The 24ms stagger, on the skeleton swap only</span>
+<pre><span class="c">/* Applied by adding data-stagger to the list wrapper at the moment
+   isLoading flips false — never on refetch, never on route return. */</span>
+[data-stagger] .brow { animation: bfade 190ms var(--ease-out) both;
+                       animation-delay: calc(var(--i) * 24ms); }
+@keyframes bfade { from { opacity:0 } to { opacity:1 } }
+
+<span class="c">/* The row is the unit of arrival. The tether is a child of the row and
+   inherits the fade — it never has an animation of its own. */</span>
+.urow[data-arrived] { animation: rowin 200ms var(--ease-out) both; }
+@keyframes rowin { from { opacity:0 } to { opacity:1 } }</pre>
+
+  <span class="rv-kicker">04 · The tether</span>
+<pre><span class="c">// components/Tether.tsx — bespoke, no shadcn equivalent exists.
+// Renders in the row's 22px grid gutter. aria-label, not decoration:
+// "why is this here" has a real answer and a screen reader deserves it.</span>
+<span class="k">export function</span> Tether() {
+  <span class="k">return</span> (
+    &lt;svg width={16} height={12} viewBox=<span class="s">"0 0 16 12"</span> role=<span class="s">"img"</span>
+         aria-label=<span class="s">"Filed automatically from a bank email"</span> className=<span class="s">"tether"</span>&gt;
+      &lt;path d=<span class="s">"M1 6h14"</span> fill=<span class="s">"none"</span> stroke=<span class="s">"currentColor"</span>
+            strokeWidth=<span class="s">"var(--stroke-tether)"</span>
+            strokeDasharray=<span class="s">"4 6"</span> strokeLinecap=<span class="s">"round"</span> /&gt;
+    &lt;/svg&gt;
+  );
+}
+<span class="c">// Rendered when item.source === 'gmail'. Untethered rows render an empty
+// &lt;span /&gt; in the same cell so the chip column never shifts.</span></pre>
+
+  <span class="rv-kicker">05 · shadcn/ui — what maps, what does not</span>
+  <table class="rv-tbl">
+    <tr><th>On this screen</th><th>Primitive</th><th>Overrides that matter</th></tr>
+    <tr><td>Panel</td><td><code>card</code></td><td>shadcn ships <code>shadow-sm</code> — it must become
+        <code>shadow-none</code>. <code>rounded-[22px]</code>, 1.5px <code>--ink</code> border,
+        <code>bg-bg</code>. <code>CardHeader</code> padding 22, not <code>p-6</code>.</td></tr>
+    <tr><td>Budget bar</td><td><code>progress</code></td><td>Track defaults to a filled muted fill — make it
+        transparent with a 1.5px ink border. Indicator keeps Radix's <code>translateX</code>. Add
+        <code>role="img"</code> with the full sentence: a bare <code>progressbar</code> announces "82 percent",
+        which is not what the row means.</td></tr>
+    <tr><td>Skeleton</td><td><code>skeleton</code></td><td>Swap <code>animate-pulse</code> for
+        <code>animate-chip-pulse</code> (1150ms, <code>--ease-in-out</code>, .34 → .72). Ship
+        <code>SkeletonRow</code> reproducing the exact grid with the dashed 30px circle in column one.</td></tr>
+    <tr><td>Separator</td><td><code>separator</code></td><td>Two variants: <code>hair</code> 1px
+        <code>--rule</code> for row rhythm, <code>panel</code> 1.5px <code>--ink</code> for structure. Default to
+        hair; require an explicit prop for ink.</td></tr>
+    <tr><td>Retry / CTA</td><td><code>button</code></td><td>Delete the default
+        <code>active:scale-[0.98]</code> and use <code>.stamp</code>. Kill
+        <code>hover:bg-primary/90</code> — Sorted buttons have no hover state. Override
+        <code>ring-offset-background</code>: it assumes a white page and this one is cream.</td></tr>
+    <tr><td>Mobile nav</td><td><code>sheet</code></td><td>side="left", 288px, 320ms
+        <code>--ease-drawer</code>. Overlay <code>rgba(26,26,26,.34)</code> — remove the default
+        <code>backdrop-blur</code>. No shadow on the panel; the 1.5px right border is the edge.</td></tr>
+    <tr><td><strong>Chip</strong></td><td><em>bespoke</em></td><td><code>badge</code> is a text pill and is the
+        wrong shape, the wrong semantics and the wrong contrast story. Build
+        <code>&lt;Chip category icon size /&gt;</code> typed against <code>ChipToken</code> so an unknown category
+        cannot compile and an icon cannot be omitted. <code>shopping</code> and <code>health</code> are
+        <code>textSafe: false</code>.</td></tr>
+    <tr><td><strong>Tether</strong></td><td><em>bespoke</em></td><td>Nothing resembles it. 16 × 12 inline SVG in a
+        22px gutter.</td></tr>
+    <tr><td><strong>Row</strong></td><td><em>bespoke</em></td><td><code>table</code> is for tabular data with
+        headers. Both row types here are 3- and 4-column grids with an icon gutter and no header.</td></tr>
+  </table>
+
+  <span class="rv-kicker" style="margin-top:32px">06 · Pre-ship guards for this file</span>
+  <ul class="rv-callouts">
+    <li><b>viewBox</b><span><code>grep '&lt;svg&gt;&lt;use'</code> returns zero. Every one of the wrappers on this
+        screen carries <code>viewBox="0 0 24 24"</code>; the sprite host carries none because it renders
+        nothing.</span></li>
+    <li><b>Focus</b><span>No <code>outline:none</code> anywhere except inside prose. Every ring is
+        <code>outline: var(--focus-ring); outline-offset: var(--focus-offset)</code>, drawn outward onto cream at
+        11.77:1 — never inset, never box-shadow-as-ring on the ink-filled pill.</span></li>
+    <li><b>Press</b><span>No <code>scale()</code> in any <code>:active</code> block. The stamp presses by
+        <code>translateY(2px)</code> with the shadow collapsed, both properties on one 110ms
+        <code>--ease-out</code>.</span></li>
+    <li><b>Shadow</b><span>Exactly one <code>box-shadow</code> declaration lineage in the file, and it is the
+        stamp. No blur, no spread, no <code>backdrop-blur</code>.</span></li>
+    <li><b>Text tokens</b><span>Every string containing a verb is <code>--dim-2</code> at 5.71:1.
+        <code>--dim</code> appears only on uppercase mono micro-labels.</span></li>
+  </ul>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var inr = new Intl.NumberFormat('en-IN', {
+    style: 'currency', currency: 'INR', maximumFractionDigits: 0
+  });
+
+  var root  = document.body;
+  var rmBtn = document.getElementById('rv-rm');
+  var osRM  = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+  function reduced() {
+    return root.getAttribute('data-rm') === 'on' || osRM.matches;
+  }
+
+  /* ── Net Worth count-up ────────────────────────────────────────────
+     The sole carve-out to rule 12. 600ms cap, once per session, and
+     disabled outright under reduced motion. Formatted through Intl on
+     every frame so the lakh/crore grouping is correct mid-count. */
+  var SEEN = 'sorted:netWorthCounted';
+
+  function countUp(force) {
+    var el = document.getElementById('nw-fig');
+    if (!el) return;
+    var target = Number(el.getAttribute('data-value'));
+
+    if (reduced() || !window.gsap) { el.textContent = inr.format(target); return; }
+    if (!force && sessionStorage.getItem(SEEN)) { el.textContent = inr.format(target); return; }
+
+    var o = { v: 0 };
+    gsap.to(o, {
+      v: target,
+      duration: 0.6,
+      ease: 'power4.out',
+      onUpdate:   function () { el.textContent = inr.format(Math.round(o.v)); },
+      onComplete: function () { el.textContent = inr.format(target); }
+    });
+    try { sessionStorage.setItem(SEEN, '1'); } catch (e) { /* private mode */ }
+  }
+
+  /* ── budget rows · 24ms opacity-only stagger, skeleton swap only ─── */
+  function stagger() {
+    var rows = document.getElementById('budget-rows');
+    if (!rows || reduced()) return;
+    rows.removeAttribute('data-stagger');
+    void rows.offsetWidth;               /* restart the animation cleanly */
+    rows.setAttribute('data-stagger', '');
+  }
+
+  document.getElementById('rv-replay').addEventListener('click', function () {
+    countUp(true);
+    stagger();
+  });
+
+  /* ── reduced-motion toggle · review chrome only ───────────────────── */
+  rmBtn.addEventListener('click', function () {
+    var on = root.getAttribute('data-rm') !== 'on';
+    root.setAttribute('data-rm', on ? 'on' : 'off');
+    rmBtn.setAttribute('aria-pressed', String(on));
+    rmBtn.textContent = 'Reduced motion · ' + (on ? 'on' : 'off');
+  });
+
+  /* ── mobile nav sheet · shadcn Sheet, side=left ───────────────────── */
+  var shell = document.getElementById('m-shell');
+  var open  = document.getElementById('m-open');
+  var close = document.getElementById('m-close');
+  var scrim = document.getElementById('m-scrim');
+  var nav   = document.getElementById('m-nav');
+
+  function setSheet(state) {
+    shell.setAttribute('data-sheet', state);
+    open.setAttribute('aria-expanded', String(state === 'open'));
+    nav.setAttribute('aria-hidden', String(state !== 'open'));
+    if (state === 'open') { scrim.hidden = false; close.focus(); }
+    else { scrim.hidden = true; open.focus(); }
+  }
+  open.addEventListener('click',  function () { setSheet('open'); });
+  close.addEventListener('click', function () { setSheet('closed'); });
+  scrim.addEventListener('click', function () { setSheet('closed'); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && shell.getAttribute('data-sheet') === 'open') setSheet('closed');
+  });
+
+  /* first paint */
+  countUp(false);
+})();
+</script>
+</body>
+</html>

@@ -45,6 +45,18 @@ const importBatchSchema = new Schema({
   // unconditionally (it's read straight off the statement, not derived from
   // whichever rows this parser managed to extract).
   closingBalance: { type: Number, default: null },
+  // Data-quality signal, HDFC-only today (the only bank with an exported opening-
+  // balance finder — see `STATEMENT_OPENING_BALANCE_REGISTRY`): the closing balance
+  // this statement's OWN "Opening Balance" plus the sum of every successfully-parsed
+  // row's amount would predict. Compared against `closingBalance` (the statement's
+  // own PRINTED closing figure) once processing completes — a mismatch beyond
+  // rounding means some row(s) on this statement were missed or misparsed, even
+  // though `closingBalance` itself (read straight off the document) is still trusted
+  // and still used to reconcile the account. Flagged, not blocking: never fails or
+  // holds up the import. `null` whenever there's no opening-balance finder for this
+  // parser, or the statement had no closing balance to compare against at all.
+  expectedClosingBalance: { type: Number, default: null },
+  closingBalanceMismatch: { type: Boolean, default: false },
 });
 
 export const ImportBatch = model("ImportBatch", importBatchSchema);

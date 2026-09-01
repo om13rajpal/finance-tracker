@@ -5,6 +5,7 @@ import { app } from "../../src/app.js";
 import { PendingTransaction } from "../../src/models/PendingTransaction.js";
 import { Transaction } from "../../src/models/Transaction.js";
 import { CategorizationRule } from "../../src/models/CategorizationRule.js";
+import { Account } from "../../src/models/Account.js";
 
 function authCookie(userId = "user-1") {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET as string);
@@ -72,6 +73,112 @@ describe("pending transactions", () => {
 
     const rule = await CategorizationRule.findOne({ userId: "user-confirm", matchValue: "SWIGGY" });
     expect(rule).not.toBeNull();
+  });
+
+  it("applies the confirmed transaction's amount as a delta to the linked account's currentBalance", async () => {
+    const userId = "user-confirm-balance";
+    const cookie = authCookie(userId);
+    const account = await Account.create({
+      userId,
+      type: "bank",
+      institution: "Test Bank",
+      nickname: "Test",
+      currentBalance: 1000,
+    });
+    const pending = await PendingTransaction.create({
+      userId,
+      accountId: account._id.toString(),
+      amount: -600,
+      date: new Date("2026-08-16"),
+      merchant: "SWIGGY ORDER",
+      source: "email_parsed",
+    });
+
+    const res = await request(app)
+      .post(`/pending-transactions/${pending._id}/confirm`)
+      .set("Cookie", cookie)
+      .send({});
+    expect(res.status).toBe(200);
+
+    const updated = await Account.findById(account._id);
+    expect(updated!.currentBalance).toBe(400);
+  });
+
+  it("applies the delta to whichever account is chosen via `accountId` edits at confirm time, not the pending doc's original one", async () => {
+    const userId = "user-confirm-edited-account";
+    const cookie = authCookie(userId);
+    const originalAccount = await Account.create({
+      userId,
+      type: "bank",
+      institution: "Test Bank",
+      nickname: "Original",
+      currentBalance: 1000,
+    });
+    const chosenAccount = await Account.create({
+      userId,
+      type: "bank",
+      institution: "Test Bank",
+      nickname: "Chosen",
+      currentBalance: 500,
+    });
+    const pending = await PendingTransaction.create({
+      userId,
+      accountId: null,
+      amount: -200,
+      date: new Date("2026-08-16"),
+      merchant: "SOME MERCHANT",
+      source: "email_parsed",
+    });
+
+    const res = await request(app)
+      .post(`/pending-transactions/${pending._id}/confirm`)
+      .set("Cookie", cookie)
+      .send({ accountId: chosenAccount._id.toString() });
+    expect(res.status).toBe(200);
+
+    expect((await Account.findById(chosenAccount._id))!.currentBalance).toBe(300);
+    expect((await Account.findById(originalAccount._id))!.currentBalance).toBe(1000);
+  });
+
+  it("does not apply any balance change when confirm is rejected as a possible duplicate", async () => {
+    const userId = "user-confirm-dup-balance";
+    const cookie = authCookie(userId);
+    const account = await Account.create({
+      userId,
+      type: "bank",
+      institution: "Test Bank",
+      nickname: "Test",
+      currentBalance: 1000,
+    });
+    await Transaction.create({
+      userId,
+      accountId: account._id.toString(),
+      amount: -750,
+      date: new Date("2026-08-16"),
+      source: "manual",
+      status: "confirmed",
+    });
+    const pending = await PendingTransaction.create({
+      userId,
+      accountId: account._id.toString(),
+      amount: -750,
+      date: new Date("2026-08-16"),
+      merchant: "SOME STORE",
+      source: "email_parsed",
+    });
+
+    const res = await request(app)
+      .post(`/pending-transactions/${pending._id}/confirm`)
+      .set("Cookie", cookie)
+      .send({});
+    expect(res.status).toBe(409);
+
+    // The seeded transaction above was created directly against the model (not
+    // through a route), so it never applied its own delta — the balance must
+    // still be exactly 1000, proving the duplicate-rejected confirm applied NO
+    // delta for the transaction that was never actually created.
+    const updated = await Account.findById(account._id);
+    expect(updated!.currentBalance).toBe(1000);
   });
 
   it("rejects a pending transaction, deleting it without creating a real one", async () => {
@@ -458,6 +565,55 @@ describe("pending transactions", () => {
 
       const confirmedA = await Transaction.findOne({ userId, merchant: "ZOMATO ORDER #1" });
       expect(confirmedA!.categoryId).toBe("cat-dining");
+    });
+
+    it("applies each confirmed row's amount as a balance delta, skipping the balance change for rows that are skipped", async () => {
+      const userId = "user-bulk-confirm-balance";
+      const cookie = authCookie(userId);
+      const account = await Account.create({
+        userId,
+        type: "bank",
+        institution: "Test Bank",
+        nickname: "Test",
+        currentBalance: 1000,
+      });
+
+      const a = await PendingTransaction.create({
+        userId,
+        accountId: account._id.toString(),
+        amount: -450,
+        date: new Date("2026-08-16"),
+        merchant: "A",
+        source: "email_parsed",
+      });
+      const b = await PendingTransaction.create({
+        userId,
+        accountId: account._id.toString(),
+        amount: -120,
+        date: new Date("2026-08-17"),
+        merchant: "B",
+        source: "pdf_statement_parsed",
+      });
+      const needsAccount = await PendingTransaction.create({
+        userId,
+        accountId: null,
+        amount: -9999,
+        date: new Date("2026-08-16"),
+        merchant: "NO ACCOUNT",
+        source: "email_parsed",
+      });
+
+      const res = await request(app)
+        .post("/pending-transactions/bulk-confirm")
+        .set("Cookie", cookie)
+        .send({ ids: [a._id.toString(), b._id.toString(), needsAccount._id.toString()] });
+
+      expect(res.status).toBe(200);
+      expect(res.body.confirmedIds.sort()).toEqual([a._id.toString(), b._id.toString()].sort());
+
+      // 1000 - 450 - 120 = 430. The skipped 9999 must NOT be reflected.
+      const updated = await Account.findById(account._id);
+      expect(updated!.currentBalance).toBe(430);
     });
 
     it("skips (not fails) a row that still needs an account, a likely duplicate, and an id that isn't this user's — reporting why for each", async () => {

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { app } from "../../src/app.js";
 import { RecurringTransaction } from "../../src/models/RecurringTransaction.js";
 import { Transaction } from "../../src/models/Transaction.js";
+import { Account } from "../../src/models/Account.js";
 import {
   advanceNextDueDate,
   processDueRecurringTransactions,
@@ -323,6 +324,60 @@ describe("processDueRecurringTransactions", () => {
     // brief requires. We assert on the Transaction shape instead of a lot count.
     const tx = await Transaction.findOne({ userId: "user-sip" });
     expect(tx!.amount).toBe(-5000);
+  });
+
+  it("applies the auto-created transaction's amount as a delta to the linked account's currentBalance", async () => {
+    const account = await Account.create({
+      userId: "user-due-balance",
+      type: "bank",
+      institution: "Test Bank",
+      nickname: "Test",
+      currentBalance: 1000,
+    });
+    await RecurringTransaction.create({
+      userId: "user-due-balance",
+      name: "Rent",
+      type: "expense",
+      amount: 20000,
+      frequency: "monthly",
+      nextDueDate: new Date("2026-08-01"),
+      accountId: account._id.toString(),
+      categoryId: "cat-rent",
+      autoCreate: true,
+      status: "active",
+    });
+
+    await processDueRecurringTransactions();
+
+    const updated = await Account.findById(account._id);
+    expect(updated!.currentBalance).toBe(-19000); // 1000 - 20000
+  });
+
+  it("does NOT apply a balance delta for an informational (autoCreate:false) item", async () => {
+    const account = await Account.create({
+      userId: "user-info-balance",
+      type: "bank",
+      institution: "Test Bank",
+      nickname: "Test",
+      currentBalance: 1000,
+    });
+    await RecurringTransaction.create({
+      userId: "user-info-balance",
+      name: "Reminder",
+      type: "expense",
+      amount: 1500,
+      frequency: "monthly",
+      nextDueDate: new Date("2026-08-01"),
+      accountId: account._id.toString(),
+      categoryId: "cat-fitness",
+      autoCreate: false,
+      status: "active",
+    });
+
+    await processDueRecurringTransactions();
+
+    const updated = await Account.findById(account._id);
+    expect(updated!.currentBalance).toBe(1000);
   });
 
   it("advances an item only ONE cycle per run even when several cycles have elapsed, leaving it still due for the next run", async () => {

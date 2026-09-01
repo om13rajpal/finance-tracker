@@ -7,6 +7,7 @@ import { findLikelyDuplicate } from "./duplicate-detection.js";
 import { maybeCreateRuleFromCorrection } from "./transactions.service.js";
 import { applyCategorizationRules } from "../categorization/categorization.engine.js";
 import { invalidateDashboardCache } from "../dashboard/dashboard.service.js";
+import { applyConfirmedTransactionBalanceEffect } from "../accounts/balance.service.js";
 
 export const pendingTransactionsRouter = Router();
 pendingTransactionsRouter.use(requireAuth);
@@ -91,6 +92,22 @@ pendingTransactionsRouter.post("/:id/confirm", async (req, res, next) => {
       source: pending.source,
       status: "confirmed",
     });
+
+    await applyConfirmedTransactionBalanceEffect(
+      userId,
+      merged.accountId,
+      merged.amount,
+      merged.emailBalance ?? null,
+      merged.date,
+      // Only honor the "already reconciled" flag if this confirm didn't
+      // redirect the transaction to a DIFFERENT account than the one its
+      // import actually reconciled — the reconciliation's assumption (this
+      // money left THAT account) no longer holds if it didn't, in the end,
+      // stay on that account, and the rare case of editing a PDF-statement
+      // row's account during confirm needs its normal delta applied like any
+      // other transaction.
+      pending.balanceReconciledAtImport === true && merged.accountId === pending.accountId
+    );
 
     // `matchValue` is optional on this route: the pending transaction's own
     // (possibly edited) `merchant` is already known here, so the caller
@@ -215,6 +232,18 @@ pendingTransactionsRouter.post("/bulk-confirm", async (req, res, next) => {
         source: pending.source,
         status: "confirmed",
       });
+      await applyConfirmedTransactionBalanceEffect(
+        userId,
+        pending.accountId,
+        pending.amount,
+        pending.emailBalance ?? null,
+        pending.date,
+        // Bulk-confirm never redirects a row to a different account (no
+        // per-item edits at all — see this route's own doc comment), so
+        // unlike the single-confirm route above there's no account-match
+        // check needed here.
+        pending.balanceReconciledAtImport === true
+      );
       await PendingTransaction.deleteOne({ _id: pending._id });
       confirmedIds.push(id);
     }

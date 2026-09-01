@@ -80,15 +80,38 @@ const balanceSchema = z.object({ balance: z.number() });
 accountsRouter.post("/:id/balance", async (req, res, next) => {
   try {
     const { balance } = balanceSchema.parse(req.body);
+    const userId = (req as any).userId;
+
+    // Read first (not for a guard — a manual correction ALWAYS wins, no staleness
+    // check the way `reconcileBalance` has) purely to capture `previousBalance` for
+    // the audit-trail snapshot below.
+    const previous = await Account.findOne({ _id: req.params.id, userId });
+    if (!previous) return res.status(404).json({ error: "Not found" });
+
+    const now = new Date();
     const account = await Account.findOneAndUpdate(
-      { _id: req.params.id, userId: (req as any).userId },
-      { currentBalance: balance, lastUpdated: new Date() },
+      { _id: req.params.id, userId },
+      // `balanceAsOf: now` matters as much as `currentBalance` itself: it stamps
+      // this figure as accurate "as of right now," so a LATER-processed automated
+      // reconciliation describing an EARLIER point in time (an old statement
+      // uploaded after the fact, a delayed email alert) correctly loses to this
+      // correction via `reconcileBalance`'s own staleness guard instead of
+      // silently overwriting it.
+      { currentBalance: balance, balanceAsOf: now, lastUpdated: now },
       { new: true }
     );
     if (!account) return res.status(404).json({ error: "Not found" });
 
-    await BalanceSnapshot.create({ accountId: account._id.toString(), balance, date: new Date() });
-    await invalidateDashboardCache((req as any).userId);
+    await BalanceSnapshot.create({
+      accountId: account._id.toString(),
+      balance,
+      date: now,
+      source: "manual",
+      previousBalance: previous.currentBalance,
+      delta: Math.round((balance - previous.currentBalance) * 100) / 100,
+      asOf: now,
+    });
+    await invalidateDashboardCache(userId);
     res.json(account);
   } catch (err) {
     next(err);

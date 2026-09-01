@@ -1,0 +1,1372 @@
+<!-- @moodforge
+schema: 1.0
+round: 2
+phase: discovery
+worker: moodforge-theme-explorer
+theme: tbd
+version: v1
+created_at: 2026-08-30T00:00:00Z
+sha256: 8f1c2ab27379efd189b71512f72daea37aeee9a5959582ad1f41a6b99ba4d68a
+palette: [#FAF5F2, #FCE4CA, #F2F9FF, #F7F1E4, #14199C, #5483D3, #FBA130, #F1A007, #F9ACCE, #23B471, #1A1A1A, #000000]
+fonts: [Cabinet Grotesk 800, Satoshi 700, Switzer 800, JetBrains Mono 600, Bricolage Grotesque 800, Geist Mono 500, Bespoke Slab 700, DM Mono 500, Clash Display 600, Space Mono 700]
+tokens_used: []
+summary: Round 2 discovery — five theme directions for finance-tracker (login + dashboard only), spread deliberately along the playfulness-penetration axis, each with palette, type specimen, inline-SVG illustrated hero, full dashboard and a proposed product name.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>finance-tracker · Round 2 · five directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=DM+Mono:wght@400;500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700&f[]=satoshi@400,500,700,900&f[]=switzer@400,500,600,700,800&f[]=bespoke-slab@400,700&f[]=supreme@400,500,700&f[]=clash-display@500,600,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --page:#0A0A0A; --page-2:#121212; --page-ink:#F2F2F2; --page-dim:#8A8A8A;
+  --hair:#262626;
+  --scale:0.80;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--page);color:var(--page-ink);
+  font-family:"Switzer","Satoshi",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+img,svg{display:block}
+
+/* ---------- page chrome ---------- */
+.topbar{position:sticky;top:0;z-index:60;background:rgba(10,10,10,.92);
+  backdrop-filter:none;border-bottom:1px solid var(--hair);
+  display:flex;align-items:center;justify-content:space-between;gap:24px;
+  padding:14px 32px}
+.topbar .slug{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--page-dim)}
+.topbar .slug b{color:var(--page-ink);font-weight:600}
+.index{display:flex;gap:6px;align-items:center}
+.index a{width:30px;height:30px;display:grid;place-items:center;border:1px solid var(--hair);
+  color:var(--page-dim);text-decoration:none;font-family:var(--mono);font-size:12px;
+  transition:color .18s ease,border-color .18s ease,background-color .18s ease}
+.index a:hover,.index a:focus-visible{color:#0A0A0A;background:var(--page-ink);border-color:var(--page-ink);outline:none}
+
+.wrap{max-width:1200px;margin:0 auto;padding:0 20px}
+
+/* ---------- intro ---------- */
+.intro{padding:96px 0 88px}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--page-dim);margin:0 0 22px}
+.intro h1{font-family:"Switzer",sans-serif;font-weight:800;font-size:clamp(38px,5.4vw,72px);
+  line-height:.96;letter-spacing:-.035em;margin:0 0 28px;max-width:16ch}
+.intro h1 em{font-style:normal;color:#FBA130}
+.lede{font-size:17px;line-height:1.6;color:#BDBDBD;max-width:62ch;margin:0 0 18px}
+.lede b{color:var(--page-ink);font-weight:600}
+
+.axis-explainer{margin-top:56px;border-top:1px solid var(--hair);padding-top:32px}
+.axis-explainer h2{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--page-dim);font-weight:400;margin:0 0 26px}
+.axis-track{position:relative;height:1px;background:var(--hair);margin:64px 0 0}
+.axis-track::before,.axis-track::after{content:"";position:absolute;top:-5px;width:1px;height:11px;background:#5A5A5A}
+.axis-track::before{left:0}.axis-track::after{right:0}
+.axis-ends{display:flex;justify-content:space-between;margin-top:16px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--page-dim)}
+.axis-pin{position:absolute;top:-4px;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:0}
+.axis-pin i{width:9px;height:9px;border-radius:50%;display:block}
+.axis-pin span{position:absolute;bottom:20px;font-family:var(--mono);font-size:11px;font-weight:600;white-space:nowrap}
+
+/* ---------- direction shell ---------- */
+.dir{padding:0 0 40px}
+.dir-head{padding:104px 0 44px}
+.dir-rule{height:1px;width:100%;}
+.dir-letter{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin:0 0 18px;color:var(--page-dim)}
+.dir-title{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin:0 0 18px}
+.dir-title h2{font-family:"Switzer",sans-serif;font-weight:800;font-size:clamp(34px,4.6vw,62px);
+  line-height:.94;letter-spacing:-.035em;margin:0}
+.dir-title .tag{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  border:1px solid var(--hair);padding:6px 10px;color:var(--page-dim);margin-bottom:8px}
+.position{font-size:19px;line-height:1.5;max-width:64ch;margin:0 0 6px;color:#DCDCDC}
+.position b{font-weight:600;color:#fff}
+.meta-grid{display:grid;grid-template-columns:1.15fr 1fr .8fr;gap:40px;margin-top:44px;align-items:start}
+@media(max-width:1000px){.meta-grid{grid-template-columns:1fr}}
+.meta h3{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--page-dim);font-weight:400;margin:0 0 16px}
+
+/* swatches */
+.sw-row{display:flex;flex-wrap:wrap;gap:8px}
+.sw{width:96px}
+.sw i{display:block;height:52px;border:1px solid rgba(255,255,255,.16)}
+.sw b{display:block;font-family:var(--mono);font-size:10px;font-weight:500;margin-top:7px;color:#E4E4E4}
+.sw span{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#7C7C7C;margin-top:2px}
+
+/* type specimen */
+.spec{border:1px solid var(--hair);padding:22px 22px 18px}
+.spec .disp{line-height:.92;letter-spacing:-.03em;margin:0 0 4px;color:#fff}
+.spec .num{margin:16px 0 4px;line-height:1;color:#fff}
+.spec .note{font-family:var(--mono);font-size:10px;color:#7C7C7C;letter-spacing:.06em;margin:14px 0 0;line-height:1.7}
+.spec .note b{color:#C9C9C9;font-weight:500}
+
+/* mini axis per direction */
+.mini-axis{position:relative;height:1px;background:var(--hair);margin:26px 0 0}
+.mini-axis i{position:absolute;top:-4px;width:9px;height:9px;border-radius:50%;transform:translateX(-50%)}
+.mini-ends{display:flex;justify-content:space-between;margin-top:12px;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#6E6E6E}
+.namecard{border:1px solid var(--hair);padding:20px}
+.namecard .n{font-family:"Switzer",sans-serif;font-weight:800;font-size:34px;letter-spacing:-.03em;margin:0 0 8px;color:#fff}
+.namecard p{font-size:13px;line-height:1.55;color:#9E9E9E;margin:0}
+
+/* mockup frames */
+.shots{margin-top:52px;display:flex;flex-direction:column;gap:40px}
+.shot-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--page-dim);margin:0 0 12px;display:flex;gap:14px;align-items:baseline}
+.shot-label b{color:#E8E8E8;font-weight:500}
+.viewport{width:1152px;height:720px;max-width:100%;overflow:hidden;position:relative;border:1px solid var(--hair)}
+.frame{width:1440px;height:900px;transform:scale(var(--scale));transform-origin:top left;overflow:hidden;position:relative}
+@media(max-width:1200px){.viewport{width:100%;height:auto;aspect-ratio:1440/900}
+  .frame{transform:scale(calc(100vw/1440*0.92))}}
+
+/* footer / table */
+.compare{padding:110px 0 130px;border-top:1px solid var(--hair);margin-top:90px}
+table.cmp{width:100%;border-collapse:collapse;font-size:13px}
+table.cmp th{text-align:left;font-family:var(--mono);font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--page-dim);font-weight:400;padding:0 14px 12px 0;border-bottom:1px solid var(--hair);vertical-align:bottom}
+table.cmp td{padding:18px 14px 18px 0;border-bottom:1px solid var(--hair);vertical-align:top;color:#C4C4C4;line-height:1.5}
+table.cmp td.k{color:#fff;font-weight:600;font-size:15px;white-space:nowrap}
+table.cmp td .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:middle}
+table.cmp .hex{font-family:var(--mono);font-size:11px;color:#E0E0E0}
+.reply{margin-top:64px;border:1px solid var(--hair);padding:26px 28px;display:flex;gap:26px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.reply p{margin:0;font-size:15px;color:#C4C4C4;line-height:1.5}
+.reply p b{color:#fff}
+.reply .k{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#FBA130}
+
+/* shared mockup primitives */
+.tnum{font-variant-numeric:tabular-nums}
+.stamp{box-shadow:0 2px 0 currentColor}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="slug"><b>finance-tracker</b> · round 2 · discovery</div>
+  <div class="slug" style="letter-spacing:.2em">pick one</div>
+  <nav class="index" aria-label="Directions">
+    <a href="#a">A</a><a href="#b">B</a><a href="#c">C</a><a href="#d">D</a><a href="#e">E</a><a href="#compare">≡</a>
+  </nav>
+</header>
+
+<main>
+<section class="wrap intro">
+  <p class="eyebrow">round 2 · five directions · login + dashboard only</p>
+  <h1>The references are playful. The dashboard is where you look at <em>real money</em>.</h1>
+  <p class="lede">Both of your references — the Spotted onboarding screen and the blue-star type app — are illustrative, character-driven, flat colour-blocked, warm. None of them is a dense financial instrument you open every morning. <b>Reconciling those two facts is the entire job of this round.</b></p>
+  <p class="lede">So these five directions are not five palettes. They are five answers to one question: <b>how far does the playfulness penetrate past the login screen?</b> Every direction below shows the same two surfaces with the same real numbers — a ₹42,18,650 net worth, an HDFC alert auto-imported three minutes ago — so the only variable is the philosophy.</p>
+
+  <div class="axis-explainer">
+    <h2>The axis · playfulness penetration</h2>
+    <div class="axis-track">
+      <div class="axis-pin" style="left:8%"><span style="color:#5483D3">B · Kosh</span><i style="background:#5483D3"></i></div>
+      <div class="axis-pin" style="left:34%"><span style="color:#FBA130">D · Ledger&amp;</span><i style="background:#FBA130"></i></div>
+      <div class="axis-pin" style="left:56%"><span style="color:#23B471">C · Sorted</span><i style="background:#23B471"></i></div>
+      <div class="axis-pin" style="left:76%"><span style="color:#F9ACCE">E · Khazana</span><i style="background:#F9ACCE"></i></div>
+      <div class="axis-pin" style="left:94%"><span style="color:#F1A007">A · Gullu</span><i style="background:#F1A007"></i></div>
+    </div>
+    <div class="axis-ends"><span>quarantined at the door</span><span>playful all the way in</span></div>
+  </div>
+</section>
+
+<!-- ============================ A · GULLU ============================ -->
+<style>
+.A{--bg:#FAF5F2;--block:#FCE4CA;--ink:#111111;--blue:#14199C;--orange:#FBA130;
+   --pink:#F9ACCE;--green:#23B471;--mustard:#F1A007;--hairA:#111111;
+   --disp:"Cabinet Grotesk","Switzer",sans-serif;--ui:"Satoshi",system-ui,sans-serif;}
+.A .frame{background:var(--bg);color:var(--ink);font-family:var(--ui)}
+.A .disp{font-family:var(--disp);font-weight:800;letter-spacing:-.03em}
+.A .lab{font-family:var(--ui);font-weight:700;font-size:10px;letter-spacing:.16em;text-transform:uppercase}
+.A .money{font-family:var(--ui);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.A .pill{border:2px solid var(--ink);border-radius:999px;background:var(--ink);color:#FAF5F2;
+  font-family:var(--ui);font-weight:700;font-size:15px;letter-spacing:.02em;padding:16px 30px;
+  box-shadow:0 2px 0 var(--ink);cursor:pointer}
+.A .chip{width:34px;height:34px;border-radius:50%;border:2px solid var(--ink);display:grid;place-items:center;flex:none}
+/* login */
+.A .lg{display:grid;grid-template-columns:800px 640px;height:900px}
+.A .lg-l{background:var(--block);border-right:2px solid var(--ink);display:grid;place-items:center;position:relative}
+.A .lg-blob{width:470px;height:470px;border-radius:50%;background:var(--bg);border:2px solid var(--ink);display:grid;place-items:center}
+.A .lg-r{padding:96px 80px;display:flex;flex-direction:column;justify-content:center}
+.A .fld{border:2px solid var(--ink);background:transparent;border-radius:14px;padding:17px 18px;
+  font-family:var(--ui);font-size:16px;font-weight:500;color:var(--ink);width:100%}
+.A .fld::placeholder{color:#8A7F76}
+/* dashboard */
+.A .db{display:grid;grid-template-columns:88px 1fr;height:900px}
+.A .rail{background:var(--block);border-right:2px solid var(--ink);display:flex;flex-direction:column;align-items:center;gap:16px;padding:22px 0}
+.A .main{overflow:hidden}
+.A .topstrip{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:2px solid var(--ink)}
+.A .sechead{display:inline-flex;align-items:center;gap:9px;border:2px solid var(--ink);border-radius:999px;padding:5px 14px 5px 8px;font-weight:700;font-size:11px;letter-spacing:.13em;text-transform:uppercase}
+.A .card{border:2px solid var(--ink);border-radius:20px;padding:20px 22px;background:var(--bg)}
+.A .row{display:grid;grid-template-columns:34px 1fr auto;gap:14px;align-items:center;padding:13px 0;border-bottom:1.5px solid rgba(17,17,17,.16)}
+.A .row:last-child{border-bottom:0}
+</style>
+<section class="dir A" id="a">
+  <div class="wrap dir-head">
+    <div class="dir-rule" style="background:#F1A007;height:2px;margin-bottom:44px"></div>
+    <p class="dir-letter">Direction A</p>
+    <div class="dir-title">
+      <h2>Gullu</h2>
+      <span class="tag">the character comes inside</span>
+      <span class="tag">ambitious · polarising</span>
+    </div>
+    <p class="position"><b>Position:</b> playfulness goes all the way in. Gullu the gullak greets you on the login screen and then follows you onto the dashboard — colour-blocked section headers, a mascot cameo in the greeting strip, a chip on every row. This is your references taken literally, with one rule holding it back from the birthday-card failure: <b>Gullu is never within 200px of a rupee figure.</b></p>
+    <div class="mini-axis"><i style="left:94%;background:#F1A007"></i></div>
+    <div class="mini-ends"><span>quarantined</span><span>all the way in</span></div>
+
+    <div class="meta-grid">
+      <div class="meta">
+        <h3>Palette · warm cream base</h3>
+        <div class="sw-row">
+          <div class="sw"><i style="background:#FAF5F2"></i><b>#FAF5F2</b><span>base</span></div>
+          <div class="sw"><i style="background:#FCE4CA"></i><b>#FCE4CA</b><span>block</span></div>
+          <div class="sw"><i style="background:#111111"></i><b>#111111</b><span>ink · 2px</span></div>
+          <div class="sw"><i style="background:#14199C"></i><b>#14199C</b><span>primary</span></div>
+          <div class="sw"><i style="background:#FBA130"></i><b>#FBA130</b><span>energy</span></div>
+          <div class="sw"><i style="background:#23B471"></i><b>#23B471</b><span>gain</span></div>
+          <div class="sw"><i style="background:#F9ACCE"></i><b>#F9ACCE</b><span>spend</span></div>
+          <div class="sw"><i style="background:#F1A007"></i><b>#F1A007</b><span>bills</span></div>
+        </div>
+      </div>
+      <div class="meta">
+        <h3>Type · Cabinet Grotesk + Satoshi</h3>
+        <div class="spec">
+          <p class="disp" style="font-family:'Cabinet Grotesk',sans-serif;font-weight:800;font-size:46px">Namaste, Om</p>
+          <p class="num money" style="font-family:'Satoshi',sans-serif;font-weight:900;font-size:52px;font-variant-numeric:tabular-nums;letter-spacing:-.025em">₹42,18,650</p>
+          <p class="note"><b>Display</b> Cabinet Grotesk 800 — wide, geometric, friendly without being soft.<br><b>Numeric</b> Satoshi 900 tabular — same skeleton family energy, but engineered figures. <br>0123456789 · ₹1,24,300 · ₹2,847.50</p>
+        </div>
+      </div>
+      <div class="meta">
+        <h3>Name</h3>
+        <div class="namecard">
+          <p class="n">Gullu</p>
+          <p>Character-first naming: the gullak <em>is</em> the brand. “Gullu” sits small in the corner, the mascot does the recognition work. Warmest, most personal, least serious — which for a private single-user tool may be exactly right.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap shots">
+    <div>
+      <p class="shot-label"><b>Login</b> <span>1440 × 900 · illustrated set-piece · OTP flow</span></p>
+      <div class="viewport"><div class="frame">
+        <div class="lg">
+          <div class="lg-l">
+            <div class="lg-blob">
+              <svg width="330" height="330" viewBox="0 0 240 240" data-draw fill="none">
+                <!-- sparkles -->
+                <path d="M32 66 l0 -16 M24 58 l16 0" stroke="#111" stroke-width="5" stroke-linecap="round"/>
+                <path d="M212 122 l0 -12 M206 116 l12 0" stroke="#111" stroke-width="5" stroke-linecap="round"/>
+                <!-- coin -->
+                <circle cx="120" cy="34" r="19" fill="#FBA130" stroke="#111" stroke-width="5"/>
+                <text x="120" y="42" text-anchor="middle" font-family="Cabinet Grotesk, sans-serif" font-weight="800" font-size="20" fill="#111">₹</text>
+                <!-- legs -->
+                <rect x="72" y="192" width="24" height="22" rx="8" fill="#14199C" stroke="#111" stroke-width="5"/>
+                <rect x="146" y="192" width="24" height="22" rx="8" fill="#14199C" stroke="#111" stroke-width="5"/>
+                <!-- body -->
+                <rect x="40" y="86" width="162" height="116" rx="56" fill="#14199C" stroke="#111" stroke-width="5"/>
+                <!-- coin slot -->
+                <rect x="98" y="76" width="44" height="13" rx="6.5" fill="#FAF5F2" stroke="#111" stroke-width="5"/>
+                <!-- waving hand -->
+                <path d="M196 128 q22 -6 26 -26 q3 -14 -8 -16 q-9 -1 -12 10 q3 -16 -7 -18 q-10 -2 -13 12 q1 -13 -8 -14 q-9 -1 -11 12 l-5 30 q-2 22 18 26 q14 3 20 -16z" fill="#FBA130" stroke="#111" stroke-width="5" stroke-linejoin="round"/>
+                <!-- eyes -->
+                <circle cx="98" cy="132" r="15" fill="#FAF5F2" stroke="#111" stroke-width="4"/>
+                <circle cx="146" cy="132" r="15" fill="#FAF5F2" stroke="#111" stroke-width="4"/>
+                <circle cx="101" cy="134" r="6.5" fill="#111"/>
+                <circle cx="149" cy="134" r="6.5" fill="#111"/>
+                <!-- smile -->
+                <path d="M104 162 q18 16 36 0" stroke="#111" stroke-width="5" stroke-linecap="round"/>
+                <!-- cheeks -->
+                <circle cx="74" cy="156" r="8" fill="#F9ACCE"/>
+                <circle cx="170" cy="156" r="8" fill="#F9ACCE"/>
+              </svg>
+            </div>
+            <div style="position:absolute;bottom:56px;left:0;right:0;text-align:center">
+              <p class="lab" style="margin:0;opacity:.62">your gullak has been counting</p>
+            </div>
+          </div>
+
+          <div class="lg-r">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:auto">
+              <div style="width:26px;height:26px;border-radius:50%;background:#14199C;border:2px solid #111"></div>
+              <span class="disp" style="font-size:20px">Gullu</span>
+            </div>
+            <div style="margin:auto 0">
+              <p class="lab" style="color:#14199C;margin:0 0 16px">Welcome back</p>
+              <h1 class="disp" style="font-size:64px;line-height:.94;margin:0 0 18px">Let’s see<br>where you<br>stand.</h1>
+              <p style="font-size:16px;line-height:1.55;color:#5C544D;margin:0 0 34px;max-width:38ch">Enter your email and we’ll send a 6-digit code. No password to forget.</p>
+              <input class="fld" type="email" value="om@omrajpal.in" style="margin-bottom:14px">
+              <button class="pill" style="width:100%">Send code</button>
+              <p style="font-size:13px;color:#8A7F76;margin:22px 0 0">Only you have an account here. That’s the whole point.</p>
+            </div>
+            <p class="lab" style="margin:auto 0 0;color:#8A7F76;opacity:.8">Signature motion · Gullu tilts and waves once on load, the coin drops into the slot</p>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div>
+      <p class="shot-label"><b>Dashboard</b> <span>1440 × 900 · character present · colour-blocked section headers</span></p>
+      <div class="viewport"><div class="frame">
+        <div class="db">
+          <div class="rail">
+            <div class="chip" style="background:#14199C"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8l6-5 6 5v6H2z" stroke="#FAF5F2" stroke-width="2" stroke-linejoin="round"/></svg></div>
+            <div class="chip" style="background:#F9ACCE"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12v9H2z" stroke="#111" stroke-width="2"/><path d="M2 7h12" stroke="#111" stroke-width="2"/></svg></div>
+            <div class="chip" style="background:#23B471"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 12l4-5 3 3 5-7" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <div class="chip" style="background:#F1A007"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="#111" stroke-width="2"/><path d="M8 5v3l2 2" stroke="#111" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div class="chip" style="background:#FBA130"><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M3 6h10" stroke="#111" stroke-width="2" stroke-linecap="round"/></svg></div>
+            <div style="margin-top:auto"><div class="chip" style="background:#FAF5F2"><span style="font-size:13px;font-weight:700">OR</span></div></div>
+          </div>
+
+          <div class="main">
+            <div class="topstrip">
+              <div style="display:flex;align-items:center;gap:14px">
+                <svg width="34" height="34" viewBox="0 0 240 240" fill="none">
+                  <rect x="40" y="86" width="162" height="116" rx="56" fill="#14199C" stroke="#111" stroke-width="9"/>
+                  <rect x="98" y="76" width="44" height="13" rx="6.5" fill="#FAF5F2" stroke="#111" stroke-width="9"/>
+                  <circle cx="98" cy="136" r="13" fill="#FAF5F2"/><circle cx="146" cy="136" r="13" fill="#FAF5F2"/>
+                  <circle cx="100" cy="138" r="6" fill="#111"/><circle cx="148" cy="138" r="6" fill="#111"/>
+                </svg>
+                <div>
+                  <p class="disp" style="font-size:22px;margin:0">Namaste, Om</p>
+                  <p style="font-size:12px;color:#8A7F76;margin:2px 0 0">Sunday, 30 August · everything synced</p>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px">
+                <span style="border:2px solid #23B471;color:#0F7A4B;border-radius:999px;padding:6px 12px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase">Gmail sync on</span>
+                <span class="pill" style="padding:9px 18px;font-size:13px">Add entry</span>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 460px;gap:26px;padding:26px 32px">
+              <div>
+                <div style="background:#FCE4CA;border:2px solid #111;border-radius:24px;padding:26px 28px 24px;margin-bottom:22px">
+                  <p class="lab" style="margin:0 0 12px">Net worth</p>
+                  <p class="money" style="font-size:86px;line-height:.9;margin:0" data-countup="4218650">₹42,18,650</p>
+                  <div style="display:flex;align-items:center;gap:12px;margin-top:16px">
+                    <span style="background:#23B471;border:2px solid #111;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:700" class="tnum">↑ ₹86,420</span>
+                    <span style="font-size:13px;font-weight:600" class="tnum">+2.09% · last 30 days</span>
+                    <svg width="120" height="30" viewBox="0 0 120 30" fill="none" style="margin-left:auto"><path d="M2 24 L18 21 L34 25 L50 15 L66 18 L82 9 L98 12 L118 3" stroke="#111" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                </div>
+
+                <div style="display:flex;align-items:center;gap:12px;margin:0 0 16px">
+                  <span class="sechead" style="background:#F9ACCE"><span class="chip" style="width:20px;height:20px;border-width:1.5px;background:#FAF5F2"><span style="font-size:10px">₹</span></span> Spending · August</span>
+                  <span class="tnum" style="font-size:12px;color:#8A7F76;font-weight:600;margin-left:auto">₹1,24,300 of ₹1,45,000</span>
+                </div>
+                <div class="card" style="padding:22px 22px 18px">
+                  <div style="display:flex;align-items:flex-end;gap:14px;height:132px">
+                    <div style="flex:1;text-align:center"><div style="height:118px;background:#F9ACCE;border:2px solid #111;border-radius:8px 8px 0 0"></div></div>
+                    <div style="flex:1;text-align:center"><div style="height:76px;background:#F1A007;border:2px solid #111;border-radius:8px 8px 0 0"></div></div>
+                    <div style="flex:1;text-align:center"><div style="height:88px;background:#FBA130;border:2px solid #111;border-radius:8px 8px 0 0"></div></div>
+                    <div style="flex:1;text-align:center"><div style="height:38px;background:#5483D3;border:2px solid #111;border-radius:8px 8px 0 0"></div></div>
+                    <div style="flex:1;text-align:center"><div style="height:27px;background:#23B471;border:2px solid #111;border-radius:8px 8px 0 0"></div></div>
+                    <div style="flex:1;text-align:center"><div style="height:18px;background:#FAF5F2;border:2px solid #111;border-radius:8px 8px 0 0"></div></div>
+                  </div>
+                  <div style="display:flex;gap:14px;border-top:2px solid #111;padding-top:10px;margin-top:0">
+                    <div style="flex:1;text-align:center"><p class="lab" style="font-size:9px;margin:0">Shop</p><p class="money" style="font-size:13px;margin:3px 0 0">28,940</p></div>
+                    <div style="flex:1;text-align:center"><p class="lab" style="font-size:9px;margin:0">Bills</p><p class="money" style="font-size:13px;margin:3px 0 0">18,420</p></div>
+                    <div style="flex:1;text-align:center"><p class="lab" style="font-size:9px;margin:0">Food</p><p class="money" style="font-size:13px;margin:3px 0 0">21,300</p></div>
+                    <div style="flex:1;text-align:center"><p class="lab" style="font-size:9px;margin:0">Transp</p><p class="money" style="font-size:13px;margin:3px 0 0">9,180</p></div>
+                    <div style="flex:1;text-align:center"><p class="lab" style="font-size:9px;margin:0">Health</p><p class="money" style="font-size:13px;margin:3px 0 0">6,510</p></div>
+                    <div style="flex:1;text-align:center"><p class="lab" style="font-size:9px;margin:0">Subs</p><p class="money" style="font-size:13px;margin:3px 0 0">4,270</p></div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div style="display:flex;align-items:center;margin:0 0 14px">
+                  <span class="sechead" style="background:#5483D3;color:#FAF5F2"><span class="chip" style="width:20px;height:20px;border-width:1.5px;background:#FAF5F2;color:#111"><span style="font-size:10px">◈</span></span> Accounts</span>
+                </div>
+                <div class="card" style="padding:6px 22px;margin-bottom:22px">
+                  <div data-rise>
+                    <div class="row"><span class="chip" style="background:#14199C;width:30px;height:30px"><span style="color:#FAF5F2;font-size:11px;font-weight:700">H</span></span><span style="font-weight:600;font-size:14px">HDFC Savings</span><span class="money" style="font-size:15px">₹3,84,210</span></div>
+                    <div class="row"><span class="chip" style="background:#FBA130;width:30px;height:30px"><span style="font-size:11px;font-weight:700">I</span></span><span style="font-weight:600;font-size:14px">ICICI Salary</span><span class="money" style="font-size:15px">₹1,12,940</span></div>
+                    <div class="row"><span class="chip" style="background:#23B471;width:30px;height:30px"><span style="font-size:11px;font-weight:700">Z</span></span><span style="font-weight:600;font-size:14px">Zerodha</span><span class="money" style="font-size:15px">₹24,90,180</span></div>
+                    <div class="row"><span class="chip" style="background:#F9ACCE;width:30px;height:30px"><span style="font-size:11px;font-weight:700">K</span></span><span style="font-weight:600;font-size:14px">Kuvera · MF</span><span class="money" style="font-size:15px">₹9,68,320</span></div>
+                    <div class="row"><span class="chip" style="background:#F1A007;width:30px;height:30px"><span style="font-size:11px;font-weight:700">E</span></span><span style="font-weight:600;font-size:14px">EPF</span><span class="money" style="font-size:15px">₹3,25,400</span></div>
+                    <div class="row"><span class="chip" style="background:#FAF5F2;width:30px;height:30px"><span style="font-size:11px;font-weight:700">A</span></span><span style="font-weight:600;font-size:14px">Amex India</span><span class="money" style="font-size:15px;color:#B1355C">−₹62,400</span></div>
+                  </div>
+                </div>
+
+                <div style="display:flex;align-items:center;margin:0 0 14px">
+                  <span class="sechead" style="background:#F1A007"><span class="chip" style="width:20px;height:20px;border-width:1.5px;background:#FAF5F2"><span style="font-size:10px">✉</span></span> Just in</span>
+                </div>
+                <div class="card" style="padding:6px 22px">
+                  <div data-rise>
+                    <div class="row"><span class="chip" style="background:#F9ACCE;width:30px;height:30px"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 6h10l-1 8H4z" stroke="#111" stroke-width="2" stroke-linejoin="round"/><path d="M6 6V4a2 2 0 014 0v2" stroke="#111" stroke-width="2"/></svg></span>
+                      <span><span style="font-weight:600;font-size:14px;display:block">Swiggy Instamart</span><span style="font-size:11px;color:#8A7F76">auto-imported from HDFC alert · 3m ago</span></span>
+                      <span class="money" style="font-size:15px">−₹1,284</span></div>
+                    <div class="row"><span class="chip" style="background:#F1A007;width:30px;height:30px"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M9 2L4 9h4l-1 5 5-7H8z" stroke="#111" stroke-width="2" stroke-linejoin="round"/></svg></span>
+                      <span><span style="font-weight:600;font-size:14px;display:block">BSES Rajdhani</span><span style="font-size:11px;color:#8A7F76">Bills · Today 09:10</span></span>
+                      <span class="money" style="font-size:15px">−₹2,847.50</span></div>
+                    <div class="row"><span class="chip" style="background:#23B471;width:30px;height:30px"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 12l4-5 3 3 4-6" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                      <span><span style="font-weight:600;font-size:14px;display:block">Parag Parikh Flexi Cap</span><span style="font-size:11px;color:#8A7F76">Zerodha SIP · Sat 6:30 PM</span></span>
+                      <span class="money" style="font-size:15px">−₹25,000</span></div>
+                    <div class="row"><span class="chip" style="background:#5483D3;width:30px;height:30px"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="2.5" y="4" width="11" height="8" rx="1.5" stroke="#111" stroke-width="2"/></svg></span>
+                      <span><span style="font-weight:600;font-size:14px;display:block">Netflix</span><span style="font-size:11px;color:#8A7F76">Subscriptions · Sat 9:15 PM</span></span>
+                      <span class="money" style="font-size:15px">−₹649</span></div>
+                    <div class="row"><span class="chip" style="background:#FBA130;width:30px;height:30px"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><circle cx="5" cy="11" r="2" stroke="#111" stroke-width="2"/><circle cx="12" cy="11" r="2" stroke="#111" stroke-width="2"/><path d="M3 11V6h8l2 5" stroke="#111" stroke-width="2" stroke-linejoin="round"/></svg></span>
+                      <span><span style="font-weight:600;font-size:14px;display:block">Rapido</span><span style="font-size:11px;color:#8A7F76">Transport · 28 Aug</span></span>
+                      <span class="money" style="font-size:15px">−₹487</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ B · KOSH ============================ -->
+<style>
+.B{--bg:#F2F9FF;--ink:#0A0A0A;--blue:#14199C;--blue2:#5483D3;--rule:#C6DAEE;--dim:#5E7183;
+   --disp:"Switzer",sans-serif;--num:"JetBrains Mono",ui-monospace,monospace;}
+.B .frame{background:var(--bg);color:var(--ink);font-family:var(--disp)}
+.B .lab{font-family:var(--num);font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:500;color:var(--dim)}
+.B .money{font-family:var(--num);font-variant-numeric:tabular-nums}
+.B .pill{border:1.5px solid var(--ink);border-radius:999px;background:var(--ink);color:#F2F9FF;
+  font-family:var(--disp);font-weight:600;font-size:15px;padding:15px 30px;box-shadow:0 2px 0 var(--ink);cursor:pointer}
+.B .fld{border:0;border-bottom:1.5px solid var(--ink);background:transparent;padding:12px 0;
+  font-family:var(--disp);font-size:19px;font-weight:500;color:var(--ink);width:100%;border-radius:0}
+/* login */
+.B .lg{height:900px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px;position:relative}
+/* dashboard */
+.B .nav{display:flex;align-items:center;gap:34px;padding:0 56px;height:64px;border-bottom:1px solid var(--rule)}
+.B .nav a{font-size:13px;font-weight:500;color:var(--dim);text-decoration:none}
+.B .nav a.on{color:var(--ink);font-weight:600}
+.B .grid12{display:grid;grid-template-columns:repeat(12,1fr);gap:0;padding:0 56px}
+.B .col{border-right:1px solid var(--rule);padding:26px 24px 26px 0}
+.B .col:last-child{border-right:0}
+.B table.led{width:100%;border-collapse:collapse}
+.B table.led th{text-align:left;font-family:var(--num);font-size:9px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--dim);font-weight:500;padding:0 0 10px;border-bottom:1px solid var(--ink)}
+.B table.led td{padding:12px 0;border-bottom:1px solid var(--rule);font-size:14px;font-weight:500;vertical-align:baseline}
+.B table.led td.n{font-family:var(--num);font-variant-numeric:tabular-nums;text-align:right;font-size:14px;font-weight:500}
+</style>
+<section class="dir B" id="b">
+  <div class="wrap dir-head">
+    <div class="dir-rule" style="background:#5483D3;height:2px;margin-bottom:44px"></div>
+    <p class="dir-letter">Direction B</p>
+    <div class="dir-title">
+      <h2>Kosh</h2>
+      <span class="tag">quarantined at the door</span>
+      <span class="tag">safe · ships Monday</span>
+    </div>
+    <p class="position"><b>Position:</b> the login is a full illustrated set-piece — a hand-drawn tijori you literally open. Then the door closes behind you and the dashboard is Swiss: a 12-column ruled grid, hairlines, one blue rule, monospaced figures, zero illustration. <b>Playfulness is a threshold ritual, not a permanent resident.</b> This is the direction that stays legible on day 900.</p>
+    <div class="mini-axis"><i style="left:8%;background:#5483D3"></i></div>
+    <div class="mini-ends"><span>quarantined</span><span>all the way in</span></div>
+
+    <div class="meta-grid">
+      <div class="meta">
+        <h3>Palette · cool cream base</h3>
+        <div class="sw-row">
+          <div class="sw"><i style="background:#F2F9FF"></i><b>#F2F9FF</b><span>base</span></div>
+          <div class="sw"><i style="background:#E4F0FB"></i><b>#E4F0FB</b><span>fill</span></div>
+          <div class="sw"><i style="background:#C6DAEE"></i><b>#C6DAEE</b><span>hairline</span></div>
+          <div class="sw"><i style="background:#0A0A0A"></i><b>#0A0A0A</b><span>ink</span></div>
+          <div class="sw"><i style="background:#14199C"></i><b>#14199C</b><span>primary</span></div>
+          <div class="sw"><i style="background:#5483D3"></i><b>#5483D3</b><span>support</span></div>
+          <div class="sw"><i style="background:#23B471"></i><b>#23B471</b><span>gain only</span></div>
+          <div class="sw"><i style="background:#5E7183"></i><b>#5E7183</b><span>dim</span></div>
+        </div>
+      </div>
+      <div class="meta">
+        <h3>Type · Switzer + JetBrains Mono</h3>
+        <div class="spec">
+          <p class="disp" style="font-family:'Switzer',sans-serif;font-weight:800;font-size:46px">Good evening</p>
+          <p class="num" style="font-family:'JetBrains Mono',monospace;font-weight:600;font-size:44px;font-variant-numeric:tabular-nums;letter-spacing:-.04em">₹42,18,650</p>
+          <p class="note"><b>Display</b> Switzer 800 — neutral, Swiss, gets out of the way.<br><b>Numeric</b> JetBrains Mono 600 — every column aligns without effort; the tool reads as an instrument.<br>0123456789 · ₹1,24,300 · −₹2,847.50</p>
+        </div>
+      </div>
+      <div class="meta">
+        <h3>Name</h3>
+        <div class="namecard">
+          <p class="n">Kosh</p>
+          <p>कोष — treasury, corpus, the store of value. One syllable, unmistakably Indian, sober enough to sit above a net-worth figure without irony. The wordmark is set in Switzer 800 and never illustrated.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap shots">
+    <div>
+      <p class="shot-label"><b>Login</b> <span>1440 × 900 · the one big illustrated moment</span></p>
+      <div class="viewport"><div class="frame">
+        <div class="lg">
+          <div style="position:absolute;top:34px;left:56px;display:flex;align-items:center;gap:9px">
+            <div style="width:10px;height:10px;background:#14199C;border-radius:50%"></div>
+            <span style="font-weight:800;font-size:17px;letter-spacing:-.02em">Kosh</span>
+          </div>
+          <svg width="300" height="278" viewBox="0 0 260 240" data-draw fill="none">
+            <!-- back plate -->
+            <rect x="24" y="20" width="212" height="200" rx="26" fill="#E4F0FB" stroke="#0A0A0A" stroke-width="5"/>
+            <rect x="40" y="36" width="180" height="168" rx="16" fill="none" stroke="#0A0A0A" stroke-width="2"/>
+            <!-- hinges -->
+            <rect x="16" y="58" width="16" height="26" rx="6" fill="#5483D3" stroke="#0A0A0A" stroke-width="4"/>
+            <rect x="16" y="158" width="16" height="26" rx="6" fill="#5483D3" stroke="#0A0A0A" stroke-width="4"/>
+            <!-- dial ticks -->
+            <path d="M114 58 v10 M114 172 v10 M58 120 h10 M160 120 h10" stroke="#0A0A0A" stroke-width="4" stroke-linecap="round"/>
+            <path d="M74 80 l7 7 M154 160 l7 7 M154 80 l-7 7 M74 160 l7 -7" stroke="#0A0A0A" stroke-width="4" stroke-linecap="round"/>
+            <!-- dial -->
+            <circle cx="114" cy="120" r="44" fill="#14199C" stroke="#0A0A0A" stroke-width="5"/>
+            <circle cx="114" cy="120" r="15" fill="#F2F9FF" stroke="#0A0A0A" stroke-width="4"/>
+            <path d="M114 105 v-22" stroke="#F2F9FF" stroke-width="5" stroke-linecap="round"/>
+            <!-- handle -->
+            <rect x="192" y="100" width="15" height="42" rx="7.5" fill="#5483D3" stroke="#0A0A0A" stroke-width="4"/>
+            <!-- note peeking out of the top gap -->
+            <path d="M150 24 l44 -12 l7 24 l-44 12 z" fill="#FBA130" stroke="#0A0A0A" stroke-width="4" stroke-linejoin="round"/>
+            <text x="172" y="26" text-anchor="middle" transform="rotate(-15 172 26)" font-family="Switzer, sans-serif" font-weight="800" font-size="15" fill="#0A0A0A">₹</text>
+            <!-- feet -->
+            <rect x="52" y="220" width="26" height="14" rx="5" fill="#0A0A0A"/>
+            <rect x="182" y="220" width="26" height="14" rx="5" fill="#0A0A0A"/>
+          </svg>
+
+          <h1 style="font-weight:800;font-size:56px;letter-spacing:-.035em;line-height:1;margin:46px 0 12px;text-align:center">Open the kosh</h1>
+          <p style="font-size:16px;color:#5E7183;margin:0 0 46px;text-align:center;max-width:44ch;line-height:1.55">Enter your email. A six-digit code arrives in about ten seconds.</p>
+          <div style="width:400px">
+            <p class="lab" style="margin:0 0 4px">Email</p>
+            <input class="fld" type="email" value="om@omrajpal.in" style="margin-bottom:30px">
+            <button class="pill" style="width:100%">Send code</button>
+          </div>
+          <p class="lab" style="position:absolute;bottom:34px;left:56px;opacity:.75">Signature motion · the dial rotates 240° and the door hairline draws itself before the form fades up</p>
+          <p class="lab" style="position:absolute;bottom:34px;right:56px">Single tenant · one account · no signup</p>
+        </div>
+      </div></div>
+    </div>
+
+    <div>
+      <p class="shot-label"><b>Dashboard</b> <span>1440 × 900 · Swiss ruled grid · no illustration past this point</span></p>
+      <div class="viewport"><div class="frame">
+        <div style="height:900px;display:flex;flex-direction:column">
+          <div style="height:4px;background:#14199C"></div>
+          <div class="nav">
+            <span style="font-weight:800;font-size:17px;letter-spacing:-.02em;margin-right:16px">Kosh</span>
+            <a href="#" class="on">Overview</a><a href="#">Accounts</a><a href="#">Transactions</a><a href="#">Investments</a><a href="#">Budgets</a>
+            <span class="lab" style="margin-left:auto">30 Aug 2026 · 19:04 IST</span>
+          </div>
+
+          <div style="padding:44px 56px 30px;border-bottom:1px solid #C6DAEE">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between">
+              <div>
+                <p class="lab" style="margin:0 0 14px">Net worth · all accounts</p>
+                <p class="money" style="font-size:78px;font-weight:600;line-height:.9;margin:0;letter-spacing:-.05em" data-countup="4218650">₹42,18,650</p>
+              </div>
+              <div style="display:flex;gap:52px;align-items:flex-end;padding-bottom:8px">
+                <div><p class="lab" style="margin:0 0 8px">30-day change</p><p class="money" style="font-size:26px;font-weight:600;margin:0;color:#0E7C4E">+₹86,420</p></div>
+                <div><p class="lab" style="margin:0 0 8px">Percent</p><p class="money" style="font-size:26px;font-weight:600;margin:0;color:#0E7C4E">+2.09%</p></div>
+                <div><p class="lab" style="margin:0 0 8px">Assets / liabilities</p><p class="money" style="font-size:26px;font-weight:600;margin:0">42,81,050 / 62,400</p></div>
+                <svg width="200" height="56" viewBox="0 0 200 56" fill="none"><path d="M2 48 L26 44 L50 47 L74 32 L98 36 L122 20 L146 25 L170 12 L198 4" stroke="#14199C" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 48 L26 44 L50 47 L74 32 L98 36 L122 20 L146 25 L170 12 L198 4 L198 56 L2 56 Z" fill="#14199C" fill-opacity=".07"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid12" style="flex:1;border-bottom:1px solid #C6DAEE">
+            <div class="col" style="grid-column:span 5">
+              <p class="lab" style="margin:0 0 18px">Accounts</p>
+              <table class="led">
+                <thead><tr><th>Institution</th><th>Type</th><th style="text-align:right">Balance</th></tr></thead>
+                <tbody data-rise>
+                  <tr><td>HDFC Bank</td><td style="color:#5E7183">Savings</td><td class="n">3,84,210</td></tr>
+                  <tr><td>ICICI Bank</td><td style="color:#5E7183">Salary</td><td class="n">1,12,940</td></tr>
+                  <tr><td>Zerodha</td><td style="color:#5E7183">Equity</td><td class="n">24,90,180</td></tr>
+                  <tr><td>Kuvera</td><td style="color:#5E7183">Mutual funds</td><td class="n">9,68,320</td></tr>
+                  <tr><td>EPFO</td><td style="color:#5E7183">Retirement</td><td class="n">3,25,400</td></tr>
+                  <tr><td>Amex India</td><td style="color:#5E7183">Credit card</td><td class="n" style="color:#B03A3A">−62,400</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="col" style="grid-column:span 3">
+              <p class="lab" style="margin:0 0 18px">Allocation</p>
+              <div style="display:flex;height:10px;border:1px solid #0A0A0A;margin-bottom:22px">
+                <div style="width:38%;background:#14199C"></div>
+                <div style="width:30%;background:#5483D3"></div>
+                <div style="width:12%;background:#A8C6E8"></div>
+                <div style="width:11%;background:#E4F0FB"></div>
+                <div style="width:9%;background:#F2F9FF"></div>
+              </div>
+              <table class="led">
+                <tbody>
+                  <tr><td><span style="display:inline-block;width:8px;height:8px;background:#14199C;margin-right:9px"></span>Stocks</td><td class="n">38%</td></tr>
+                  <tr><td><span style="display:inline-block;width:8px;height:8px;background:#5483D3;margin-right:9px"></span>Mutual funds</td><td class="n">30%</td></tr>
+                  <tr><td><span style="display:inline-block;width:8px;height:8px;background:#A8C6E8;margin-right:9px"></span>Cash</td><td class="n">12%</td></tr>
+                  <tr><td><span style="display:inline-block;width:8px;height:8px;background:#E4F0FB;border:1px solid #0A0A0A;margin-right:9px"></span>EPF</td><td class="n">11%</td></tr>
+                  <tr><td><span style="display:inline-block;width:8px;height:8px;background:#F2F9FF;border:1px solid #0A0A0A;margin-right:9px"></span>Gold</td><td class="n">9%</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="col" style="grid-column:span 4;padding-right:0">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 0 18px">
+                <p class="lab" style="margin:0">Recent activity</p>
+                <p class="lab" style="margin:0;color:#14199C">3 auto-imported today</p>
+              </div>
+              <table class="led">
+                <tbody data-rise>
+                  <tr><td>Swiggy Instamart<br><span class="lab" style="font-size:9px;letter-spacing:.1em;color:#14199C">HDFC alert · 3m ago</span></td><td class="n">−1,284</td></tr>
+                  <tr><td>BSES Rajdhani<br><span class="lab" style="font-size:9px;letter-spacing:.1em">Today 09:10</span></td><td class="n">−2,847.50</td></tr>
+                  <tr><td>Parag Parikh Flexi Cap<br><span class="lab" style="font-size:9px;letter-spacing:.1em">Zerodha SIP · Sat 18:30</span></td><td class="n">−25,000</td></tr>
+                  <tr><td>Netflix<br><span class="lab" style="font-size:9px;letter-spacing:.1em">Sat 21:15</span></td><td class="n">−649</td></tr>
+                  <tr><td>Rapido<br><span class="lab" style="font-size:9px;letter-spacing:.1em">28 Aug</span></td><td class="n">−487</td></tr>
+                  <tr><td>Apollo Pharmacy<br><span class="lab" style="font-size:9px;letter-spacing:.1em">27 Aug</span></td><td class="n">−930</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="padding:16px 56px;display:flex;justify-content:space-between;align-items:center">
+            <p class="lab" style="margin:0">August spend ₹1,24,300 of ₹1,45,000 · 86%</p>
+            <div style="flex:1;height:6px;background:#E4F0FB;border:1px solid #0A0A0A;margin:0 28px;position:relative">
+              <div style="width:86%;height:100%;background:#14199C" data-rule></div>
+            </div>
+            <p class="lab" style="margin:0">₹20,700 left · 1 day</p>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ C · SORTED ============================ -->
+<style>
+.C{--bg:#FAF5F2;--ink:#1A1A1A;--rule:#E2D8D0;--dim:#7D7169;
+   --food:#F9ACCE;--bills:#F1A007;--invest:#23B471;--transport:#5483D3;--shop:#FBA130;--health:#14199C;
+   --disp:"Bricolage Grotesque",sans-serif;--ui:"Geist",system-ui,sans-serif;--num:"Geist Mono",ui-monospace,monospace;}
+.C .frame{background:var(--bg);color:var(--ink);font-family:var(--ui)}
+.C .disp{font-family:var(--disp);font-weight:800;letter-spacing:-.035em}
+.C .lab{font-family:var(--num);font-size:10px;letter-spacing:.15em;text-transform:uppercase;font-weight:500;color:var(--dim)}
+.C .money{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:500}
+.C .pill{border:1.5px solid var(--ink);border-radius:999px;background:var(--ink);color:#FAF5F2;
+  font-family:var(--ui);font-weight:600;font-size:15px;padding:15px 30px;box-shadow:0 2px 0 var(--ink);cursor:pointer}
+.C .fld{border:1.5px solid var(--ink);border-radius:999px;background:transparent;padding:15px 22px;
+  font-family:var(--ui);font-size:16px;color:var(--ink);width:100%}
+.C .cchip{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--ink);display:grid;place-items:center;flex:none}
+.C .crow{display:grid;grid-template-columns:30px 1fr auto;gap:14px;align-items:center;padding:14px 0;border-bottom:1px solid var(--rule)}
+.C .crow:last-child{border-bottom:0}
+.C .panel{border:1.5px solid var(--ink);border-radius:22px;padding:22px 24px}
+.C .side{width:232px;border-right:1.5px solid var(--ink);padding:26px 22px;display:flex;flex-direction:column}
+.C .navrow{display:flex;align-items:center;gap:12px;padding:9px 0;font-size:14px;font-weight:500;color:var(--dim)}
+.C .navrow.on{color:var(--ink);font-weight:600}
+</style>
+<section class="dir C" id="c">
+  <div class="wrap dir-head">
+    <div class="dir-rule" style="background:#23B471;height:2px;margin-bottom:44px"></div>
+    <p class="dir-letter">Direction C</p>
+    <div class="dir-title">
+      <h2>Sorted</h2>
+      <span class="tag">the chip system carries everything</span>
+      <span class="tag">the practical middle</span>
+    </div>
+    <p class="position"><b>Position:</b> a direct lift of ref-1's colour-coded category rail, made load-bearing. The layout is quiet and the type is disciplined — <b>all of the personality lives in a five-colour chip system</b> that runs down the sidebar, tags every transaction, and colours every bar. No mascot, no illustration past the login. Colour is the character.</p>
+    <div class="mini-axis"><i style="left:56%;background:#23B471"></i></div>
+    <div class="mini-ends"><span>quarantined</span><span>all the way in</span></div>
+
+    <div class="meta-grid">
+      <div class="meta">
+        <h3>Palette · warm cream + a fixed five-chip set</h3>
+        <div class="sw-row">
+          <div class="sw"><i style="background:#FAF5F2"></i><b>#FAF5F2</b><span>base</span></div>
+          <div class="sw"><i style="background:#E2D8D0"></i><b>#E2D8D0</b><span>hairline</span></div>
+          <div class="sw"><i style="background:#1A1A1A"></i><b>#1A1A1A</b><span>ink</span></div>
+          <div class="sw"><i style="background:#F9ACCE"></i><b>#F9ACCE</b><span>food</span></div>
+          <div class="sw"><i style="background:#F1A007"></i><b>#F1A007</b><span>bills</span></div>
+          <div class="sw"><i style="background:#23B471"></i><b>#23B471</b><span>invest</span></div>
+          <div class="sw"><i style="background:#5483D3"></i><b>#5483D3</b><span>transport</span></div>
+          <div class="sw"><i style="background:#FBA130"></i><b>#FBA130</b><span>shopping</span></div>
+          <div class="sw"><i style="background:#14199C"></i><b>#14199C</b><span>health</span></div>
+        </div>
+      </div>
+      <div class="meta">
+        <h3>Type · Bricolage Grotesque + Geist Mono</h3>
+        <div class="spec">
+          <p class="disp" style="font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:46px">Sorted.</p>
+          <p class="num" style="font-family:'Geist Mono',monospace;font-weight:500;font-size:46px;font-variant-numeric:tabular-nums;letter-spacing:-.03em">₹42,18,650</p>
+          <p class="note"><b>Display</b> Bricolage Grotesque 800 — a grotesk with visible quirks in the a, g and R; warm without being rounded-cute.<br><b>Numeric</b> Geist Mono 500 — quiet, evenly-coloured, disappears behind the chips.<br>0123456789 · ₹1,24,300 · −₹2,847.50</p>
+        </div>
+      </div>
+      <div class="meta">
+        <h3>Name</h3>
+        <div class="namecard">
+          <p class="n">Sorted</p>
+          <p>Plain-confident English, and the name is the mechanic: every rupee here has been sorted into a coloured chip. It doubles as the feeling you want at the end of a session — <em>sorted</em>.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap shots">
+    <div>
+      <p class="shot-label"><b>Login</b> <span>1440 × 900 · the chip system as hero</span></p>
+      <div class="viewport"><div class="frame">
+        <div style="display:grid;grid-template-columns:1fr 1fr;height:900px">
+          <div style="padding:56px 80px;display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="display:flex"><span style="width:13px;height:13px;border-radius:50%;background:#F9ACCE;border:1.5px solid #1A1A1A"></span><span style="width:13px;height:13px;border-radius:50%;background:#23B471;border:1.5px solid #1A1A1A;margin-left:-5px"></span><span style="width:13px;height:13px;border-radius:50%;background:#5483D3;border:1.5px solid #1A1A1A;margin-left:-5px"></span></div>
+              <span class="disp" style="font-size:19px">Sorted</span>
+            </div>
+            <div style="margin:auto 0">
+              <p class="lab" style="margin:0 0 18px;color:#23B471">Everything is where you left it</p>
+              <h1 class="disp" style="font-size:70px;line-height:.92;margin:0 0 20px">Six years<br>of money,<br>filed.</h1>
+              <p style="font-size:16px;line-height:1.6;color:#7D7169;margin:0 0 36px;max-width:36ch">4,812 transactions across nine accounts, every one of them already in a category. Sign in and pick up where you were.</p>
+              <p class="lab" style="margin:0 0 8px">Email</p>
+              <input class="fld" type="email" value="om@omrajpal.in" style="margin-bottom:14px">
+              <button class="pill" style="width:100%">Send code</button>
+            </div>
+            <p class="lab" style="margin:0">Signature motion · the five chips fly in from the corners and snap into orbit, then the ₹ counts from 0</p>
+          </div>
+
+          <div style="background:#FCE4CA;border-left:1.5px solid #1A1A1A;display:grid;place-items:center;position:relative">
+            <svg width="430" height="344" viewBox="0 0 300 240" data-draw fill="none">
+              <!-- connectors -->
+              <path d="M150 66 V26 M196 120 H256 M104 120 H44 M176 160 L226 196 M124 160 L74 196" stroke="#1A1A1A" stroke-width="1.5" stroke-dasharray="4 5"/>
+              <!-- centre -->
+              <circle cx="150" cy="120" r="54" fill="#FAF5F2" stroke="#1A1A1A" stroke-width="4"/>
+              <text x="150" y="141" text-anchor="middle" font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="54" fill="#1A1A1A">₹</text>
+              <!-- chip: food (pink, chai cup) -->
+              <circle cx="150" cy="26" r="26" fill="#F9ACCE" stroke="#1A1A1A" stroke-width="4"/>
+              <path d="M140 20 h17 v10 a8.5 8.5 0 0 1 -17 0 z" stroke="#1A1A1A" stroke-width="3" stroke-linejoin="round"/>
+              <path d="M157 22 a5 5 0 0 1 0 8" stroke="#1A1A1A" stroke-width="3"/>
+              <path d="M145 14 v-4 M152 14 v-4" stroke="#1A1A1A" stroke-width="3" stroke-linecap="round"/>
+              <!-- chip: invest (green, chart) -->
+              <circle cx="256" cy="86" r="26" fill="#23B471" stroke="#1A1A1A" stroke-width="4"/>
+              <path d="M245 94 l6 -8 l5 5 l7 -12" stroke="#1A1A1A" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M258 79 h6 v6" stroke="#1A1A1A" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- chip: bills (mustard, bolt) -->
+              <circle cx="226" cy="196" r="26" fill="#F1A007" stroke="#1A1A1A" stroke-width="4"/>
+              <path d="M229 184 l-8 11 h6 l-2 9 l9 -12 h-6 z" stroke="#1A1A1A" stroke-width="3.5" stroke-linejoin="round"/>
+              <!-- chip: transport (blue, auto) -->
+              <circle cx="74" cy="196" r="26" fill="#5483D3" stroke="#1A1A1A" stroke-width="4"/>
+              <path d="M64 199 v-9 h13 l4 9" stroke="#1A1A1A" stroke-width="3.5" stroke-linejoin="round"/>
+              <circle cx="68" cy="203" r="3.5" stroke="#1A1A1A" stroke-width="3"/>
+              <circle cx="79" cy="203" r="3.5" stroke="#1A1A1A" stroke-width="3"/>
+              <!-- chip: shopping (orange, bag) -->
+              <circle cx="44" cy="86" r="26" fill="#FBA130" stroke="#1A1A1A" stroke-width="4"/>
+              <path d="M35 82 h18 l-2 13 h-14 z" stroke="#1A1A1A" stroke-width="3.5" stroke-linejoin="round"/>
+              <path d="M40 82 a4 4 0 0 1 8 0" stroke="#1A1A1A" stroke-width="3.5"/>
+            </svg>
+            <p class="lab" style="position:absolute;bottom:48px;left:0;right:0;text-align:center;color:#1A1A1A;opacity:.6">six categories · one colour each · never changes</p>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div>
+      <p class="shot-label"><b>Dashboard</b> <span>1440 × 900 · quiet layout, loud taxonomy</span></p>
+      <div class="viewport"><div class="frame">
+        <div style="display:flex;height:900px">
+          <aside class="side">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:34px">
+              <div style="display:flex"><span style="width:13px;height:13px;border-radius:50%;background:#F9ACCE;border:1.5px solid #1A1A1A"></span><span style="width:13px;height:13px;border-radius:50%;background:#23B471;border:1.5px solid #1A1A1A;margin-left:-5px"></span><span style="width:13px;height:13px;border-radius:50%;background:#5483D3;border:1.5px solid #1A1A1A;margin-left:-5px"></span></div>
+              <span class="disp" style="font-size:18px">Sorted</span>
+            </div>
+            <div class="navrow on"><span class="cchip" style="background:#1A1A1A;width:22px;height:22px"><span style="color:#FAF5F2;font-size:10px">◧</span></span>Overview</div>
+            <div class="navrow"><span class="cchip" style="background:transparent;width:22px;height:22px"><span style="font-size:10px">◍</span></span>Accounts</div>
+            <div class="navrow"><span class="cchip" style="background:transparent;width:22px;height:22px"><span style="font-size:10px">≡</span></span>Transactions</div>
+            <div class="navrow"><span class="cchip" style="background:transparent;width:22px;height:22px"><span style="font-size:10px">↗</span></span>Investments</div>
+
+            <p class="lab" style="margin:34px 0 14px">Categories · August</p>
+            <div style="display:flex;flex-direction:column;gap:11px">
+              <div style="display:flex;align-items:center;gap:11px"><span class="cchip" style="background:#FBA130;width:26px;height:26px"></span><span style="font-size:13px;font-weight:500">Shopping</span><span class="money" style="font-size:12px;margin-left:auto">28,940</span></div>
+              <div style="display:flex;align-items:center;gap:11px"><span class="cchip" style="background:#F9ACCE;width:26px;height:26px"></span><span style="font-size:13px;font-weight:500">Food</span><span class="money" style="font-size:12px;margin-left:auto">21,300</span></div>
+              <div style="display:flex;align-items:center;gap:11px"><span class="cchip" style="background:#F1A007;width:26px;height:26px"></span><span style="font-size:13px;font-weight:500">Bills</span><span class="money" style="font-size:12px;margin-left:auto">18,420</span></div>
+              <div style="display:flex;align-items:center;gap:11px"><span class="cchip" style="background:#5483D3;width:26px;height:26px"></span><span style="font-size:13px;font-weight:500">Transport</span><span class="money" style="font-size:12px;margin-left:auto">9,180</span></div>
+              <div style="display:flex;align-items:center;gap:11px"><span class="cchip" style="background:#14199C;width:26px;height:26px"></span><span style="font-size:13px;font-weight:500">Health</span><span class="money" style="font-size:12px;margin-left:auto">6,510</span></div>
+              <div style="display:flex;align-items:center;gap:11px"><span class="cchip" style="background:#23B471;width:26px;height:26px"></span><span style="font-size:13px;font-weight:500">Invested</span><span class="money" style="font-size:12px;margin-left:auto">25,000</span></div>
+            </div>
+            <p class="lab" style="margin-top:auto">Hover a chip to dim the rest</p>
+          </aside>
+
+          <div style="flex:1;padding:30px 36px;overflow:hidden">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:26px">
+              <div>
+                <h1 class="disp" style="font-size:26px;margin:0">Sunday, 30 August</h1>
+                <p style="font-size:13px;color:#7D7169;margin:3px 0 0">Last Gmail sync 2m ago · 3 transactions imported</p>
+              </div>
+              <button class="pill" style="padding:10px 20px;font-size:13px">Add entry</button>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 400px;gap:24px">
+              <div>
+                <div class="panel" style="margin-bottom:22px">
+                  <p class="lab" style="margin:0 0 10px">Net worth</p>
+                  <p class="money" style="font-size:72px;line-height:.9;margin:0;letter-spacing:-.045em;font-weight:500" data-countup="4218650">₹42,18,650</p>
+                  <div style="display:flex;align-items:center;gap:14px;margin-top:14px">
+                    <span class="cchip" style="background:#23B471"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 12V4M4 8l4-4 4 4" stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span class="money" style="font-size:16px">+₹86,420</span>
+                    <span style="font-size:13px;color:#7D7169">+2.09% in 30 days</span>
+                    <svg width="150" height="34" viewBox="0 0 150 34" fill="none" style="margin-left:auto"><path d="M2 28 L20 25 L38 27 L56 17 L74 20 L92 11 L110 14 L128 7 L148 3" stroke="#23B471" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                  </div>
+                </div>
+
+                <div class="panel">
+                  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px">
+                    <p class="lab" style="margin:0">Spending · August</p>
+                    <p class="money" style="margin:0;font-size:14px">₹1,24,300 <span style="color:#7D7169">/ ₹1,45,000</span></p>
+                  </div>
+                  <div style="display:flex;height:22px;border:1.5px solid #1A1A1A;border-radius:999px;overflow:hidden">
+                    <div style="width:31%;background:#FBA130"></div>
+                    <div style="width:23%;background:#F9ACCE;border-left:1.5px solid #1A1A1A"></div>
+                    <div style="width:20%;background:#F1A007;border-left:1.5px solid #1A1A1A"></div>
+                    <div style="width:10%;background:#5483D3;border-left:1.5px solid #1A1A1A"></div>
+                    <div style="width:7%;background:#14199C;border-left:1.5px solid #1A1A1A"></div>
+                    <div style="width:9%;background:transparent;border-left:1.5px solid #1A1A1A"></div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;margin-top:12px">
+                    <span class="lab">shopping 31%</span><span class="lab">food 23%</span><span class="lab">bills 20%</span><span class="lab">transport 10%</span><span class="lab">health 7%</span><span class="lab" style="color:#1A1A1A">₹20,700 left</span>
+                  </div>
+                  <div style="border-top:1px solid #E2D8D0;margin-top:20px;padding-top:16px;display:flex;gap:34px">
+                    <div><p class="lab" style="margin:0 0 6px">Top holding</p><p style="font-size:14px;font-weight:600;margin:0">Parag Parikh Flexi Cap</p><p class="money" style="font-size:13px;margin:3px 0 0;color:#0E7C4E">₹6,42,180 · +14.8%</p></div>
+                    <div><p class="lab" style="margin:0 0 6px">Biggest mover</p><p style="font-size:14px;font-weight:600;margin:0">RELIANCE</p><p class="money" style="font-size:13px;margin:3px 0 0;color:#0E7C4E">₹1,42,900 · +1.2%</p></div>
+                    <div><p class="lab" style="margin:0 0 6px">Next SIP</p><p style="font-size:14px;font-weight:600;margin:0">1 Sep · Nippon Small Cap</p><p class="money" style="font-size:13px;margin:3px 0 0">₹10,000</p></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel" style="padding:20px 24px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+                  <p class="lab" style="margin:0">Recent</p><p class="lab" style="margin:0;color:#23B471">3 auto-imported</p>
+                </div>
+                <div data-rise>
+                  <div class="crow"><span class="cchip" style="background:#F9ACCE"></span><span><span style="font-size:14px;font-weight:600;display:block">Swiggy Instamart</span><span class="lab" style="font-size:9px">HDFC alert · 3m ago</span></span><span class="money" style="font-size:14px">−1,284</span></div>
+                  <div class="crow"><span class="cchip" style="background:#F1A007"></span><span><span style="font-size:14px;font-weight:600;display:block">BSES Rajdhani</span><span class="lab" style="font-size:9px">Today 09:10</span></span><span class="money" style="font-size:14px">−2,847.50</span></div>
+                  <div class="crow"><span class="cchip" style="background:#23B471"></span><span><span style="font-size:14px;font-weight:600;display:block">Parag Parikh Flexi Cap</span><span class="lab" style="font-size:9px">Zerodha SIP · Sat 6:30 PM</span></span><span class="money" style="font-size:14px">−25,000</span></div>
+                  <div class="crow"><span class="cchip" style="background:#FBA130"></span><span><span style="font-size:14px;font-weight:600;display:block">Amazon.in</span><span class="lab" style="font-size:9px">Amex alert · Sat 4:12 PM</span></span><span class="money" style="font-size:14px">−7,499</span></div>
+                  <div class="crow"><span class="cchip" style="background:#5483D3"></span><span><span style="font-size:14px;font-weight:600;display:block">Rapido</span><span class="lab" style="font-size:9px">28 Aug</span></span><span class="money" style="font-size:14px">−487</span></div>
+                  <div class="crow"><span class="cchip" style="background:#14199C"></span><span><span style="font-size:14px;font-weight:600;display:block">Apollo Pharmacy</span><span class="lab" style="font-size:9px">27 Aug</span></span><span class="money" style="font-size:14px">−930</span></div>
+                  <div class="crow"><span class="cchip" style="background:#F9ACCE"></span><span><span style="font-size:14px;font-weight:600;display:block">Blinkit</span><span class="lab" style="font-size:9px">27 Aug</span></span><span class="money" style="font-size:14px">−1,142</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ D · LEDGER& ============================ -->
+<style>
+.D{--bg:#F7F1E4;--ink:#1A1A1A;--rulel:#C3D3E4;--margin:#FBA130;--dim:#7B7261;--blue:#14199C;
+   --disp:"Bespoke Slab","Switzer",serif;--ui:"Supreme",system-ui,sans-serif;--num:"DM Mono",ui-monospace,monospace;}
+.D .frame{background:var(--bg);color:var(--ink);font-family:var(--ui)}
+.D .ruled{background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 35px,var(--rulel) 35px,var(--rulel) 36px)}
+.D .disp{font-family:var(--disp);font-weight:700;letter-spacing:-.015em}
+.D .lab{font-family:var(--num);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.D .money{font-family:var(--num);font-variant-numeric:tabular-nums;font-weight:500}
+.D .pill{border:1.5px solid var(--ink);border-radius:4px;background:var(--ink);color:#F7F1E4;
+  font-family:var(--ui);font-weight:700;font-size:15px;padding:15px 30px;box-shadow:0 2px 0 var(--ink);cursor:pointer;letter-spacing:.02em}
+.D .fld{border:0;border-bottom:1.5px solid var(--ink);background:transparent;padding:10px 0;border-radius:0;
+  font-family:var(--num);font-size:18px;color:var(--ink);width:100%}
+.D .stampmark{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--margin);color:#B4700B;
+  border-radius:3px;padding:3px 7px;font-family:var(--num);font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  transform:rotate(-1.6deg)}
+.D .ledrow{display:grid;grid-template-columns:82px 1fr 132px 150px;align-items:center;height:36px;
+  border-bottom:1px solid var(--rulel);font-size:14px}
+</style>
+<section class="dir D" id="d">
+  <div class="wrap dir-head">
+    <div class="dir-rule" style="background:#FBA130;height:2px;margin-bottom:44px"></div>
+    <p class="dir-letter">Direction D</p>
+    <div class="dir-title">
+      <h2>Ledger&amp;</h2>
+      <span class="tag">warmth from material, not characters</span>
+      <span class="tag">safe · quietly distinctive</span>
+    </div>
+    <p class="position"><b>Position:</b> the play comes from <b>paper</b>. A bahi-khata — the red cloth-bound ledger every Indian family business keeps — rendered as an interface: blue rule lines, an orange margin rule at 72px, entries written on the rules, a running balance column, and a rubber stamp on every row the Gmail parser brought in. Charm without a single face on the dashboard.</p>
+    <div class="mini-axis"><i style="left:34%;background:#FBA130"></i></div>
+    <div class="mini-ends"><span>quarantined</span><span>all the way in</span></div>
+
+    <div class="meta-grid">
+      <div class="meta">
+        <h3>Palette · warm paper base</h3>
+        <div class="sw-row">
+          <div class="sw"><i style="background:#F7F1E4"></i><b>#F7F1E4</b><span>paper</span></div>
+          <div class="sw"><i style="background:#FCE4CA"></i><b>#FCE4CA</b><span>margin block</span></div>
+          <div class="sw"><i style="background:#C3D3E4"></i><b>#C3D3E4</b><span>rule line</span></div>
+          <div class="sw"><i style="background:#FBA130"></i><b>#FBA130</b><span>margin rule</span></div>
+          <div class="sw"><i style="background:#1A1A1A"></i><b>#1A1A1A</b><span>ink</span></div>
+          <div class="sw"><i style="background:#14199C"></i><b>#14199C</b><span>cover blue</span></div>
+          <div class="sw"><i style="background:#23B471"></i><b>#23B471</b><span>credit</span></div>
+          <div class="sw"><i style="background:#7B7261"></i><b>#7B7261</b><span>dim</span></div>
+        </div>
+      </div>
+      <div class="meta">
+        <h3>Type · Bespoke Slab + DM Mono</h3>
+        <div class="spec">
+          <p class="disp" style="font-family:'Bespoke Slab',serif;font-weight:700;font-size:46px">Balance carried</p>
+          <p class="num" style="font-family:'DM Mono',monospace;font-weight:500;font-size:44px;font-variant-numeric:tabular-nums;letter-spacing:-.02em">₹42,18,650</p>
+          <p class="note"><b>Display</b> Bespoke Slab 700 — a slab, not a fashion serif; it reads as stamped rather than published.<br><b>Numeric</b> DM Mono 500 — narrow, ledger-grade, sits on a rule line without crowding it.<br>0123456789 · ₹1,24,300 · −₹2,847.50</p>
+        </div>
+      </div>
+      <div class="meta">
+        <h3>Name</h3>
+        <div class="namecard">
+          <p class="n">Ledger&amp;</p>
+          <p>The ampersand is the point: it is a ledger <em>and</em> everything the old one never did — parses your bank mail, tracks FIFO cost basis, files your tax. The trailing “&amp;” is also the only ornament the brand ever needs.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap shots">
+    <div>
+      <p class="shot-label"><b>Login</b> <span>1440 × 900 · the bahi-khata, opened</span></p>
+      <div class="viewport"><div class="frame">
+        <div style="height:900px;display:flex;position:relative" class="ruled">
+          <div style="position:absolute;left:96px;top:0;bottom:0;width:2px;background:#FBA130"></div>
+          <div style="position:absolute;left:104px;top:0;bottom:0;width:1px;background:#FBA130;opacity:.45"></div>
+
+          <div style="width:96px;padding-top:34px;display:flex;flex-direction:column;align-items:center;gap:8px">
+            <div class="lab" style="writing-mode:vertical-rl;letter-spacing:.3em;margin-top:110px">folio 01 · 2026-27</div>
+          </div>
+
+          <div style="flex:1;padding:56px 80px 56px 60px;display:flex;align-items:center;gap:80px">
+            <div style="flex:1">
+              <p class="lab" style="margin:0 0 20px">Ledger&amp; · private books of Om Rajpal</p>
+              <h1 class="disp" style="font-size:66px;line-height:1;margin:0 0 20px">Open the<br>books.</h1>
+              <p style="font-size:16px;line-height:1.65;color:#7B7261;margin:0 0 42px;max-width:36ch">Six financial years, 4,812 entries, every one reconciled. Type your email and a six-digit code follows.</p>
+              <p class="lab" style="margin:0 0 2px">Email</p>
+              <input class="fld" type="email" value="om@omrajpal.in" style="margin-bottom:34px">
+              <button class="pill">Send code &nbsp;→</button>
+              <p class="lab" style="margin:36px 0 0">Signature motion · the thread unwinds from the button and the cover swings open 12° before the form settles onto the rules</p>
+            </div>
+
+            <div style="flex:none">
+              <svg width="380" height="326" viewBox="0 0 280 240" data-draw fill="none">
+                <!-- pages behind -->
+                <rect x="40" y="46" width="176" height="162" rx="5" fill="#FDFAF2" stroke="#1A1A1A" stroke-width="4"/>
+                <path d="M46 62 h58 M46 74 h58 M46 86 h44" stroke="#C3D3E4" stroke-width="3" stroke-linecap="round"/>
+                <!-- cover -->
+                <rect x="56" y="34" width="176" height="162" rx="6" fill="#14199C" stroke="#1A1A1A" stroke-width="5"/>
+                <rect x="56" y="34" width="18" height="162" fill="#0E1170" stroke="#1A1A1A" stroke-width="5"/>
+                <!-- title panel -->
+                <rect x="94" y="62" width="116" height="46" rx="3" fill="#F7F1E4" stroke="#1A1A1A" stroke-width="4"/>
+                <path d="M104 78 h96 M104 90 h62" stroke="#1A1A1A" stroke-width="3" stroke-linecap="round"/>
+                <!-- thread + button -->
+                <path d="M232 118 q26 6 22 26 q-3 16 -22 12" stroke="#1A1A1A" stroke-width="4" stroke-linecap="round"/>
+                <path d="M56 130 q-20 8 -6 22 q10 10 26 4" stroke="#1A1A1A" stroke-width="4" stroke-linecap="round"/>
+                <circle cx="232" cy="132" r="14" fill="#FBA130" stroke="#1A1A1A" stroke-width="4"/>
+                <circle cx="232" cy="132" r="4" fill="#1A1A1A"/>
+                <!-- folded note bookmark -->
+                <path d="M168 34 l40 -18 l10 22 l-40 18 z" fill="#F1A007" stroke="#1A1A1A" stroke-width="4" stroke-linejoin="round"/>
+                <text x="192" y="32" text-anchor="middle" transform="rotate(-24 192 32)" font-family="Bespoke Slab, serif" font-weight="700" font-size="16" fill="#1A1A1A">₹</text>
+                <!-- stamp -->
+                <circle cx="72" cy="206" r="28" stroke="#FBA130" stroke-width="4"/>
+                <circle cx="72" cy="206" r="21" stroke="#FBA130" stroke-width="2" stroke-dasharray="3 4"/>
+                <text x="72" y="214" text-anchor="middle" font-family="DM Mono, monospace" font-weight="500" font-size="19" fill="#FBA130">₹</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <div>
+      <p class="shot-label"><b>Dashboard</b> <span>1440 × 900 · entries sit on the rules · running balance column</span></p>
+      <div class="viewport"><div class="frame">
+        <div style="height:900px;display:flex;flex-direction:column;position:relative">
+          <div style="position:absolute;left:72px;top:0;bottom:0;width:2px;background:#FBA130;z-index:2"></div>
+          <div style="position:absolute;left:80px;top:0;bottom:0;width:1px;background:#FBA130;opacity:.4;z-index:2"></div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 48px 20px 104px;border-bottom:1.5px solid #1A1A1A">
+            <div style="display:flex;align-items:center;gap:26px">
+              <span class="disp" style="font-size:19px">Ledger&amp;</span>
+              <span class="lab">Overview</span><span class="lab" style="color:#1A1A1A">·</span>
+              <span class="lab">Entries</span><span class="lab">Holdings</span><span class="lab">Budgets</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px">
+              <span class="stampmark">Gmail sync · 2m ago</span>
+              <button class="pill" style="padding:9px 18px;font-size:13px">New entry</button>
+            </div>
+          </div>
+
+          <div style="display:flex;padding:30px 48px 26px 104px;gap:56px;align-items:flex-end;border-bottom:1.5px solid #1A1A1A;background:#FCE4CA">
+            <div>
+              <p class="lab" style="margin:0 0 10px">Balance carried forward · 30 Aug 2026</p>
+              <p class="money" style="font-size:74px;line-height:.88;margin:0;letter-spacing:-.04em" data-countup="4218650">₹42,18,650</p>
+            </div>
+            <div style="display:flex;gap:44px;padding-bottom:10px">
+              <div><p class="lab" style="margin:0 0 7px">This month</p><p class="money" style="font-size:22px;margin:0;color:#0E7C4E">+₹86,420</p></div>
+              <div><p class="lab" style="margin:0 0 7px">Rate</p><p class="money" style="font-size:22px;margin:0;color:#0E7C4E">+2.09%</p></div>
+              <div><p class="lab" style="margin:0 0 7px">Entries this FY</p><p class="money" style="font-size:22px;margin:0">1,204</p></div>
+            </div>
+            <svg width="210" height="60" viewBox="0 0 210 60" fill="none" style="margin-left:auto;margin-bottom:6px"><path d="M2 52 L28 48 L54 51 L80 34 L106 39 L132 21 L158 26 L184 12 L208 4" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="208" cy="4" r="4" fill="#FBA130" stroke="#1A1A1A" stroke-width="2"/></svg>
+          </div>
+
+          <div style="display:flex;flex:1;overflow:hidden">
+            <div class="ruled" style="flex:1;padding:0 40px 0 104px;position:relative">
+              <div class="ledrow" style="border-bottom:1.5px solid #1A1A1A;height:34px">
+                <span class="lab">Date</span><span class="lab">Particulars</span><span class="lab" style="text-align:right">Debit / credit</span><span class="lab" style="text-align:right">Balance</span>
+              </div>
+              <div data-rise>
+                <div class="ledrow"><span class="money" style="font-size:12px;color:#7B7261">30 Aug</span><span style="display:flex;align-items:center;gap:10px"><b style="font-weight:700">Swiggy Instamart</b><span class="stampmark">HDFC alert · 3m</span></span><span class="money" style="text-align:right">−1,284.00</span><span class="money" style="text-align:right;color:#7B7261">42,18,650</span></div>
+                <div class="ledrow"><span class="money" style="font-size:12px;color:#7B7261">30 Aug</span><span><b style="font-weight:700">BSES Rajdhani</b> <span style="color:#7B7261;font-size:13px">· electricity, Aug</span></span><span class="money" style="text-align:right">−2,847.50</span><span class="money" style="text-align:right;color:#7B7261">42,19,934</span></div>
+                <div class="ledrow"><span class="money" style="font-size:12px;color:#7B7261">30 Aug</span><span style="display:flex;align-items:center;gap:10px"><b style="font-weight:700">Zepto</b><span class="stampmark">ICICI alert · 41m</span></span><span class="money" style="text-align:right">−612.00</span><span class="money" style="text-align:right;color:#7B7261">42,22,782</span></div>
+                <div class="ledrow"><span class="money" style="font-size:12px;color:#7B7261">29 Aug</span><span><b style="font-weight:700">Parag Parikh Flexi Cap</b> <span style="color:#7B7261;font-size:13px">· Zerodha SIP</span></span><span class="money" style="text-align:right">−25,000.00</span><span class="money" style="text-align:right;color:#7B7261">42,23,394</span></div>
+                <div class="ledrow"><span class="money" style="font-size:12px;color:#7B7261">29 Aug</span><span><b style="font-weight:700">Salary · credited</b> <span style="color:#7B7261;font-size:13px">· ICICI</span></span><span class="money" style="text-align:right;color:#0E7C4E">+2,84,000.00</span><span class="money" style="text-align:right;color:#7B7261">42,48,394</span></div>
+                <div class="ledrow"><span class="money" style="font-size:12px;color:#7B7261">29 Aug</span><span><b style="font-weight:700">Netflix</b> <span style="color:#7B7261;font-size:13px">· subscription</span></span><span class="money" style="text-align:right">−649.00</span><span class="money" style="text-align:right;color:#7B7261">39,64,394</span></div>
+                <div class="ledrow"><span class="money" style="font-size:12px;color:#7B7261">28 Aug</span><span style="display:flex;align-items:center;gap:10px"><b style="font-weight:700">Amazon.in</b><span class="stampmark">Amex alert</span></span><span class="money" style="text-align:right">−7,499.00</span><span class="money" style="text-align:right;color:#7B7261">39,65,043</span></div>
+                <div class="ledrow"><span class="money" style="font-size:12px;color:#7B7261">28 Aug</span><span><b style="font-weight:700">Rapido</b> <span style="color:#7B7261;font-size:13px">· transport</span></span><span class="money" style="text-align:right">−487.00</span><span class="money" style="text-align:right;color:#7B7261">39,72,542</span></div>
+                <div class="ledrow"><span class="money" style="font-size:12px;color:#7B7261">27 Aug</span><span><b style="font-weight:700">Apollo Pharmacy</b> <span style="color:#7B7261;font-size:13px">· health</span></span><span class="money" style="text-align:right">−930.00</span><span class="money" style="text-align:right;color:#7B7261">39,73,029</span></div>
+                <div class="ledrow"><span class="money" style="font-size:12px;color:#7B7261">27 Aug</span><span><b style="font-weight:700">Blinkit</b> <span style="color:#7B7261;font-size:13px">· groceries</span></span><span class="money" style="text-align:right">−1,142.00</span><span class="money" style="text-align:right;color:#7B7261">39,73,959</span></div>
+              </div>
+            </div>
+
+            <aside style="width:352px;border-left:1.5px solid #1A1A1A;padding:24px 32px">
+              <p class="lab" style="margin:0 0 16px">Accounts · 30 Aug</p>
+              <div style="border-top:1.5px solid #1A1A1A">
+                <div class="ledrow" style="grid-template-columns:1fr auto;height:34px"><span style="font-weight:700">HDFC Savings</span><span class="money">3,84,210</span></div>
+                <div class="ledrow" style="grid-template-columns:1fr auto;height:34px"><span style="font-weight:700">ICICI Salary</span><span class="money">1,12,940</span></div>
+                <div class="ledrow" style="grid-template-columns:1fr auto;height:34px"><span style="font-weight:700">Zerodha</span><span class="money">24,90,180</span></div>
+                <div class="ledrow" style="grid-template-columns:1fr auto;height:34px"><span style="font-weight:700">Kuvera · MF</span><span class="money">9,68,320</span></div>
+                <div class="ledrow" style="grid-template-columns:1fr auto;height:34px"><span style="font-weight:700">EPF</span><span class="money">3,25,400</span></div>
+                <div class="ledrow" style="grid-template-columns:1fr auto;height:34px;border-bottom:1.5px solid #1A1A1A"><span style="font-weight:700">Amex India</span><span class="money" style="color:#A63A2E">−62,400</span></div>
+              </div>
+
+              <p class="lab" style="margin:28px 0 14px">Budget · August</p>
+              <p class="money" style="font-size:26px;margin:0 0 10px">₹1,24,300 <span style="color:#7B7261;font-size:15px">/ ₹1,45,000</span></p>
+              <div style="height:14px;border:1.5px solid #1A1A1A;display:flex">
+                <div style="width:86%;background:repeating-linear-gradient(45deg,#FBA130 0 5px,#F7F1E4 5px 8px)" data-rule></div>
+              </div>
+              <p class="lab" style="margin:10px 0 0">₹20,700 unspent with one day to run</p>
+
+              <div style="margin-top:32px;border:1.5px solid #1A1A1A;border-radius:4px;padding:16px;background:#FCE4CA">
+                <p class="lab" style="margin:0 0 8px;color:#1A1A1A">Needs your eye</p>
+                <p style="font-size:14px;line-height:1.5;margin:0;font-weight:500">Two Amex charges from 28 Aug are still uncategorised. The parser guessed <b>Shopping</b>.</p>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================ E · KHAZANA ============================ -->
+<style>
+.E{--bg:#F2F9FF;--field:#FBA130;--ink:#0A0A0A;--blue:#14199C;--blue2:#5483D3;--dim:#5F6B75;--rule:#0A0A0A;
+   --disp:"Clash Display",sans-serif;--ui:"General Sans",system-ui,sans-serif;--num:"Space Mono",ui-monospace,monospace;}
+.E .frame{background:var(--bg);color:var(--ink);font-family:var(--ui)}
+.E .disp{font-family:var(--disp);font-weight:600;letter-spacing:-.025em}
+.E .lab{font-family:var(--num);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.E .money{font-family:var(--num);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.E .pill{border:2px solid var(--ink);border-radius:999px;background:var(--ink);color:#F2F9FF;
+  font-family:var(--ui);font-weight:600;font-size:15px;padding:16px 32px;box-shadow:0 2px 0 var(--ink);cursor:pointer;letter-spacing:.06em;text-transform:uppercase}
+.E .fld{border:2px solid var(--ink);border-radius:999px;background:transparent;padding:15px 24px;
+  font-family:var(--num);font-size:15px;color:var(--ink);width:100%}
+.E .glyph{font-family:var(--disp);font-weight:600;color:var(--blue);position:absolute;line-height:1}
+.E .marker{font-family:var(--disp);font-weight:600;font-size:26px;color:var(--field);line-height:1;margin-right:10px}
+.E .bar{border:2px solid var(--ink);height:26px}
+.E .erow{display:grid;grid-template-columns:1fr 96px 130px;align-items:center;padding:12px 0;border-bottom:2px solid var(--ink)}
+.E .erow:last-child{border-bottom:0}
+</style>
+<section class="dir E" id="e">
+  <div class="wrap dir-head">
+    <div class="dir-rule" style="background:#F9ACCE;height:2px;margin-bottom:44px"></div>
+    <p class="dir-letter">Direction E</p>
+    <div class="dir-title">
+      <h2>Khazana</h2>
+      <span class="tag">the glyph is the character</span>
+      <span class="tag">most ambitious · loudest</span>
+    </div>
+    <p class="position"><b>Position:</b> no mascot anywhere — instead the <b>oversized ₹ becomes the character</b>, dot eyes and all, exactly the way ref-2 turns punctuation into personality. Saturated orange field, cream card inset, display type at 100px, thick 2px ink outlines on everything. The dashboard stays playful through <b>scale and glyph</b> rather than illustration, so nothing ever sits on top of a number.</p>
+    <div class="mini-axis"><i style="left:76%;background:#F9ACCE"></i></div>
+    <div class="mini-ends"><span>quarantined</span><span>all the way in</span></div>
+
+    <div class="meta-grid">
+      <div class="meta">
+        <h3>Palette · cool cream card on a saturated field</h3>
+        <div class="sw-row">
+          <div class="sw"><i style="background:#F2F9FF"></i><b>#F2F9FF</b><span>card base</span></div>
+          <div class="sw"><i style="background:#FBA130"></i><b>#FBA130</b><span>field</span></div>
+          <div class="sw"><i style="background:#0A0A0A"></i><b>#0A0A0A</b><span>ink · 2px</span></div>
+          <div class="sw"><i style="background:#14199C"></i><b>#14199C</b><span>glyph blue</span></div>
+          <div class="sw"><i style="background:#5483D3"></i><b>#5483D3</b><span>support</span></div>
+          <div class="sw"><i style="background:#F9ACCE"></i><b>#F9ACCE</b><span>highlight</span></div>
+          <div class="sw"><i style="background:#23B471"></i><b>#23B471</b><span>gain</span></div>
+          <div class="sw"><i style="background:#FCE4CA"></i><b>#FCE4CA</b><span>tint</span></div>
+        </div>
+      </div>
+      <div class="meta">
+        <h3>Type · Clash Display + Space Mono</h3>
+        <div class="spec">
+          <p class="disp" style="font-family:'Clash Display',sans-serif;font-weight:600;font-size:48px">Khazana</p>
+          <p class="num" style="font-family:'Space Mono',monospace;font-weight:700;font-size:42px;font-variant-numeric:tabular-nums;letter-spacing:-.04em">₹42,18,650</p>
+          <p class="note"><b>Display</b> Clash Display 600 — high-contrast, slightly odd, made to be set enormous.<br><b>Numeric</b> Space Mono 700 — deliberately mechanical against the display face; the friction is the point.<br>0123456789 · ₹1,24,300 · −₹2,847.50</p>
+        </div>
+      </div>
+      <div class="meta">
+        <h3>Name</h3>
+        <div class="namecard">
+          <p class="n">Khazana</p>
+          <p>ख़ज़ाना — treasure, hoard, the good stuff. Bigger and more theatrical than “Kosh”, which suits a direction that sets its wordmark at 100px on an orange field. The ₹ character is the logo; the word is the caption.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap shots">
+    <div>
+      <p class="shot-label"><b>Login</b> <span>1440 × 900 · cream card on the orange field · ref-2 lineage</span></p>
+      <div class="viewport"><div class="frame">
+        <div style="height:900px;background:#FBA130;display:grid;place-items:center;position:relative;overflow:hidden">
+          <span class="glyph" style="left:82px;top:110px;font-size:130px;color:#14199C;transform:rotate(-9deg)">&amp;</span>
+          <span class="glyph" style="left:150px;bottom:96px;font-size:96px;color:#0A0A0A;transform:rotate(7deg)">%</span>
+          <span class="glyph" style="right:96px;top:150px;font-size:110px;color:#0A0A0A;transform:rotate(6deg)">§</span>
+          <span class="glyph" style="right:132px;bottom:118px;font-size:150px;color:#14199C;transform:rotate(-6deg)">*</span>
+          <span class="glyph" style="left:52px;top:auto;bottom:300px;font-size:74px;color:#F2F9FF">,</span>
+
+          <div style="width:820px;background:#F2F9FF;border:2px solid #0A0A0A;border-radius:36px;padding:52px 64px 46px;position:relative;z-index:2">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <span class="lab" style="color:#0A0A0A">Khazana · private ledger</span>
+              <span class="lab" style="color:#0A0A0A">one account · est. 2020</span>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:40px">
+              <svg width="240" height="230" viewBox="0 0 200 200" data-draw fill="none" style="flex:none">
+                <text x="100" y="164" text-anchor="middle" font-family="Clash Display, sans-serif" font-weight="600" font-size="200"
+                      fill="#14199C" stroke="#0A0A0A" stroke-width="9" style="paint-order:stroke fill">₹</text>
+                <circle cx="82" cy="72" r="17" fill="#F2F9FF" stroke="#0A0A0A" stroke-width="5"/>
+                <circle cx="126" cy="72" r="17" fill="#F2F9FF" stroke="#0A0A0A" stroke-width="5"/>
+                <circle cx="86" cy="76" r="7.5" fill="#0A0A0A"/>
+                <circle cx="130" cy="76" r="7.5" fill="#0A0A0A"/>
+                <path d="M92 106 q12 11 24 0" stroke="#0A0A0A" stroke-width="5" stroke-linecap="round"/>
+              </svg>
+
+              <div style="flex:1">
+                <h1 class="disp" style="font-size:74px;line-height:.9;margin:0 0 14px">Everything<br>you own,<br>in one figure.</h1>
+                <p style="font-size:15px;line-height:1.6;color:#5F6B75;margin:0 0 26px;max-width:34ch">Enter your email. A six-digit code lands in about ten seconds — no password, no second device.</p>
+                <div style="display:flex;gap:12px">
+                  <input class="fld" type="email" value="om@omrajpal.in" style="flex:1">
+                  <button class="pill">Send code</button>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:0;border:2px solid #0A0A0A;border-radius:999px;overflow:hidden;margin-top:36px">
+              <div style="flex:1;padding:11px 20px;background:#FCE4CA;border-right:2px solid #0A0A0A"><span class="lab" style="color:#0A0A0A">4,812 entries</span></div>
+              <div style="flex:1;padding:11px 20px;border-right:2px solid #0A0A0A"><span class="lab" style="color:#0A0A0A">9 accounts</span></div>
+              <div style="flex:1;padding:11px 20px;border-right:2px solid #0A0A0A"><span class="lab" style="color:#0A0A0A">FIFO cost basis</span></div>
+              <div style="flex:1;padding:11px 20px;background:#F9ACCE"><span class="lab" style="color:#0A0A0A">gmail parser on</span></div>
+            </div>
+          </div>
+
+          <p class="lab" style="position:absolute;bottom:26px;left:0;right:0;text-align:center;color:#0A0A0A;opacity:.65">Signature motion · the ₹ blinks once, the glyphs drift on a 24s loop, the card scales in from 0.96</p>
+        </div>
+      </div></div>
+    </div>
+
+    <div>
+      <p class="shot-label"><b>Dashboard</b> <span>1440 × 900 · playfulness carried by scale and glyph, never by illustration</span></p>
+      <div class="viewport"><div class="frame">
+        <div style="height:900px;display:flex;flex-direction:column">
+          <div style="background:#FBA130;border-bottom:2px solid #0A0A0A;display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:76px">
+            <div style="display:flex;align-items:center;gap:28px">
+              <span class="disp" style="font-size:26px">Khazana</span>
+              <div style="display:flex;gap:8px">
+                <span style="border:2px solid #0A0A0A;border-radius:999px;background:#0A0A0A;color:#FBA130;padding:6px 15px;font-size:12px;font-weight:600">Overview</span>
+                <span style="border:2px solid #0A0A0A;border-radius:999px;padding:6px 15px;font-size:12px;font-weight:600">Accounts</span>
+                <span style="border:2px solid #0A0A0A;border-radius:999px;padding:6px 15px;font-size:12px;font-weight:600">Entries</span>
+                <span style="border:2px solid #0A0A0A;border-radius:999px;padding:6px 15px;font-size:12px;font-weight:600">Holdings</span>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px">
+              <span class="lab" style="color:#0A0A0A">Sun 30 Aug · 19:04</span>
+              <span style="width:38px;height:38px;border-radius:50%;border:2px solid #0A0A0A;background:#F2F9FF;display:grid;place-items:center;font-weight:600;font-size:13px">OR</span>
+            </div>
+          </div>
+
+          <div style="display:flex;border-bottom:2px solid #0A0A0A">
+            <div style="flex:1;padding:30px 40px 26px">
+              <p class="lab" style="margin:0 0 12px">Net worth · all nine accounts</p>
+              <p class="money" style="font-size:100px;line-height:.84;margin:0" data-countup="4218650">₹42,18,650</p>
+              <div style="display:flex;align-items:center;gap:12px;margin-top:18px">
+                <span style="border:2px solid #0A0A0A;background:#23B471;border-radius:999px;padding:6px 15px;font-family:'Space Mono',monospace;font-weight:700;font-size:14px">↑ ₹86,420</span>
+                <span style="border:2px solid #0A0A0A;border-radius:999px;padding:6px 15px;font-family:'Space Mono',monospace;font-weight:700;font-size:14px">+2.09%</span>
+                <span class="lab" style="color:#0A0A0A">last 30 days</span>
+              </div>
+            </div>
+            <div style="width:300px;border-left:2px solid #0A0A0A;background:#FCE4CA;padding:26px 30px;display:flex;flex-direction:column;justify-content:center">
+              <p class="lab" style="margin:0 0 10px;color:#0A0A0A">August spend</p>
+              <p class="money" style="font-size:34px;margin:0 0 4px">₹1,24,300</p>
+              <p class="lab" style="margin:0 0 14px;color:#0A0A0A">of ₹1,45,000 budgeted</p>
+              <div class="bar" style="background:#F2F9FF;display:flex"><div style="width:86%;background:#14199C" data-rule></div></div>
+              <p class="lab" style="margin:10px 0 0;color:#0A0A0A">₹20,700 left · 1 day</p>
+            </div>
+          </div>
+
+          <div style="display:flex;flex:1;overflow:hidden">
+            <div style="flex:1;padding:26px 34px;border-right:2px solid #0A0A0A">
+              <p style="margin:0 0 20px;display:flex;align-items:center"><span class="marker">§</span><span class="lab" style="color:#0A0A0A">Allocation</span></p>
+              <div style="display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;align-items:center;gap:14px"><span style="width:110px;font-size:13px;font-weight:600">Stocks</span><div class="bar" style="flex:1;display:flex"><div style="width:38%;background:#14199C"></div></div><span class="money" style="width:52px;text-align:right;font-size:13px">38%</span></div>
+                <div style="display:flex;align-items:center;gap:14px"><span style="width:110px;font-size:13px;font-weight:600">Mutual funds</span><div class="bar" style="flex:1;display:flex"><div style="width:30%;background:#5483D3"></div></div><span class="money" style="width:52px;text-align:right;font-size:13px">30%</span></div>
+                <div style="display:flex;align-items:center;gap:14px"><span style="width:110px;font-size:13px;font-weight:600">Cash</span><div class="bar" style="flex:1;display:flex"><div style="width:12%;background:#F9ACCE"></div></div><span class="money" style="width:52px;text-align:right;font-size:13px">12%</span></div>
+                <div style="display:flex;align-items:center;gap:14px"><span style="width:110px;font-size:13px;font-weight:600">EPF</span><div class="bar" style="flex:1;display:flex"><div style="width:11%;background:#23B471"></div></div><span class="money" style="width:52px;text-align:right;font-size:13px">11%</span></div>
+                <div style="display:flex;align-items:center;gap:14px"><span style="width:110px;font-size:13px;font-weight:600">Gold</span><div class="bar" style="flex:1;display:flex"><div style="width:9%;background:#FBA130"></div></div><span class="money" style="width:52px;text-align:right;font-size:13px">9%</span></div>
+              </div>
+
+              <p style="margin:34px 0 16px;display:flex;align-items:center"><span class="marker">※</span><span class="lab" style="color:#0A0A0A">Accounts</span></p>
+              <div style="border-top:2px solid #0A0A0A">
+                <div class="erow" style="grid-template-columns:1fr auto"><span style="font-weight:600;font-size:14px">HDFC Savings</span><span class="money" style="font-size:15px">₹3,84,210</span></div>
+                <div class="erow" style="grid-template-columns:1fr auto"><span style="font-weight:600;font-size:14px">Zerodha</span><span class="money" style="font-size:15px">₹24,90,180</span></div>
+                <div class="erow" style="grid-template-columns:1fr auto"><span style="font-weight:600;font-size:14px">Kuvera · MF</span><span class="money" style="font-size:15px">₹9,68,320</span></div>
+                <div class="erow" style="grid-template-columns:1fr auto;border-bottom:2px solid #0A0A0A"><span style="font-weight:600;font-size:14px">Amex India</span><span class="money" style="font-size:15px;color:#B0322A">−₹62,400</span></div>
+              </div>
+            </div>
+
+            <div style="width:520px;padding:26px 34px">
+              <p style="margin:0 0 14px;display:flex;align-items:center"><span class="marker">&amp;</span><span class="lab" style="color:#0A0A0A">Just in</span><span class="lab" style="margin-left:auto;color:#14199C">3 auto-imported</span></p>
+              <div style="border-top:2px solid #0A0A0A" data-rise>
+                <div class="erow"><span><b style="font-weight:600;font-size:14px;display:block">Swiggy Instamart</b><span class="lab" style="font-size:9px;color:#14199C">HDFC alert · 3m ago</span></span><span class="lab" style="text-align:right">Food</span><span class="money" style="text-align:right;font-size:15px">−₹1,284</span></div>
+                <div class="erow"><span><b style="font-weight:600;font-size:14px;display:block">BSES Rajdhani</b><span class="lab" style="font-size:9px">Today 09:10</span></span><span class="lab" style="text-align:right">Bills</span><span class="money" style="text-align:right;font-size:15px">−₹2,847.50</span></div>
+                <div class="erow"><span><b style="font-weight:600;font-size:14px;display:block">Parag Parikh Flexi Cap</b><span class="lab" style="font-size:9px">Zerodha SIP · Sat 6:30 PM</span></span><span class="lab" style="text-align:right">Invest</span><span class="money" style="text-align:right;font-size:15px">−₹25,000</span></div>
+                <div class="erow"><span><b style="font-weight:600;font-size:14px;display:block">Amazon.in</b><span class="lab" style="font-size:9px;color:#14199C">Amex alert · Sat 4:12 PM</span></span><span class="lab" style="text-align:right">Shop</span><span class="money" style="text-align:right;font-size:15px">−₹7,499</span></div>
+                <div class="erow"><span><b style="font-weight:600;font-size:14px;display:block">Netflix</b><span class="lab" style="font-size:9px">Sat 9:15 PM</span></span><span class="lab" style="text-align:right">Subs</span><span class="money" style="text-align:right;font-size:15px">−₹649</span></div>
+                <div class="erow"><span><b style="font-weight:600;font-size:14px;display:block">Rapido</b><span class="lab" style="font-size:9px">28 Aug</span></span><span class="lab" style="text-align:right">Travel</span><span class="money" style="text-align:right;font-size:15px">−₹487</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="border-top:2px solid #0A0A0A;background:#0A0A0A;color:#FBA130;height:38px;display:flex;align-items:center;gap:34px;padding:0 40px;overflow:hidden;white-space:nowrap">
+            <span class="lab" style="color:#FBA130">RELIANCE ₹1,42,900 +1.2%</span>
+            <span class="lab" style="color:#FBA130">INFY ₹68,410 −0.4%</span>
+            <span class="lab" style="color:#FBA130">HDFCBANK ₹2,04,760 +0.8%</span>
+            <span class="lab" style="color:#FBA130">TCS ₹94,220 +0.3%</span>
+            <span class="lab" style="color:#FBA130">NIPPON SMALL CAP ₹3,18,940 +1.6%</span>
+            <span class="lab" style="color:#FBA130">PPFAS FLEXI ₹6,42,180 +14.8% XIRR</span>
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap compare" id="compare">
+  <p class="eyebrow">side by side</p>
+  <h1 style="font-size:clamp(30px,3.6vw,48px);max-width:20ch">Five philosophies, one table.</h1>
+  <table class="cmp" style="margin-top:44px">
+    <thead>
+      <tr>
+        <th style="width:15%">Direction</th>
+        <th style="width:27%">Position on the axis</th>
+        <th style="width:14%">Base</th>
+        <th style="width:14%">Accent</th>
+        <th style="width:14%">Type</th>
+        <th style="width:16%">Proposed name</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="k"><span class="dot" style="background:#F1A007"></span>A · Gullu</td>
+        <td>Character lives on the dashboard. Colour-blocked section headers, mascot cameo in the greeting strip, chips everywhere. The boldest reading of your references.</td>
+        <td class="hex">#FAF5F2<br><span style="color:#8A8A8A">warm cream</span></td>
+        <td class="hex">#14199C<br><span style="color:#8A8A8A">royal blue</span></td>
+        <td>Cabinet Grotesk 800<br><span style="color:#8A8A8A">Satoshi tabular</span></td>
+        <td class="k" style="font-size:15px">Gullu<br><span style="font-weight:400;font-size:12px;color:#8A8A8A">character-first</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span class="dot" style="background:#5483D3"></span>B · Kosh</td>
+        <td>Login is a full illustrated set-piece. The door closes behind you and the dashboard is Swiss, ruled, wordless. Playfulness strictly quarantined.</td>
+        <td class="hex">#F2F9FF<br><span style="color:#8A8A8A">cool cream</span></td>
+        <td class="hex">#14199C<br><span style="color:#8A8A8A">single blue rule</span></td>
+        <td>Switzer 800<br><span style="color:#8A8A8A">JetBrains Mono</span></td>
+        <td class="k" style="font-size:15px">Kosh<br><span style="font-weight:400;font-size:12px;color:#8A8A8A">Hindi vault word</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span class="dot" style="background:#23B471"></span>C · Sorted</td>
+        <td>Colour-coded chips carry all the personality — a direct lift of ref-1's category rail. Layout stays quiet; the badge system does the talking.</td>
+        <td class="hex">#FAF5F2<br><span style="color:#8A8A8A">warm cream</span></td>
+        <td class="hex">#23B471 #F9ACCE<br><span style="color:#8A8A8A">five-chip set</span></td>
+        <td>Bricolage Grotesque 800<br><span style="color:#8A8A8A">Geist Mono</span></td>
+        <td class="k" style="font-size:15px">Sorted<br><span style="font-weight:400;font-size:12px;color:#8A8A8A">plain-confident English</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span class="dot" style="background:#FBA130"></span>D · Ledger&amp;</td>
+        <td>Warmth comes from material, not characters. Ruled bahi-khata paper, an orange margin rule, a rubber stamp on every auto-imported row. No mascot past the door.</td>
+        <td class="hex">#F7F1E4<br><span style="color:#8A8A8A">warm paper</span></td>
+        <td class="hex">#FBA130<br><span style="color:#8A8A8A">margin rule</span></td>
+        <td>Bespoke Slab 700<br><span style="color:#8A8A8A">DM Mono</span></td>
+        <td class="k" style="font-size:15px">Ledger&amp;<br><span style="font-weight:400;font-size:12px;color:#8A8A8A">plain-confident English</span></td>
+      </tr>
+      <tr>
+        <td class="k"><span class="dot" style="background:#F9ACCE"></span>E · Khazana</td>
+        <td>No mascot anywhere. The oversized ₹ glyph is the character. Saturated orange field, huge type, ref-2's glyph play scaled up onto the dashboard.</td>
+        <td class="hex">#F2F9FF<br><span style="color:#8A8A8A">cool cream on orange</span></td>
+        <td class="hex">#FBA130<br><span style="color:#8A8A8A">full-bleed field</span></td>
+        <td>Clash Display 600<br><span style="color:#8A8A8A">Space Mono</span></td>
+        <td class="k" style="font-size:15px">Khazana<br><span style="font-weight:400;font-size:12px;color:#8A8A8A">Hindi treasure word</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="reply">
+    <p><b>Reply A / B / C / D / E</b> — or combine them: “B's dashboard with C's chip rail”, “A's illustration, D's paper”. Or say <b>hate all, try [reference]</b>.</p>
+    <p class="k">also open · warm cream or cool cream?</p>
+  </div>
+</section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+<script>
+(function(){
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(!window.gsap){return;}
+  gsap.registerPlugin(ScrollTrigger);
+
+  // Indian grouping formatter (lakh / crore)
+  function inr(n, dec){
+    var neg = n < 0; n = Math.abs(n);
+    var s = dec ? n.toFixed(2) : String(Math.round(n));
+    var parts = s.split('.'); var i = parts[0];
+    var last3 = i.slice(-3), rest = i.slice(0, -3);
+    if(rest) rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',');
+    var out = rest ? rest + ',' + last3 : last3;
+    if(parts[1]) out += '.' + parts[1];
+    return (neg ? '-₹' : '₹') + out;
+  }
+
+  document.querySelectorAll('[data-countup]').forEach(function(el){
+    var target = parseFloat(el.getAttribute('data-countup'));
+    var dec = el.hasAttribute('data-dec');
+    if(reduce){ el.textContent = inr(target, dec); return; }
+    var o = {v:0};
+    el.textContent = inr(0, dec);
+    gsap.to(o, {
+      v: target, duration: 1.5, ease: 'power3.out',
+      scrollTrigger: {trigger: el, start: 'top 88%', once: true},
+      onUpdate: function(){ el.textContent = inr(o.v, dec); }
+    });
+  });
+
+  if(reduce) return;
+
+  document.querySelectorAll('[data-draw]').forEach(function(svg){
+    var shapes = svg.querySelectorAll('path,circle,rect,line,polyline,polygon,ellipse');
+    gsap.from(shapes, {
+      opacity: 0, y: 14, duration: .5, ease: 'power2.out', stagger: .022,
+      scrollTrigger: {trigger: svg, start: 'top 85%', once: true}
+    });
+  });
+
+  document.querySelectorAll('[data-rise]').forEach(function(list){
+    gsap.from(list.children, {
+      opacity: 0, y: 10, duration: .45, ease: 'power2.out', stagger: .05,
+      scrollTrigger: {trigger: list, start: 'top 90%', once: true}
+    });
+  });
+
+  document.querySelectorAll('[data-rule]').forEach(function(el){
+    gsap.from(el, {
+      scaleX: 0, transformOrigin: 'left center', duration: .8, ease: 'power3.inOut',
+      scrollTrigger: {trigger: el, start: 'top 92%', once: true}
+    });
+  });
+})();
+</script>
+</body>
+</html>

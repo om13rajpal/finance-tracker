@@ -1,15 +1,24 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { API_BASE, apiFetch } from "@/lib/api-client";
-import type { Holding, HoldingLot, ImportBatchResult, Platform } from "@/lib/api-types";
-import { formatDate, formatInr, formatPrice, formatUnits } from "@/lib/format";
+import type {
+  Account,
+  BuyHoldingResult,
+  Holding,
+  HoldingLot,
+  ImportBatchResult,
+  InstrumentType,
+  Platform,
+  SellHoldingResult,
+} from "@/lib/api-types";
+import { formatDate, formatInr, formatPrice, formatUnits, todayInputValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Icon } from "@/components/app/icons";
-import { Field, Select } from "@/components/app/form";
+import { Field, FieldGrid, FormActions, MoneyInput, DateInput, Segmented, Select } from "@/components/app/form";
 import {
   EmptyState,
   Helper,
@@ -24,6 +33,7 @@ import {
   Skeleton,
 } from "@/components/app/primitives";
 import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
 import { useToast } from "@/components/ui/Toast";
 
 /**
@@ -55,6 +65,10 @@ export default function InvestmentsPage() {
   const lots = useQuery({
     queryKey: ["holding-lots"],
     queryFn: () => apiFetch<{ items: HoldingLot[] }>("/holding-lots?limit=50"),
+  });
+  const accounts = useQuery({
+    queryKey: ["accounts"],
+    queryFn: () => apiFetch<Account[]>("/accounts"),
   });
 
   const rows = holdings.data ?? [];
@@ -261,7 +275,8 @@ export default function InvestmentsPage() {
           ) : null}
         </div>
 
-        <div className="xl:sticky xl:top-32">
+        <div className="flex flex-col gap-22 xl:sticky xl:top-32">
+          <BuySellPanel accounts={accounts.data ?? []} />
           <ImportPanel />
         </div>
       </div>
@@ -294,6 +309,237 @@ function Th({
     >
       {children}
     </th>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Buy / sell
+// ═══════════════════════════════════════════════════════════════════════════
+
+type TradeDirection = "buy" | "sell";
+
+/**
+ * Records a single manual trade — the counterpart to the CSV import panel for
+ * a one-off buy or sell that isn't sitting in a broker export.
+ *
+ * THE ACCOUNT FIELD IS OPTIONAL, DELIBERATELY. Picking one turns this from a
+ * silent balance adjustment into a real linked expense/income transaction —
+ * exactly as if the purchase or sale had been typed into Transactions by
+ * hand — which is what keeps net worth from double-counting the cash a
+ * purchase spends. Leaving it blank still records the lot/sale on its own,
+ * matching how a CSV-imported historical trade behaves (no account context
+ * available), so nothing about this form is ever a hard requirement to use.
+ */
+function BuySellPanel({ accounts }: { accounts: Account[] }) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [direction, setDirection] = useState<TradeDirection>("buy");
+  const empty = {
+    symbol: "",
+    platform: "zerodha" as Platform | "other",
+    instrumentType: "stock" as InstrumentType,
+    date: todayInputValue(),
+    price: "",
+    units: "",
+    accountId: "",
+  };
+  const [form, setForm] = useState(empty);
+
+  function invalidateAfterTrade() {
+    queryClient.invalidateQueries({ queryKey: ["holdings"] });
+    queryClient.invalidateQueries({ queryKey: ["holding-lots"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    queryClient.invalidateQueries({ queryKey: ["accounts"] });
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["capital-gains"] });
+  }
+
+  const buy = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiFetch<BuyHoldingResult>("/holdings", { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      invalidateAfterTrade();
+      setForm(empty);
+      showToast("Purchase recorded", "success");
+    },
+    onError: (e) => showToast((e as Error).message || "Could not record that purchase", "error"),
+  });
+
+  const sell = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiFetch<SellHoldingResult>("/holdings/sell", { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      invalidateAfterTrade();
+      setForm(empty);
+      showToast("Sale recorded", "success");
+    },
+    onError: (e) => showToast((e as Error).message || "Could not record that sale", "error"),
+  });
+
+  const busy = buy.isPending || sell.isPending;
+
+  return (
+    <Panel>
+      <PanelHeader title="§ Buy or sell" />
+      <form
+        noValidate
+        className="flex flex-col gap-14"
+        onSubmit={(e) => {
+          e.preventDefault();
+          const symbol = form.symbol.trim();
+          if (!symbol) {
+            showToast("Enter a symbol");
+            return;
+          }
+          const price = Number(form.price);
+          if (form.price.trim() === "" || Number.isNaN(price) || price <= 0) {
+            showToast("Enter a price above zero");
+            return;
+          }
+          const units = Number(form.units);
+          if (form.units.trim() === "" || Number.isNaN(units) || units <= 0) {
+            showToast("Enter a unit count above zero");
+            return;
+          }
+          if (!form.date) {
+            showToast("Choose a date");
+            return;
+          }
+
+          if (direction === "buy") {
+            buy.mutate({
+              symbol,
+              platform: form.platform,
+              instrumentType: form.instrumentType,
+              buyDate: form.date,
+              buyPrice: price,
+              units,
+              accountId: form.accountId || undefined,
+            });
+          } else {
+            sell.mutate({
+              symbol,
+              instrumentType: form.instrumentType,
+              sellDate: form.date,
+              sellPrice: price,
+              unitsSold: units,
+              accountId: form.accountId || undefined,
+            });
+          }
+        }}
+      >
+        <div className="flex flex-col gap-8">
+          <span className="font-sans text-body-s font-medium text-ink">Direction</span>
+          <Segmented
+            name="trade-direction"
+            ariaLabel="Direction"
+            value={direction}
+            onChange={setDirection}
+            options={[
+              { value: "buy", label: "Buy" },
+              { value: "sell", label: "Sell" },
+            ]}
+          />
+        </div>
+
+        <FieldGrid>
+          <Field id="trade-symbol" label="Symbol">
+            <Input
+              id="trade-symbol"
+              className="uppercase"
+              placeholder="INFY"
+              value={form.symbol}
+              onChange={(e) => setForm({ ...form, symbol: e.target.value })}
+            />
+          </Field>
+          <Field id="trade-instrument" label="Instrument">
+            <Select
+              id="trade-instrument"
+              value={form.instrumentType}
+              onChange={(e) => setForm({ ...form, instrumentType: e.target.value as InstrumentType })}
+            >
+              <option value="stock">Stock</option>
+              <option value="mutual_fund">Mutual fund</option>
+            </Select>
+          </Field>
+        </FieldGrid>
+
+        <FieldGrid>
+          <Field id="trade-price" label={direction === "buy" ? "Buy price" : "Sell price"}>
+            <MoneyInput
+              id="trade-price"
+              placeholder="1500"
+              value={form.price}
+              onChange={(e) => setForm({ ...form, price: e.target.value })}
+            />
+          </Field>
+          <Field id="trade-units" label="Units">
+            <Input
+              id="trade-units"
+              type="number"
+              min="0"
+              step="any"
+              inputMode="decimal"
+              className="font-num"
+              placeholder="10"
+              value={form.units}
+              onChange={(e) => setForm({ ...form, units: e.target.value })}
+            />
+          </Field>
+        </FieldGrid>
+
+        <Field id="trade-date" label={direction === "buy" ? "Bought on" : "Sold on"}>
+          <DateInput
+            id="trade-date"
+            value={form.date}
+            onChange={(e) => setForm({ ...form, date: e.target.value })}
+          />
+        </Field>
+
+        {direction === "buy" ? (
+          <Field id="trade-platform" label="Platform">
+            <Select
+              id="trade-platform"
+              value={form.platform}
+              onChange={(e) => setForm({ ...form, platform: e.target.value as Platform | "other" })}
+            >
+              <option value="zerodha">Zerodha</option>
+              <option value="groww">Groww</option>
+              <option value="other">Other</option>
+            </Select>
+          </Field>
+        ) : null}
+
+        <Field
+          id="trade-account"
+          label={direction === "buy" ? "Funding account (optional)" : "Credit to account (optional)"}
+          helper={
+            direction === "buy"
+              ? "Pick one and this shows up as a real expense, deducted from that account — exactly like any other transaction."
+              : "Pick one and the sale proceeds are credited there as a real income transaction."
+          }
+        >
+          <Select
+            id="trade-account"
+            value={form.accountId}
+            onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+          >
+            <option value="">No linked account</option>
+            {accounts.map((a) => (
+              <option key={a._id} value={a._id}>
+                {a.institution} · {a.nickname}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <FormActions>
+          <Button type="submit" busy={busy}>
+            {direction === "buy" ? "Record purchase" : "Record sale"}
+          </Button>
+        </FormActions>
+      </form>
+    </Panel>
   );
 }
 

@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import { app } from "../../src/app.js";
 import { Transaction } from "../../src/models/Transaction.js";
 import { ImportBatch } from "../../src/models/ImportBatch.js";
+import { Account } from "../../src/models/Account.js";
 
 // Shape of one entry in an ImportBatch's rowResults, as it comes back over HTTP.
 type RowResult = { row: number; status: "success" | "failed"; reason?: string };
@@ -185,6 +186,30 @@ describe("CSV import", () => {
     for (const id of successIds) {
       expect(batch!.resultingIds).toContain(id);
     }
+  });
+
+  it("applies every imported row's amount as a delta to the linked account's currentBalance", async () => {
+    const userId = "user-csv-balance";
+    const cookie = authCookie(userId);
+    const account = await Account.create({
+      userId,
+      type: "bank",
+      institution: "Test Bank",
+      nickname: "Test",
+      currentBalance: 1000,
+    });
+
+    const res = await request(app)
+      .post("/transactions/import")
+      .set("Cookie", cookie)
+      .field("accountId", account._id.toString())
+      .attach("file", Buffer.from(CSV), "statement.csv");
+
+    expect(res.status).toBe(200);
+    // CSV: -450 (SWIGGY), +50000 (SALARY), BAD-DATE fails, -1200 (AMAZON).
+    // 1000 - 450 + 50000 - 1200 = 49350.
+    const updated = await Account.findById(account._id);
+    expect(updated!.currentBalance).toBe(49350);
   });
 
   it("runs categorization on successfully imported rows", async () => {

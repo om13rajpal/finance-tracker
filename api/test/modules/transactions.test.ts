@@ -3,10 +3,16 @@ import request from "supertest";
 import jwt from "jsonwebtoken";
 import { app } from "../../src/app.js";
 import { CategorizationRule } from "../../src/models/CategorizationRule.js";
+import { Account } from "../../src/models/Account.js";
 
 function authCookie(userId = "user-1") {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET as string);
   return `token=${token}`;
+}
+
+async function createAccount(userId: string, currentBalance: number, type: "bank" | "credit_card" = "bank") {
+  const account = await Account.create({ userId, type, institution: "Test Bank", nickname: "Test", currentBalance });
+  return account._id.toString();
 }
 
 describe("transactions", () => {
@@ -279,6 +285,93 @@ describe("transactions", () => {
 
     const listRes = await request(app).get("/transactions").set("Cookie", cookie);
     expect(listRes.body.items).toHaveLength(0);
+  });
+
+  it("applies the transaction's amount as a delta to the linked account's currentBalance on create", async () => {
+    const userId = "user-balance-create";
+    const cookie = authCookie(userId);
+    const accountId = await createAccount(userId, 1000);
+
+    await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId, amount: -300, date: "2026-08-10", merchant: "X" });
+
+    const updated = await Account.findById(accountId);
+    expect(updated!.currentBalance).toBe(700);
+  });
+
+  it("increases (not decreases) a credit card's balance for an expense transaction", async () => {
+    const userId = "user-balance-cc";
+    const cookie = authCookie(userId);
+    const accountId = await createAccount(userId, 2000, "credit_card");
+
+    await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId, amount: -500, date: "2026-08-10", merchant: "X" });
+
+    const updated = await Account.findById(accountId);
+    expect(updated!.currentBalance).toBe(2500);
+  });
+
+  it("adjusts the account balance by the DIFFERENCE when a transaction's amount is patched", async () => {
+    const userId = "user-balance-patch";
+    const cookie = authCookie(userId);
+    const accountId = await createAccount(userId, 1000);
+
+    const createRes = await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId, amount: -300, date: "2026-08-10", merchant: "X" });
+    expect((await Account.findById(accountId))!.currentBalance).toBe(700);
+
+    // Corrected from -300 to -450: balance should move by the -150 difference, to 550.
+    const patchRes = await request(app)
+      .patch(`/transactions/${createRes.body._id}`)
+      .set("Cookie", cookie)
+      .send({ amount: -450 });
+    expect(patchRes.status).toBe(200);
+
+    const updated = await Account.findById(accountId);
+    expect(updated!.currentBalance).toBe(550);
+  });
+
+  it("does not touch the account balance when a PATCH doesn't include amount", async () => {
+    const userId = "user-balance-patch-noamount";
+    const cookie = authCookie(userId);
+    const accountId = await createAccount(userId, 1000);
+
+    const createRes = await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId, amount: -300, date: "2026-08-10", merchant: "X" });
+
+    await request(app)
+      .patch(`/transactions/${createRes.body._id}`)
+      .set("Cookie", cookie)
+      .send({ note: "just a note" });
+
+    const updated = await Account.findById(accountId);
+    expect(updated!.currentBalance).toBe(700);
+  });
+
+  it("reverses the transaction's amount from the account balance on delete", async () => {
+    const userId = "user-balance-delete";
+    const cookie = authCookie(userId);
+    const accountId = await createAccount(userId, 1000);
+
+    const createRes = await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId, amount: -300, date: "2026-08-10", merchant: "X" });
+    expect((await Account.findById(accountId))!.currentBalance).toBe(700);
+
+    const delRes = await request(app).delete(`/transactions/${createRes.body._id}`).set("Cookie", cookie);
+    expect(delRes.status).toBe(204);
+
+    const updated = await Account.findById(accountId);
+    expect(updated!.currentBalance).toBe(1000);
   });
 
   it("returns 404 when deleting a nonexistent or another user's transaction", async () => {

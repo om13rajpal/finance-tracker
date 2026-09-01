@@ -3,15 +3,16 @@ import fs from "node:fs/promises";
 import { makeQueue, makeWorker } from "../queue.js";
 import { PendingTransaction } from "../../models/PendingTransaction.js";
 import { ImportBatch } from "../../models/ImportBatch.js";
-import { Account } from "../../models/Account.js";
-import { BalanceSnapshot } from "../../models/BalanceSnapshot.js";
+import type { StatementRowResult } from "../../modules/statements/types.js";
 import { findLikelyDuplicate } from "../../modules/transactions/duplicate-detection.js";
 import { tryUnlockPdf } from "../../modules/statements/pdf-unlock.service.js";
 import {
   parseStatementRows,
   findStatementClosingBalance,
+  findStatementOpeningBalance,
 } from "../../modules/statements/statement-row-parser.service.js";
 import { invalidateDashboardCache } from "../../modules/dashboard/dashboard.service.js";
+import { reconcileBalance } from "../../modules/accounts/balance.service.js";
 
 export type StatementProcessJob = {
   batchId: string;
@@ -52,6 +53,54 @@ function chunk<T>(items: T[], size: number): T[][] {
     chunks.push(items.slice(i, i + size));
   }
   return chunks;
+}
+
+/**
+ * The latest date among this statement's own successfully-parsed rows — used as
+ * the closing balance's "as of" point for `reconcileBalance`'s staleness guard.
+ * `null` when there are no dateable rows at all (a statement whose only balance
+ * signal is its Opening Balance, with zero transaction rows — see
+ * `findHdfcClosingBalance`'s own doc comment), in which case `reconcileBalance`
+ * applies unconditionally rather than refusing to reconcile at all.
+ *
+ * Deliberately the max across every row, not just the last one in array order —
+ * correct regardless of whether a parser's rows happen to already be
+ * chronologically sorted.
+ */
+function latestRowDate(rows: StatementRowResult[]): Date | null {
+  let latest: Date | null = null;
+  for (const row of rows) {
+    if ("error" in row) continue;
+    const date = new Date(row.date);
+    if (!latest || date.getTime() > latest.getTime()) latest = date;
+  }
+  return latest;
+}
+
+const MISMATCH_TOLERANCE = 0.01;
+
+/**
+ * Data-quality cross-check: does `openingBalance + sum(every successfully-parsed
+ * row's amount)` land on `closingBalance` (within rounding)? Both balances are
+ * read straight off the document's own printed figures; the sum comes from
+ * whichever rows THIS parser actually managed to extract. A mismatch beyond
+ * `MISMATCH_TOLERANCE` means some row(s) were missed or misparsed — worth
+ * flagging on the `ImportBatch` for visibility, but never worth blocking the
+ * import over (the printed `closingBalance` itself is still trusted and still
+ * used to reconcile the account either way).
+ */
+function checkClosingBalanceReconciliation(
+  rows: StatementRowResult[],
+  openingBalance: number | null,
+  closingBalance: number | null
+): { expectedClosingBalance: number | null; mismatch: boolean } {
+  if (openingBalance === null || closingBalance === null) {
+    return { expectedClosingBalance: null, mismatch: false };
+  }
+  const sum = rows.reduce((total, row) => total + ("error" in row ? 0 : row.amount), 0);
+  const expectedClosingBalance = Math.round((openingBalance + sum) * 100) / 100;
+  const mismatch = Math.abs(expectedClosingBalance - closingBalance) > MISMATCH_TOLERANCE;
+  return { expectedClosingBalance, mismatch };
 }
 
 /** Best-effort delete — a leaked temp file on a container's ephemeral disk is a
@@ -121,6 +170,22 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
   // (everything except HDFC today) — nothing to reconcile with, not an
   // error.
   const closingBalance = findStatementClosingBalance(unlocked.pages, parserKey);
+  // The statement's own printed OPENING balance, when a finder is registered for
+  // this parser (HDFC only — see `STATEMENT_OPENING_BALANCE_REGISTRY`'s doc
+  // comment). Used purely for the data-quality cross-check below, never to
+  // reconcile the account directly.
+  const openingBalance = findStatementOpeningBalance(unlocked.pages, parserKey);
+  const { expectedClosingBalance, mismatch: closingBalanceMismatch } = checkClosingBalanceReconciliation(
+    rows,
+    openingBalance,
+    closingBalance
+  );
+  // The statement's own latest transaction date — the "as of" point
+  // `reconcileBalance`'s staleness guard compares against, so an older statement
+  // (or one processed out of chronological order relative to what's already been
+  // reconciled) can never regress a more current balance. `null` when there are
+  // no dateable rows at all (see `latestRowDate`'s doc comment).
+  const asOfDate = latestRowDate(rows);
   // Pair each row with its 1-based row number up front (rather than
   // `rows.indexOf(row)` inside the loop below) so numbering a chunk stays
   // O(chunk size), not O(n) per row / O(n^2) per statement.
@@ -216,32 +281,52 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
   // by hand after every import. Runs exactly once per successful completion
   // (this line is only ever reached once the chunk loop above finishes
   // without throwing — a retry of a job that failed mid-loop simply hasn't
-  // gotten here yet), so a retried job can't double-apply it or leave two
-  // `BalanceSnapshot`s behind for one statement.
+  // gotten here yet).
   //
-  // Deliberately unconditional on `accountId` actually still existing:
-  // `findOneAndUpdate` scoped to `{_id: accountId, userId}` is a silent
-  // no-op if it doesn't (deleted between upload and now, say), same
-  // ownership-scoping every other route in this app already relies on —
-  // no special-casing needed here.
-  //
-  // KNOWN LIMITATION, not handled here: this always overwrites with
-  // whichever value this specific import found, with no awareness of
-  // whether an ALREADY-APPLIED later statement's closing balance would be
-  // regressed by importing an older, already-superseded one out of order.
-  // Fine for "one statement now and then," easy to get wrong for "several
-  // overlapping statements imported out of chronological order" — flagged,
-  // not solved.
+  // STALENESS-GUARDED via `reconcileBalance`: an older statement (or one
+  // processed out of chronological order relative to what's already been
+  // reconciled — the exact "several overlapping statements imported out of
+  // order" scenario this used to be a known, unhandled limitation for) can no
+  // longer regress a more current balance. `asOfDate` (this statement's own
+  // latest transaction date) is compared against the account's stored
+  // `balanceAsOf`; a retried job re-attempting the SAME statement's already-
+  // applied reconciliation is naturally a no-op too (equal `asOf`, not
+  // strictly newer) rather than double-applying it or leaving two
+  // `BalanceSnapshot`s behind.
   if (closingBalance !== null) {
-    await Account.findOneAndUpdate(
-      { _id: accountId, userId },
-      { currentBalance: closingBalance, lastUpdated: new Date() }
-    );
-    await BalanceSnapshot.create({ accountId, balance: closingBalance, date: new Date() });
+    const reconciled = await reconcileBalance(userId, accountId, closingBalance, asOfDate, "statement_closing_balance");
     await invalidateDashboardCache(userId);
+
+    // If (and only if) that reconciliation actually applied, every pending
+    // transaction THIS import created already has its effect captured by it
+    // — the statement's closing balance reflects every one of this batch's
+    // rows, confirmed or not, the instant the import finishes. Stamping them
+    // `balanceReconciledAtImport: true` is what stops the confirm route
+    // (`pending.routes.ts`, via `applyConfirmedTransactionBalanceEffect`)
+    // from ALSO applying each row's own amount as a delta once someone
+    // actually reviews and files it — which would double-count money the
+    // closing balance already accounted for. When the reconciliation is
+    // instead rejected as stale (an older/out-of-order statement), rows stay
+    // unstamped and confirming them applies their delta exactly as it always
+    // has, since no batch-level figure actually took effect for this import.
+    if (reconciled) {
+      const finalBatch = await ImportBatch.findById(batchId).select("resultingIds");
+      const resultingIds = finalBatch?.resultingIds ?? [];
+      if (resultingIds.length > 0) {
+        await PendingTransaction.updateMany(
+          { _id: { $in: resultingIds } },
+          { balanceReconciledAtImport: true }
+        );
+      }
+    }
   }
 
-  await ImportBatch.findByIdAndUpdate(batchId, { status: "completed", closingBalance });
+  await ImportBatch.findByIdAndUpdate(batchId, {
+    status: "completed",
+    closingBalance,
+    expectedClosingBalance,
+    closingBalanceMismatch,
+  });
   await cleanupTempFile(filePath);
   // Deliberately no cleanup on a thrown error above (a chunk's DB write
   // failing, `insertMany` rejecting, etc.): that error is left to propagate

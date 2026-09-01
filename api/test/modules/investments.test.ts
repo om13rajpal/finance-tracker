@@ -4,8 +4,12 @@ import jwt from "jsonwebtoken";
 import { app } from "../../src/app.js";
 import { HoldingLot } from "../../src/models/HoldingLot.js";
 import { TaxSlabConfig } from "../../src/models/TaxSlabConfig.js";
+import { Account } from "../../src/models/Account.js";
+import { Transaction } from "../../src/models/Transaction.js";
 import { getHoldingsRollup } from "../../src/modules/investments/holdings.service.js";
 import { applySellFifo } from "../../src/modules/investments/holdings-fifo.js";
+import { computeNetWorth } from "../../src/modules/accounts/accounts.service.js";
+import { computeFullNetWorth } from "../../src/modules/dashboard/net-worth.service.js";
 
 // getHoldingsRollup now merges in live prices via getLatestPrice — mock it so these
 // tests exercise the FIFO/rollup logic without touching Redis/Mongo price lookups or
@@ -575,6 +579,283 @@ HCLTECH,03/08/2026,buy,2,1200
         .field("platform", "zerodha");
 
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe("manual buy/sell (linked account transactions)", () => {
+    async function createAccount(userId: string, currentBalance: number) {
+      return Account.create({
+        userId,
+        type: "bank",
+        institution: "Test Bank",
+        nickname: "Test",
+        currentBalance,
+      });
+    }
+
+    async function seedCapitalGainsConfig() {
+      await TaxSlabConfig.create({
+        financialYear: "2026-27",
+        regime: "new",
+        standardDeduction: 75000,
+        slabs: [{ upTo: null, rate: 0.3 }],
+        section87ARebateLimit: 1200000,
+        section87ARebateMaxTax: 60000,
+        capitalGains: {
+          equity: { stcgHoldingDays: 365, stcgRate: 0.2, ltcgRate: 0.125, ltcgExemptionLimit: 125000 },
+          debt: { stcgHoldingDays: 0, stcgRate: null, ltcgRate: null, ltcgExemptionLimit: 0 },
+        },
+      });
+    }
+
+    describe("POST /holdings (buy)", () => {
+      it("creates a HoldingLot without touching any account when no accountId is given", async () => {
+        const cookie = authCookie("user-buy-noaccount");
+        const res = await request(app)
+          .post("/holdings")
+          .set("Cookie", cookie)
+          .send({
+            symbol: "infy",
+            platform: "zerodha",
+            instrumentType: "stock",
+            buyDate: "2026-08-01",
+            buyPrice: 1500,
+            units: 10,
+          });
+
+        expect(res.status).toBe(201);
+        expect(res.body.lot.symbol).toBe("INFY"); // upper-cased, matching CSV import convention
+        expect(res.body.transaction).toBeNull();
+
+        const lot = await HoldingLot.findOne({ userId: "user-buy-noaccount", symbol: "INFY" });
+        expect(lot).not.toBeNull();
+        expect(lot!.units).toBe(10);
+        expect(lot!.remainingUnits).toBe(10);
+
+        const txCount = await Transaction.countDocuments({ userId: "user-buy-noaccount" });
+        expect(txCount).toBe(0);
+      });
+
+      it("creates a linked expense Transaction and deducts the purchase cost from the funding account when accountId IS given", async () => {
+        const userId = "user-buy-withaccount";
+        const cookie = authCookie(userId);
+        const account = await createAccount(userId, 100000);
+
+        const res = await request(app)
+          .post("/holdings")
+          .set("Cookie", cookie)
+          .send({
+            symbol: "TCS",
+            platform: "zerodha",
+            instrumentType: "stock",
+            buyDate: "2026-08-01",
+            buyPrice: 3000,
+            units: 10,
+            accountId: account._id.toString(),
+          });
+
+        expect(res.status).toBe(201);
+        expect(res.body.transaction).not.toBeNull();
+        expect(res.body.transaction.amount).toBe(-30000); // -(3000 * 10)
+        expect(res.body.transaction.source).toBe("manual");
+        expect(res.body.transaction.status).toBe("confirmed");
+        expect(res.body.transaction.accountId).toBe(account._id.toString());
+
+        const tx = await Transaction.findOne({ userId, accountId: account._id.toString() });
+        expect(tx).not.toBeNull();
+        expect(tx!.amount).toBe(-30000);
+
+        // 100000 - (3000 * 10) = 70000.
+        const updatedAccount = await Account.findById(account._id);
+        expect(updatedAccount!.currentBalance).toBe(70000);
+      });
+
+      it("net worth is unchanged by a purchase (cash converts to holdings value 1:1 at the same price) — no double counting", async () => {
+        const userId = "user-buy-networth";
+        const cookie = authCookie(userId);
+        const account = await createAccount(userId, 100000);
+
+        const netWorthBefore = await computeFullNetWorth(userId);
+        expect(netWorthBefore).toBe(100000); // no holdings yet, just the account
+
+        // Mock this specific symbol's live price to EXACTLY the buy price, so the
+        // holding's market value equals its cost basis — making "cash became
+        // holdings value, 1:1" an exact, hand-checkable equality rather than an
+        // approximation that depends on whatever the mocked live price is.
+        mockedGetLatestPrice.mockResolvedValueOnce({ price: 3000, fetchedAt: new Date(), stale: false });
+
+        await request(app)
+          .post("/holdings")
+          .set("Cookie", cookie)
+          .send({
+            symbol: "TCS",
+            platform: "zerodha",
+            instrumentType: "stock",
+            buyDate: "2026-08-01",
+            buyPrice: 3000,
+            units: 10,
+            accountId: account._id.toString(),
+          });
+
+        // Cash account dropped by exactly the purchase cost.
+        expect(await computeNetWorth(userId)).toBe(70000);
+
+        // But TOTAL net worth (cash + holdings) is back to exactly where it
+        // started — the 30000 that left the account shows up as the holding's
+        // value, not as a phantom double-count on top of it.
+        const netWorthAfter = await computeFullNetWorth(userId);
+        expect(netWorthAfter).toBe(100000);
+      });
+
+      it("with NO funding account, the purchase legitimately increases net worth at cost basis (nothing was deducted anywhere) — this is the pre-fix double-count case, now scoped to only apply when the caller has no account context, exactly like a CSV import", async () => {
+        const userId = "user-buy-noaccount-networth";
+        await request(app)
+          .post("/holdings")
+          .set("Cookie", authCookie(userId))
+          .send({
+            symbol: "WIPRO",
+            platform: "zerodha",
+            instrumentType: "stock",
+            buyDate: "2026-08-01",
+            buyPrice: 400,
+            units: 5,
+          });
+
+        // This file's default price mock (afterEach) returns 1600 for any
+        // symbol not overridden per-test, so the holding's market value is
+        // 1600*5=8000 — the ENTIRE 8000 shows up in net worth with nothing
+        // deducted from any account, since no accountId was given. This is
+        // exactly the double-counting scenario this task fixes for CASES THAT
+        // DO supply an account (see the test above) — deliberately still true
+        // here, because CSV-imported historical holdings (which also never
+        // supply an account) must keep behaving exactly as before.
+        const netWorth = await computeFullNetWorth(userId);
+        expect(netWorth).toBe(8000);
+      });
+
+      it("400s on invalid input (e.g. missing required fields)", async () => {
+        const res = await request(app)
+          .post("/holdings")
+          .set("Cookie", authCookie("user-buy-invalid"))
+          .send({ symbol: "INFY" });
+        expect(res.status).toBe(400);
+      });
+
+      it("401s without auth", async () => {
+        const res = await request(app).post("/holdings").send({});
+        expect(res.status).toBe(401);
+      });
+    });
+
+    describe("POST /holdings/sell", () => {
+      it("sells via the existing FIFO/capital-gains pipeline without touching any account when no accountId is given", async () => {
+        const userId = "user-sell-noaccount";
+        const cookie = authCookie(userId);
+        await seedCapitalGainsConfig();
+        await HoldingLot.create({
+          userId,
+          symbol: "SBIN",
+          platform: "zerodha",
+          instrumentType: "stock",
+          buyDate: new Date("2026-01-01"),
+          buyPrice: 500,
+          units: 10,
+          remainingUnits: 10,
+        });
+
+        const res = await request(app)
+          .post("/holdings/sell")
+          .set("Cookie", cookie)
+          .send({ symbol: "sbin", instrumentType: "stock", sellDate: "2026-08-15", sellPrice: 600, unitsSold: 4 });
+
+        expect(res.status).toBe(201);
+        expect(res.body.events).toHaveLength(1);
+        expect(res.body.transaction).toBeNull();
+
+        const lot = await HoldingLot.findOne({ userId, symbol: "SBIN" });
+        expect(lot!.remainingUnits).toBe(6);
+
+        const txCount = await Transaction.countDocuments({ userId });
+        expect(txCount).toBe(0);
+      });
+
+      it("creates a linked income Transaction and credits sale proceeds to the account when accountId IS given", async () => {
+        const userId = "user-sell-withaccount";
+        const cookie = authCookie(userId);
+        await seedCapitalGainsConfig();
+        const account = await createAccount(userId, 50000);
+        await HoldingLot.create({
+          userId,
+          symbol: "SBIN",
+          platform: "zerodha",
+          instrumentType: "stock",
+          buyDate: new Date("2026-01-01"),
+          buyPrice: 500,
+          units: 10,
+          remainingUnits: 10,
+        });
+
+        const res = await request(app)
+          .post("/holdings/sell")
+          .set("Cookie", cookie)
+          .send({
+            symbol: "SBIN",
+            instrumentType: "stock",
+            sellDate: "2026-08-15",
+            sellPrice: 600,
+            unitsSold: 4,
+            accountId: account._id.toString(),
+          });
+
+        expect(res.status).toBe(201);
+        expect(res.body.transaction.amount).toBe(2400); // 600 * 4, positive (income)
+
+        // 50000 + (600 * 4) = 52400.
+        const updatedAccount = await Account.findById(account._id);
+        expect(updatedAccount!.currentBalance).toBe(52400);
+      });
+
+      it("400s (not a 500, and mutates nothing) when selling more units than are held", async () => {
+        const userId = "user-sell-oversell";
+        const cookie = authCookie(userId);
+        await seedCapitalGainsConfig();
+        const account = await createAccount(userId, 50000);
+        await HoldingLot.create({
+          userId,
+          symbol: "SBIN",
+          platform: "zerodha",
+          instrumentType: "stock",
+          buyDate: new Date("2026-01-01"),
+          buyPrice: 500,
+          units: 5,
+          remainingUnits: 5,
+        });
+
+        const res = await request(app)
+          .post("/holdings/sell")
+          .set("Cookie", cookie)
+          .send({
+            symbol: "SBIN",
+            instrumentType: "stock",
+            sellDate: "2026-08-15",
+            sellPrice: 600,
+            unitsSold: 10,
+            accountId: account._id.toString(),
+          });
+
+        expect(res.status).toBe(400);
+
+        const lot = await HoldingLot.findOne({ userId, symbol: "SBIN" });
+        expect(lot!.remainingUnits).toBe(5); // untouched
+
+        expect(await Transaction.countDocuments({ userId })).toBe(0);
+        expect((await Account.findById(account._id))!.currentBalance).toBe(50000); // untouched
+      });
+
+      it("401s without auth", async () => {
+        const res = await request(app).post("/holdings/sell").send({});
+        expect(res.status).toBe(401);
+      });
     });
   });
 

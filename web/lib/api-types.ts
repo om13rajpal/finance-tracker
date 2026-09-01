@@ -202,6 +202,27 @@ export interface HoldingLot {
   isElss?: boolean;
 }
 
+/**
+ * Response from `POST /holdings` (manual buy). `transaction` is null unless an
+ * `accountId` was supplied on the request — a buy with no funding account
+ * creates only the `HoldingLot`, matching the CSV import path's shape (no
+ * account context available), and never touches any account's balance.
+ */
+export interface BuyHoldingResult {
+  lot: HoldingLot;
+  transaction: Transaction | null;
+}
+
+/**
+ * Response from `POST /holdings/sell` (manual sell). `events` are the same
+ * per-lot capital-gains `SellEventRow`s the Tax screen reads. `transaction` is
+ * null unless an `accountId` was supplied, symmetric with `BuyHoldingResult`.
+ */
+export interface SellHoldingResult {
+  events: SellEventRow[];
+  transaction: Transaction | null;
+}
+
 // ── goals ──────────────────────────────────────────────────────────────────
 
 export interface Goal {
