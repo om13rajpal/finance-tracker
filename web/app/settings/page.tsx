@@ -11,6 +11,7 @@ import type {
   GmailStatus,
   MatchField,
   MatchType,
+  StatementPassword,
 } from "@/lib/api-types";
 import { flattenCategories, indexCategories, resolveChip } from "@/lib/buckets";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
@@ -62,6 +63,7 @@ export default function SettingsPage() {
         </div>
         <div className="flex min-w-0 flex-col gap-22">
           <GmailPanel />
+          <StatementPasswordsPanel />
           <ExportPanel />
         </div>
       </div>
@@ -393,6 +395,145 @@ function GmailPanel() {
           </PanelFooter>
         </>
       )}
+    </Panel>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Statement passwords
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * A flat, unordered list of passwords Sorted tries against any statement PDF
+ * — uploaded manually on Transactions, or arriving automatically as a Gmail
+ * attachment from an already-trusted sender. There is deliberately no
+ * bank↔password mapping to configure: every stored password is tried, in no
+ * particular order, until one unlocks the file.
+ */
+function StatementPasswordsPanel() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  const passwords = useQuery({
+    queryKey: ["statement-passwords"],
+    queryFn: () => apiFetch<StatementPassword[]>("/statement-passwords"),
+  });
+
+  const [form, setForm] = useState({ label: "", password: "" });
+
+  const create = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiFetch<StatementPassword>("/statement-passwords", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["statement-passwords"] });
+      setForm({ label: "", password: "" });
+      showToast("Password saved", "success");
+    },
+    onError: () => showToast("Could not save that password", "error"),
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`/statement-passwords/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["statement-passwords"] });
+      showToast("Password removed", "success");
+    },
+    onError: () => showToast("Could not remove that password", "error"),
+  });
+
+  const rows = passwords.data ?? [];
+
+  return (
+    <Panel>
+      <PanelHeader title="§ Statement passwords" meta={rows.length > 0 ? `${rows.length}` : undefined} />
+      <Helper className="-mt-8 mb-18 max-w-[56ch]">
+        Every password here is tried, in no particular order, against any statement PDF you upload
+        or that arrives automatically from a bank you have already told Sorted to trust. There is no
+        need to say which password belongs to which bank.
+      </Helper>
+
+      {passwords.isLoading ? (
+        <div className="flex flex-col gap-12">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-[22px] w-full rounded-sm opacity-40" />
+          ))}
+        </div>
+      ) : passwords.isError ? (
+        <Notice
+          title="Could not load your saved passwords."
+          body="Please try again shortly. Nothing has been lost."
+        />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title="No passwords saved yet."
+          body="Add the password on your bank's e-statement PDF here, once, and Sorted will try it automatically on every statement."
+        />
+      ) : (
+        <div>
+          {rows.map((entry) => (
+            <div
+              key={entry._id}
+              className="grid grid-cols-[1fr_auto] items-center gap-14 border-b border-rule py-12 last:border-b-0"
+            >
+              <RowName name={entry.label || "Untitled password"} sub="Never shown again once saved" />
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Remove "${entry.label || "this password"}"?`)) {
+                    remove.mutate(entry._id);
+                  }
+                }}
+                disabled={remove.isPending}
+                className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-alert disabled:opacity-[.55]"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form
+        noValidate
+        className="mt-18 flex flex-col gap-14 border-t border-rule pt-18"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!form.password.trim()) {
+            showToast("Enter the password");
+            return;
+          }
+          create.mutate({
+            label: form.label.trim() || undefined,
+            password: form.password,
+          });
+        }}
+      >
+        <SectionLabel>§ Add a password</SectionLabel>
+        <Field id="sp-label" label="Label" hint="Optional">
+          <Input
+            id="sp-label"
+            placeholder="SBI savings statement"
+            value={form.label}
+            onChange={(e) => setForm({ ...form, label: e.target.value })}
+          />
+        </Field>
+        <Field id="sp-password" label="Password">
+          <Input
+            id="sp-password"
+            type="password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+          />
+        </Field>
+        <FormActions className="mt-0 border-t-0 pt-0">
+          <Button type="submit" busy={create.isPending}>
+            Save Password
+          </Button>
+        </FormActions>
+      </form>
     </Panel>
   );
 }

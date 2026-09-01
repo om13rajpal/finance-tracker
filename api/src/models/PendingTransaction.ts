@@ -8,7 +8,11 @@ const pendingTransactionSchema = new Schema({
   date: { type: Date, required: true },
   note: { type: String, default: "" },
   merchant: { type: String, default: "" },
-  source: { type: String, enum: ["email_parsed"], default: "email_parsed" },
+  source: {
+    type: String,
+    enum: ["email_parsed", "pdf_statement_parsed"],
+    default: "email_parsed",
+  },
 });
 
 export const PendingTransaction = model("PendingTransaction", pendingTransactionSchema);

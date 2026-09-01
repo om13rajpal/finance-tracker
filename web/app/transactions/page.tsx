@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   useInfiniteQuery,
   useMutation,
@@ -14,6 +14,7 @@ import type {
   Account,
   CategoryNode,
   ImportBatchResult,
+  ImportPdfEnqueuedResult,
   PendingTransaction,
   Transaction,
   TransactionsPage as TransactionsPageData,
@@ -874,6 +875,23 @@ function ImportPanel({
   const [result, setResult] = useState<ImportBatchResult | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // `pdfBusy` covers only the upload request itself (fast — it just enqueues
+  // a job and returns `202`). Once that resolves, `pdfBatchId` drives a
+  // separate poll of `GET /transactions/import-pdf/:batchId` for however
+  // long the background worker actually takes to unlock/parse/insert —
+  // see `pdfBatchQuery` below. Statement processing moved off this request
+  // entirely (into the `statement-process` BullMQ worker) so a large
+  // statement can't hold this request — or this app's single event loop —
+  // open for seconds at a time.
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfBatchId, setPdfBatchId] = useState<string | null>(null);
+  const pdfFileRef = useRef<HTMLInputElement>(null);
+  // "" means "no bank-specific parser" — the server falls back to a generic,
+  // lower-accuracy reader. Naming the bank here is what lets the accurate
+  // per-bank parser (SBI, HDFC) actually get used; there's no way to detect
+  // it from the file alone before it's even unlocked.
+  const [bankFormat, setBankFormat] = useState("");
+
   async function upload(file: File) {
     if (!accountId) {
       showToast("Choose the account this statement belongs to first");
@@ -906,6 +924,72 @@ function ImportPanel({
       setBusy(false);
     }
   }
+
+  async function uploadPdf(file: File) {
+    if (!accountId) {
+      showToast("Choose the account this statement belongs to first");
+      return;
+    }
+    setPdfBusy(true);
+    setPdfBatchId(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      body.append("accountId", accountId);
+      if (bankFormat) body.append("parserKey", bankFormat);
+      // Deliberately `fetch`, not `apiFetch`: apiFetch always sets a JSON
+      // content type, and a multipart upload needs the browser to set its own
+      // boundary.
+      const res = await fetch(`${API_BASE}/transactions/import-pdf`, {
+        method: "POST",
+        credentials: "include",
+        body,
+      });
+      if (res.status === 409) {
+        showToast("You've already imported this exact statement.");
+        return;
+      }
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error ?? `Import failed: ${res.status}`);
+      }
+      // 202: the file is enqueued, not processed yet — `pdfBatchQuery` below
+      // takes over from here, polling until the worker finishes.
+      const enqueued: ImportPdfEnqueuedResult = await res.json();
+      setPdfBatchId(enqueued.batchId);
+    } catch (e) {
+      showToast((e as Error).message || "Could not import that file", "error");
+    } finally {
+      setPdfBusy(false);
+    }
+  }
+
+  // Polls the batch until it leaves "processing" — a 1.5s interval is
+  // frequent enough to feel responsive for a personal-scale statement (a few
+  // seconds at most) without hammering the API. Stops itself (returns
+  // `false`) once the batch reaches either terminal state.
+  const pdfBatchQuery = useQuery({
+    queryKey: ["import-pdf-batch", pdfBatchId],
+    queryFn: () => apiFetch<ImportBatchResult>(`/transactions/import-pdf/${pdfBatchId}`),
+    enabled: pdfBatchId !== null,
+    refetchInterval: (query) => (query.state.data?.status === "processing" ? 1500 : false),
+  });
+
+  const pdfBatch = pdfBatchQuery.data;
+  const pdfProcessing = pdfBatchId !== null && (!pdfBatch || pdfBatch.status === "processing");
+
+  // Once the batch completes with rows waiting for review, the review queue
+  // (fetched separately by `pending`/`["pending-transactions"]` above) needs
+  // refetching — nothing here touches balances/dashboard, since PDF rows are
+  // always pending, never confirmed. Runs once per batch, the moment it
+  // finishes, not on every poll tick.
+  const notifiedBatchId = useRef<string | null>(null);
+  useEffect(() => {
+    if (!pdfBatch || pdfBatch.status !== "completed" || notifiedBatchId.current === pdfBatch._id) return;
+    notifiedBatchId.current = pdfBatch._id;
+    const waiting = pdfBatch.rowResults.filter((r) => r.status === "success").length;
+    if (waiting > 0) queryClient.invalidateQueries({ queryKey: ["pending-transactions"] });
+  }, [pdfBatch, queryClient]);
 
   const failures = result?.rowResults.filter((r) => r.status === "failed") ?? [];
   const imported = result ? result.rowResults.length - failures.length : 0;
@@ -952,6 +1036,19 @@ function ImportPanel({
             e.target.value = "";
           }}
         />
+        <input
+          ref={pdfFileRef}
+          id="pdf-file"
+          type="file"
+          accept=".pdf"
+          aria-label="Statement PDF"
+          className="sr-only"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) uploadPdf(file);
+            e.target.value = "";
+          }}
+        />
         <div className="flex flex-wrap items-center gap-12">
           <Button
             type="button"
@@ -965,6 +1062,37 @@ function ImportPanel({
           </Button>
           <span className="font-sans text-caption text-dim-2">
             Date, Debit, Credit Amount, Description
+          </span>
+        </div>
+        <Field
+          id="pdf-bank-format"
+          label="Statement format"
+          hint="Optional"
+          helper="Naming the bank reads the statement more accurately. Leave it on Detect if you're not sure or it isn't listed."
+        >
+          <Select
+            id="pdf-bank-format"
+            value={bankFormat}
+            onChange={(e) => setBankFormat(e.target.value)}
+          >
+            <option value="">Detect automatically</option>
+            <option value="sbi_statement">State Bank of India (SBI)</option>
+            <option value="hdfc_statement">HDFC Bank</option>
+          </Select>
+        </Field>
+        <div className="flex flex-wrap items-center gap-12">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            busy={pdfBusy}
+            onClick={() => pdfFileRef.current?.click()}
+          >
+            <Icon name="upload" size={15} />
+            {pdfBusy ? "Reading…" : "Choose a PDF"}
+          </Button>
+          <span className="font-sans text-caption text-dim-2">
+            A bank e-statement. Password-protected is fine — saved passwords are tried automatically.
           </span>
         </div>
 
@@ -989,6 +1117,42 @@ function ImportPanel({
               </ul>
             ) : null}
           </div>
+        ) : null}
+
+        {/* PDF rows never land as confirmed — they always need a look, so
+            success points at the review queue above instead of claiming
+            "N imported" the way the CSV result does. */}
+        {pdfProcessing ? (
+          <div className="rounded-panel border-panel border-ink p-18">
+            <SectionLabel>§ Import result</SectionLabel>
+            <p className="m-0 mt-8 text-body-s">Processing your statement…</p>
+          </div>
+        ) : null}
+        {pdfBatch?.status === "completed" ? (
+          (() => {
+            const waiting = pdfBatch.rowResults.filter((r) => r.status === "success").length;
+            return waiting > 0 ? (
+              <div className="rounded-panel border-panel border-ink p-18">
+                <SectionLabel>§ Import result</SectionLabel>
+                <p className="m-0 mt-8 text-body-s">
+                  {waiting} row{waiting === 1 ? "" : "s"} read from the statement — waiting for you
+                  in “From your inbox” above.
+                </p>
+              </div>
+            ) : (
+              <Notice
+                tone="quiet"
+                title="Couldn't find any transaction rows in that PDF."
+                body="The file unlocked fine, but nothing in it matched a recognisable statement layout — a scanned image with no text layer behaves this way too."
+              />
+            );
+          })()
+        ) : null}
+        {pdfBatch?.status === "failed" ? (
+          <Notice
+            title="Could not process this statement."
+            body={pdfBatch.error ?? "Something went wrong reading that PDF. Please try again."}
+          />
         ) : null}
       </div>
     </Panel>

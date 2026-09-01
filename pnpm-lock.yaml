@@ -71,6 +71,9 @@ importers:
       multer:
         specifier: ^1.4.5-lts.1
         version: 1.4.5-lts.2
+      pdf.js-extract:
+        specifier: ^1.0.1
+        version: 1.0.1
       resend:
         specifier: ^3.5.0
         version: 3.5.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1769,6 +1772,9 @@ packages:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
 
+  dommatrix@0.1.1:
+    resolution: {integrity: sha512-45CQT2bjnN9DXF07PXgG7hfQ2r8a6trrupNuTizRzfLHWWujdebAx8Xry0CB5uVBQlQY/m0TE/Whe5nrua+lsQ==}
+
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
 
@@ -2970,6 +2976,10 @@ packages:
   pathval@2.0.1:
     resolution: {integrity: sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==}
     engines: {node: '>= 14.16'}
+
+  pdf.js-extract@1.0.1:
+    resolution: {integrity: sha512-2uWbXGPpYb0qJ/XAuNChlO/IlixtbsaBTm+oxKb7uDne0a7WN60n4jFq9IvsUGoYYDUnUiR/QIcNhA1wXCjWkw==}
+    engines: {node: '>= 20.0.0'}
 
   peberminta@0.9.0:
     resolution: {integrity: sha512-XIxfHpEuSJbITd1H3EeQwpcZbTLHc+VVr8ANI9t5sit565tsI4/xK3KWTUFE2e6QiangUkh3B0jihzmGnNrRsQ==}
@@ -5032,6 +5042,8 @@ snapshots:
     dependencies:
       domelementtype: 2.3.0
 
+  dommatrix@0.1.1: {}
+
   domutils@3.2.2:
     dependencies:
       dom-serializer: 2.0.0
@@ -6536,6 +6548,10 @@ snapshots:
   pathe@1.1.2: {}
 
   pathval@2.0.1: {}
+
+  pdf.js-extract@1.0.1:
+    dependencies:
+      dommatrix: 0.1.1
 
   peberminta@0.9.0: {}
 

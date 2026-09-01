@@ -21,11 +21,12 @@ import {
   startPriceRetentionWorker,
   schedulePriceRetention,
 } from "./workers/priceRetention.worker.js";
+import { startStatementProcessWorker } from "./workers/statementProcess.worker.js";
 
 /**
  * The subset of BullMQ's `Worker<T>` interface callers of
  * `startBackgroundWorkers` actually need. BullMQ's `Worker<T>` is invariant
- * in `T` (its methods both accept and return `T`), so the 6
+ * in `T` (its methods both accept and return `T`), so the 8
  * differently-typed workers started below have no common non-`any`
  * supertype — but every one of them satisfies this narrower, `T`-free
  * shape, which is all a caller (this app's shutdown path, or a test closing
@@ -71,12 +72,12 @@ async function startOne<T>(
 }
 
 /**
- * Starts all 7 background BullMQ workers (price-refresh, price-refresh-fanout,
+ * Starts all 8 background BullMQ workers (price-refresh, price-refresh-fanout,
  * recurring-due, gmail-watch-renewal, gmail-email-parse, monthly-rollup,
- * price-retention) and registers the repeatable schedules for the 5 of them
- * that have one. Each worker's own `start*Worker()` factory is
- * deliberately lazy (see each worker file's doc comment) so this is the single
- * place in the running app that actually calls them.
+ * price-retention, statement-process) and registers the repeatable schedules
+ * for the 5 of them that have one. Each worker's own `start*Worker()` factory
+ * is deliberately lazy (see each worker file's doc comment) so this is the
+ * single place in the running app that actually calls them.
  *
  * Returns the workers that started successfully (omitting any that failed),
  * so a caller — this app's `main()`, or a test — can close them.
@@ -90,6 +91,7 @@ export async function startBackgroundWorkers(): Promise<ManagedWorker[]> {
     startOne("gmail-email-parse", startGmailEmailParseWorker),
     startOne("monthly-rollup", startMonthlyRollupWorker, scheduleMonthlyRollup),
     startOne("price-retention", startPriceRetentionWorker, schedulePriceRetention),
+    startOne("statement-process", startStatementProcessWorker),
   ]);
 
   return workers.filter((w): w is ManagedWorker => w !== undefined);

@@ -8,6 +8,8 @@ import { accountsRouter } from "./modules/accounts/accounts.routes.js";
 import { transactionsRouter } from "./modules/transactions/transactions.routes.js";
 import { pendingTransactionsRouter } from "./modules/transactions/pending.routes.js";
 import { csvImportRouter } from "./modules/transactions/csv-import/csv-import.routes.js";
+import { statementUploadRouter } from "./modules/statements/statement-upload.routes.js";
+import { statementPasswordsRouter } from "./modules/statements/statement-passwords.routes.js";
 import { investmentsRouter } from "./modules/investments/investments.routes.js";
 import { recurringRouter } from "./modules/recurring/recurring.routes.js";
 import { goalsRouter } from "./modules/goals/goals.routes.js";
@@ -59,7 +61,9 @@ app.use("/categorization-rules", categorizationRouter);
 app.use("/accounts", accountsRouter);
 app.use("/transactions", transactionsRouter);
 app.use("/transactions", csvImportRouter);
+app.use("/transactions", statementUploadRouter);
 app.use("/pending-transactions", pendingTransactionsRouter);
+app.use("/statement-passwords", statementPasswordsRouter);
 // Mounted at root (not "/investments") so its internal routes resolve at the
 // exact top-level paths the spec calls for (GET /holdings, /holding-lots,
 // POST /investments/import). Side effect: its own requireAuth middleware runs

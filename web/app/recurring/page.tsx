@@ -20,6 +20,7 @@ import {
   relativeDays,
   todayInputValue,
 } from "@/lib/format";
+import { resolveLogoUrl } from "@/lib/subscription-logos";
 import { cn } from "@/lib/utils";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Chip, ChipSkeleton } from "@/components/app/chip";
@@ -261,6 +262,7 @@ function RecurringRow({
   const spec = resolveChip(item.categoryId, index, {
     direction: item.type === "income" ? "income" : "expense",
   });
+  const logoUrl = resolveLogoUrl(item.name);
   const signed = item.type === "income" ? Math.abs(item.amount) : -Math.abs(item.amount);
   const inactive = item.status !== "active";
 
@@ -275,7 +277,7 @@ function RecurringRow({
       )}
     >
       <div className="grid min-w-[240px] flex-1 grid-cols-row items-center gap-14">
-        <Chip spec={spec} labelled />
+        <Chip spec={spec} labelled logoUrl={logoUrl} />
         <RowName
           name={item.name}
           sub={[

@@ -39,9 +39,18 @@ export interface ChipProps {
    * the chip is the ONLY carrier of the bucket.
    */
   labelled?: boolean;
+  /**
+   * A real brand logo (logo.dev), shown in place of the bucket glyph — bucket
+   * chips only, never on the income/expense/uncategorised shapes, which carry
+   * no merchant identity to illustrate. `null`/`undefined` is the normal case
+   * (no confident merchant match) and draws the ordinary glyph. A load failure
+   * falls back to the glyph too — this is never allowed to render as a broken
+   * image.
+   */
+  logoUrl?: string | null;
 }
 
-export function Chip({ spec, size = 30, className, labelled = false }: ChipProps) {
+export function Chip({ spec, size = 30, className, labelled = false, logoUrl }: ChipProps) {
   const glyph = size === 30 ? 17 : 12.5;
   const label = chipLabel(spec);
 
@@ -59,7 +68,11 @@ export function Chip({ spec, size = 30, className, labelled = false }: ChipProps
     const meta = BUCKET_META[spec.bucket];
     return (
       <span className={cn(base, "border-panel border-ink", meta.fill)} {...a11y}>
-        <Icon name={meta.icon} size={glyph} />
+        {logoUrl ? (
+          <ChipLogo src={logoUrl} size={size} fallback={<Icon name={meta.icon} size={glyph} />} />
+        ) : (
+          <Icon name={meta.icon} size={glyph} />
+        )}
       </span>
     );
   }
@@ -80,6 +93,37 @@ export function Chip({ spec, size = 30, className, labelled = false }: ChipProps
     <span className={cn(base, "border-panel border-ink bg-transparent")} {...a11y}>
       <Icon name={spec.kind === "income" ? "in" : "out"} size={glyph} />
     </span>
+  );
+}
+
+/**
+ * Swaps to the bucket glyph on a failed image load (unknown domain to
+ * logo.dev, network hiccup, ad-blocker) — a chip is never allowed to sit
+ * there as a broken image icon. `src` changing (a different merchant) resets
+ * the failure state so a previously-broken chip gets a fresh attempt.
+ */
+function ChipLogo({ src, size, fallback }: { src: string; size: number; fallback: React.ReactNode }) {
+  const [failed, setFailed] = React.useState(false);
+
+  React.useEffect(() => setFailed(false), [src]);
+
+  if (failed) return <>{fallback}</>;
+
+  return (
+    // Fills the chip circle edge-to-edge (object-cover crops rather than
+    // letterboxing) so the bucket fill colour never shows through as a ring
+    // around a small centred glyph. A tiny 64px external brand icon;
+    // next/image's remote-domain allowlist would have to grow per merchant
+    // for no real benefit here.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      width={size}
+      height={size}
+      className="h-full w-full rounded-full object-cover"
+      onError={() => setFailed(true)}
+    />
   );
 }
 

@@ -285,6 +285,45 @@ describe("pending transactions", () => {
     expect(rule).toBeNull();
   });
 
+  it("stamps the confirmed transaction's source from the pending doc's own source, not a hardcoded value", async () => {
+    const userId = "user-source-stamp";
+    const cookie = authCookie(userId);
+
+    const emailPending = await PendingTransaction.create({
+      userId,
+      accountId: "acc-1",
+      amount: -120,
+      date: new Date("2026-08-16"),
+      merchant: "EMAIL SOURCE MERCHANT",
+      source: "email_parsed",
+    });
+    const pdfPending = await PendingTransaction.create({
+      userId,
+      accountId: "acc-1",
+      amount: -340,
+      date: new Date("2026-08-16"),
+      merchant: "PDF SOURCE MERCHANT",
+      source: "pdf_statement_parsed",
+    });
+
+    const emailRes = await request(app)
+      .post(`/pending-transactions/${emailPending._id}/confirm`)
+      .set("Cookie", cookie)
+      .send({});
+    expect(emailRes.status).toBe(200);
+    expect(emailRes.body.source).toBe("email_parsed");
+
+    const pdfRes = await request(app)
+      .post(`/pending-transactions/${pdfPending._id}/confirm`)
+      .set("Cookie", cookie)
+      .send({});
+    expect(pdfRes.status).toBe(200);
+    expect(pdfRes.body.source).toBe("pdf_statement_parsed");
+
+    const stored = await Transaction.findById(pdfRes.body._id);
+    expect(stored!.source).toBe("pdf_statement_parsed");
+  });
+
   it("auto-categorizes via an existing rule when no categoryId is supplied", async () => {
     const userId = "user-autocat";
     const cookie = authCookie(userId);

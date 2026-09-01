@@ -82,7 +82,13 @@ pendingTransactionsRouter.post("/:id/confirm", async (req, res, next) => {
       date: merged.date,
       note: merged.note,
       merchant: merged.merchant,
-      source: "email_parsed",
+      // The pending doc's OWN source, never a hardcoded value or something
+      // client-supplied via `edits` — `pending.source`, not `merged.source`,
+      // since `confirmSchema` never accepts a `source` field to merge in the
+      // first place. This used to be hardcoded to "email_parsed", which was
+      // harmless while that was the only possible source but became a real
+      // bug once `pdf_statement_parsed` existed too.
+      source: pending.source,
       status: "confirmed",
     });
 

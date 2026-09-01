@@ -38,7 +38,7 @@ export interface BalanceSnapshot {
 
 // ── transactions ───────────────────────────────────────────────────────────
 
-export type TransactionSource = "manual" | "csv_import" | "email_parsed";
+export type TransactionSource = "manual" | "csv_import" | "email_parsed" | "pdf_statement_parsed";
 
 export interface Transaction {
   _id: string;
@@ -59,10 +59,14 @@ export interface TransactionsPage {
 }
 
 /**
- * A transaction the Gmail parser produced from a bank alert, waiting to be
- * confirmed. `accountId` is nullable because an email says what was spent but
- * not always from where — which is why confirming one can require picking an
- * account first.
+ * A transaction the Gmail parser or a PDF statement import produced, waiting
+ * to be confirmed. `accountId` is nullable because an email (and, for the
+ * automatic Gmail-attachment path, a PDF too) says what was spent but not
+ * always from where — which is why confirming one can require picking an
+ * account first. A PDF uploaded manually through Transactions always knows
+ * its account up front, so `pdf_statement_parsed` rows from that path DO
+ * carry an `accountId` — it is only the automatic Gmail-attachment path that
+ * leaves it null, same reasoning as `email_parsed`.
  */
 export interface PendingTransaction {
   _id: string;
@@ -72,16 +76,46 @@ export interface PendingTransaction {
   date: string;
   note?: string;
   merchant?: string;
-  source: "email_parsed";
+  source: "email_parsed" | "pdf_statement_parsed";
 }
 
 export interface ImportBatchResult {
   _id: string;
-  source: "zerodha_csv" | "groww_csv" | "bank_statement";
+  source: "zerodha_csv" | "groww_csv" | "bank_statement" | "pdf_statement";
   filename: string;
   importedAt: string;
   rowResults: { row: number; status: "success" | "failed"; reason?: string; transactionId?: string }[];
   resultingIds: string[];
+  /**
+   * Async lifecycle. Every source except `pdf_statement` is created already
+   * `"completed"` (they still build their `ImportBatch` in one synchronous
+   * shot) — only a PDF-statement upload starts `"processing"` and is polled
+   * via `GET /transactions/import-pdf/:batchId` until it reaches a terminal
+   * state.
+   */
+  status: "processing" | "completed" | "failed";
+  error: string | null;
+}
+
+/** The immediate response from `POST /transactions/import-pdf` — enqueues a
+ * background job and returns before any row has been processed. */
+export interface ImportPdfEnqueuedResult {
+  batchId: string;
+  status: "processing";
+}
+
+// ── statement passwords ────────────────────────────────────────────────────
+
+/**
+ * Never carries the password in any form — `label` is the user's own note
+ * only, never used to pick which password to try against a given file. Every
+ * stored password is attempted, in no particular order, until one unlocks
+ * the PDF.
+ */
+export interface StatementPassword {
+  _id: string;
+  label: string;
+  createdAt: string;
 }
 
 // ── categorization ─────────────────────────────────────────────────────────

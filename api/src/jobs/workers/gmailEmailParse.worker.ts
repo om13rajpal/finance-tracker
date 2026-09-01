@@ -1,12 +1,17 @@
 import { google, gmail_v1 } from "googleapis";
 import type { Job, Worker } from "bullmq";
+import crypto from "node:crypto";
 import { getOAuthClientForUser } from "../../modules/email-ingestion/gmail-oauth.service.js";
 import { EmailSource } from "../../models/EmailSource.js";
 import { EmailImportLog } from "../../models/EmailImportLog.js";
 import { PendingTransaction } from "../../models/PendingTransaction.js";
 import { GmailConnection } from "../../models/GmailConnection.js";
+import { ImportBatch } from "../../models/ImportBatch.js";
 import { PARSER_REGISTRY } from "../../modules/email-ingestion/parsers/registry.js";
 import { isTokenRevokedError } from "../../modules/email-ingestion/token-errors.js";
+import { tryUnlockPdf } from "../../modules/statements/pdf-unlock.service.js";
+import { parseStatementRows } from "../../modules/statements/statement-row-parser.service.js";
+import { guessStatementParserKey } from "../../modules/statements/institution-parser-key.js";
 import { makeWorker } from "../queue.js";
 
 type GmailNotificationJob = { userId: string; historyId: string };
@@ -74,6 +79,136 @@ async function tryReserveImportLog(doc: ImportLogDraft): Promise<boolean> {
   } catch (err) {
     if (isDuplicateKeyError(err)) return false;
     throw err;
+  }
+}
+
+/**
+ * Recursively walks `payload.parts` (attachments can be nested a level or two
+ * deep, e.g. inside a multipart/mixed wrapper) for the first part that is
+ * both named like a PDF and carries a real `body.attachmentId` — the
+ * reference needed to actually fetch the bytes via a separate API call. A
+ * part with inline `body.data` instead of an `attachmentId` is not an
+ * attachment in the sense this code cares about (that path doesn't exist
+ * anywhere in this codebase today, confirmed at implementation time).
+ */
+function findPdfAttachmentPart(
+  payload: gmail_v1.Schema$MessagePart | undefined
+): gmail_v1.Schema$MessagePart | null {
+  if (!payload) return null;
+  const stack: gmail_v1.Schema$MessagePart[] = [payload];
+  while (stack.length > 0) {
+    const part = stack.pop()!;
+    if (part.filename && part.filename.toLowerCase().endsWith(".pdf") && part.body?.attachmentId) {
+      return part;
+    }
+    if (part.parts) stack.push(...part.parts);
+  }
+  return null;
+}
+
+/**
+ * Unlocks, parses and files a trusted-sender email's PDF statement
+ * attachment (if it has one) as `pdf_statement_parsed` `PendingTransaction`s
+ * with `accountId: null` — an email says what was spent but never which
+ * account, same as the existing body-alert path, so account assignment is
+ * deferred entirely to the existing confirm-time flow.
+ *
+ * Deliberately independent of body-text parsing: one email can have neither,
+ * either, or both a parseable alert and a PDF attachment, and this function's
+ * own `EmailImportLog` row uses a synthetic `${emailId}:pdf` key (distinct
+ * from the plain `emailId` the body-parse claim uses) so the two outcomes —
+ * and their own redelivery dedup — never collide.
+ *
+ * NEVER throws: an unlock or parse failure here must not block the rest of
+ * this mailbox's history sync (the caller's `for` loop, or the
+ * `historyId` advance after it) — it's logged and treated as this one
+ * attachment's outcome, nothing more.
+ */
+async function processPdfAttachment(params: {
+  gmail: gmail_v1.Gmail;
+  userId: string;
+  emailId: string;
+  payload: gmail_v1.Schema$MessagePart | undefined;
+  sourceId: string;
+  institution: string;
+}): Promise<void> {
+  const { gmail, userId, emailId, payload, sourceId, institution } = params;
+  const pdfLogKey = `${emailId}:pdf`;
+
+  try {
+    const part = findPdfAttachmentPart(payload);
+    if (!part?.body?.attachmentId) return; // no PDF attachment on this email — nothing to do
+
+    // Fast path only, same caveat as the plain-emailId check above — the real
+    // dedup guarantee is `tryReserveImportLog`'s unique-index race below.
+    const alreadyLogged = await EmailImportLog.findOne({ emailId: pdfLogKey });
+    if (alreadyLogged) return;
+
+    const attachmentRes = await gmail.users.messages.attachments.get({
+      userId: "me",
+      messageId: emailId,
+      id: part.body.attachmentId,
+    });
+    const base64Data = attachmentRes.data.data;
+    if (!base64Data) {
+      await tryReserveImportLog({ userId, emailId: pdfLogKey, sourceId, parseStatus: "failed" });
+      return;
+    }
+    const buffer = Buffer.from(base64Data, "base64url");
+    const fileHash = crypto.createHash("sha256").update(buffer).digest("hex");
+
+    const existingBatch = await ImportBatch.findOne({ userId, fileHash });
+    if (existingBatch) {
+      await tryReserveImportLog({ userId, emailId: pdfLogKey, sourceId, parseStatus: "failed" });
+      return;
+    }
+
+    const unlocked = await tryUnlockPdf(buffer, userId);
+    if (!unlocked.success) {
+      await tryReserveImportLog({ userId, emailId: pdfLogKey, sourceId, parseStatus: "failed" });
+      return;
+    }
+
+    const parserKey = guessStatementParserKey(institution);
+    const rows = parseStatementRows(unlocked.pages, parserKey);
+
+    const reserved = await tryReserveImportLog({ userId, emailId: pdfLogKey, sourceId, parseStatus: "success" });
+    if (!reserved) return; // lost the race to a concurrent job for the same redelivered notification
+
+    const rowResults: { row: number; status: "success" | "failed"; reason?: string; transactionId?: string }[] = [];
+    const resultingIds: string[] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      if ("error" in row) {
+        rowResults.push({ row: i + 1, status: "failed", reason: row.error });
+        continue;
+      }
+      const pending = await PendingTransaction.create({
+        userId,
+        accountId: null,
+        categoryId: null,
+        amount: row.amount,
+        date: new Date(row.date),
+        note: row.note,
+        merchant: row.merchant,
+        source: "pdf_statement_parsed",
+      });
+      resultingIds.push(pending._id.toString());
+      rowResults.push({ row: i + 1, status: "success", transactionId: pending._id.toString() });
+    }
+
+    await ImportBatch.create({
+      userId,
+      source: "pdf_statement",
+      filename: part.filename ?? "statement.pdf",
+      fileHash,
+      rowResults,
+      resultingIds,
+    });
+  } catch (err) {
+    console.error(`PDF attachment processing failed for email ${emailId}:`, err);
+    // Swallowed deliberately — see this function's doc comment.
   }
 }
 
@@ -158,6 +293,17 @@ export async function processGmailNotification({
       await tryReserveImportLog({ userId, emailId, parseStatus: "unmatched" });
       continue;
     }
+
+    // PDF attachment handling — alongside the body-text parser below, not
+    // instead of it. One email can have neither, either, or both.
+    await processPdfAttachment({
+      gmail,
+      userId,
+      emailId,
+      payload,
+      sourceId: source._id.toString(),
+      institution: source.institution,
+    });
 
     const parser = PARSER_REGISTRY[source.parserKey];
     const parsed = parser ? parser(body, subject) : null;

@@ -7,7 +7,7 @@ import { monthlyRollupQueue } from "../../src/jobs/workers/monthlyRollup.worker.
 import { priceRetentionQueue } from "../../src/jobs/workers/priceRetention.worker.js";
 import { priceRefreshFanoutQueue } from "../../src/jobs/workers/priceRefreshFanout.worker.js";
 
-// The 7 queues every worker wired up by `startBackgroundWorkers` listens on.
+// The 8 queues every worker wired up by `startBackgroundWorkers` listens on.
 const ALL_QUEUE_NAMES = [
   "price-refresh",
   "price-refresh-fanout",
@@ -16,11 +16,13 @@ const ALL_QUEUE_NAMES = [
   "gmail-email-parse",
   "monthly-rollup",
   "price-retention",
+  "statement-process",
 ];
 
-// The 5 of those 7 whose worker file also registers a repeatable schedule
-// (price-refresh and gmail-email-parse don't — their jobs are enqueued by the
-// fan-out producer / by the webhook route instead, not on a timer).
+// The 5 of those 8 whose worker file also registers a repeatable schedule
+// (price-refresh, gmail-email-parse, and statement-process don't — their jobs
+// are enqueued by the fan-out producer / by the webhook route / by the PDF
+// upload route instead, not on a timer).
 const SCHEDULED_QUEUES = [
   { name: "price-refresh-fanout", queue: priceRefreshFanoutQueue },
   { name: "recurring-due", queue: recurringDueQueue },
@@ -65,13 +67,13 @@ describe("startBackgroundWorkers", () => {
   });
 
   it(
-    "starts a real, Redis-listening worker for all 7 queues and registers the 5 repeatable schedules",
+    "starts a real, Redis-listening worker for all 8 queues and registers the 5 repeatable schedules",
     async () => {
       const workers = await startBackgroundWorkers();
 
       try {
-        // All 7 start*Worker() factories ran without throwing.
-        expect(workers).toHaveLength(7);
+        // All 8 start*Worker() factories ran without throwing.
+        expect(workers).toHaveLength(8);
 
         // In-process: every returned worker is actually running, not merely
         // constructed (a worker whose start() call threw is never in this array).
@@ -79,11 +81,11 @@ describe("startBackgroundWorkers", () => {
           expect(worker.isRunning()).toBe(true);
         }
 
-        // Redis-side: independent confirmation that each of the 7 queues has a
+        // Redis-side: independent confirmation that each of the 8 queues has a
         // connected worker client, using BullMQ's own `getWorkersCount` (backed by
         // `CLIENT LIST`) rather than trusting in-process state alone. This also
-        // exercises the queues (price-refresh, gmail-email-parse) that don't have
-        // a schedule to check via getRepeatableJobs below.
+        // exercises the queues (price-refresh, gmail-email-parse, statement-process)
+        // that don't have a schedule to check via getRepeatableJobs below.
         const probeQueues = ALL_QUEUE_NAMES.map((name) => makeQueue(name));
         try {
           await Promise.all(
