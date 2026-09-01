@@ -152,3 +152,44 @@ export function parseSbiStatement(pages: PDFExtractPage[]): StatementRowResult[]
     };
   });
 }
+
+/**
+ * The account's actual CURRENT balance ("Clear Balance" in SBI's own Account
+ * Summary block on page 1, "As on <today's date>") — deliberately NOT the
+ * same thing as the last transaction row's own balance, or the "Closing
+ * Balance" in the "Statement Summary" block at the very end of the document.
+ * Confirmed against a real 118-page SBI export: those two numbers can be
+ * meaningfully different — that document's printed transaction rows
+ * happened to stop over a year before the statement's own generation date
+ * (an SBI export quirk/limit, not a parsing bug), so the trailing summary's
+ * "Closing Balance" reflected only the last transaction actually included,
+ * not reality. "Clear Balance" is the one number in the document that's
+ * always the true, as-of-now balance regardless of whether the transaction
+ * list itself is complete — which is exactly what reconciling
+ * `Account.currentBalance` needs.
+ *
+ * The page-1 Account Summary is a two-column layout, and this specific
+ * field's label and value don't reliably end up on the same reconstructed
+ * line the way every other field on that page does — empirically, "Clear
+ * Balance" prints as its own standalone line, while its value shows up on a
+ * DIFFERENT line that starts with a bare `:` (the colon that would normally
+ * follow the label) immediately followed by the amount and a `CR`/`DR`
+ * suffix, e.g. `": 9,894.83CR Branch Phone : 9275532076"` — merged with an
+ * unrelated field from the page's other column that happens to sit at a
+ * similar height. Matching on that bare-colon-prefixed shape directly (never
+ * seen anywhere else on this page or in the transaction table, which starts
+ * every line with a date) is more robust than trying to first re-pair it
+ * with the "Clear Balance" label text across that layout quirk.
+ */
+const CLEAR_BALANCE_RE = /^:\s*([\d,]+\.\d{2})\s*(CR|DR)?\b/i;
+
+export function findSbiClosingBalance(pages: PDFExtractPage[]): number | null {
+  for (const line of linesFromPages(pages).flat()) {
+    const m = CLEAR_BALANCE_RE.exec(line.trim());
+    if (!m) continue;
+    const amount = parseFloat(m[1].replace(/,/g, ""));
+    if (!Number.isFinite(amount)) continue;
+    return m[2]?.toUpperCase() === "DR" ? -amount : amount;
+  }
+  return null;
+}

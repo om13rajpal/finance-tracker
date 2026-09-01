@@ -234,6 +234,51 @@ describe("parseStatementRows — sbi_statement", () => {
     expect(rows[1]).toMatchObject({ date: "2026-08-02", amount: -20, note: "CASH WITHDRAWAL SELF AT" });
     if (!("error" in rows[1])) expect(rows[1].merchant).toContain("00652 MAIN BRANCH");
   });
+
+  describe("findStatementClosingBalance", () => {
+    it("reads the account's current \"Clear Balance\" off its own layout quirk — value merged onto a DIFFERENT line than its label", () => {
+      // Confirmed against a real SBI statement: "Clear Balance" prints as its
+      // own standalone line, while its value lands on a different line that
+      // starts with a bare ":" — merged with an unrelated field from the
+      // page's other column ("Branch Phone", here) that happens to sit at a
+      // similar height in the two-column Account Summary layout.
+      const pages = onePage([
+        ["Branch", "Email", "ID", ":", "SBI.00652@SBI.CO.IN"],
+        [":", "9,894.83CR", "Branch", "Phone", ":", "9275532076"],
+        ["Clear", "Balance"],
+        ["Uncleared", "Amount", ":", "0.00", "CIF", "Number", ":", "90630964796"],
+      ]);
+      expect(findStatementClosingBalance(pages, "sbi_statement")).toBe(9894.83);
+    });
+
+    it("signs a DR (overdrawn) balance as negative", () => {
+      const pages = onePage([[":", "500.00DR", "Branch", "Phone", ":", "123"]]);
+      expect(findStatementClosingBalance(pages, "sbi_statement")).toBe(-500);
+    });
+
+    it("returns null when no Clear Balance line is present", () => {
+      const pages = onePage([["Some", "Other", "Line"]]);
+      expect(findStatementClosingBalance(pages, "sbi_statement")).toBeNull();
+    });
+
+    it("is NOT the same figure as the trailing Statement Summary's Closing Balance — the account summary's Clear Balance wins", () => {
+      // Confirmed against a real 118-page SBI export: its printed
+      // transaction rows stopped over a year before the statement's own
+      // generation date, so the trailing summary's "Closing Balance" (which
+      // only reflects the last transaction actually included) was ~8,300
+      // less than the account's true current balance. Using the LAST
+      // transaction row's balance (or this trailing summary) instead of
+      // "Clear Balance" would reconcile the account to a stale figure.
+      const pages = onePage([
+        [":", "9,894.83CR", "Branch", "Phone", ":", "9275532076"],
+        ["Clear", "Balance"],
+        ["Statement", "Summary", ":", "02-09-2020", "To", "01-09-2026"],
+        ["Brought", "Forward", "Dr", "Count", "Cr", "Count", "Total", "Debits", "Total", "Credits", "Closing", "Balance"],
+        ["0.00", "1229", "297", "15,17,586.15", "15,19,181.96", "1,595.81CR"],
+      ]);
+      expect(findStatementClosingBalance(pages, "sbi_statement")).toBe(9894.83);
+    });
+  });
 });
 
 describe("parseStatementRows — hdfc_statement", () => {
