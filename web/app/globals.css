@@ -1,3 +1,430 @@
+/* Design tokens first — every Tailwind utility below resolves to one of these
+   custom properties. Generated from the brand kit; see scripts/sync-tokens.mjs. */
+@import "./tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Point the kit's font tokens at the self-hosted next/font families.
+     tokens.css only declared `local()` sources, so without this the whole
+     product renders in system fallbacks. Declared after the @import so these
+     win, and the kit stays the source of truth for everything else. */
+  :root {
+    --disp: var(--font-display), "Geist", system-ui, sans-serif;
+    --ui: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+    --num: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    /* THE TWO RETIRED CHIPS, BROUGHT BACK FOR ONE SECTION.
+       #8A4BD1 and #C43C63 were Sorted chip colours until the taxonomy dropped
+       from six categories to four buckets. They were retired for one measured
+       reason: ink on them is 3.32:1 and 3.46:1, so a rupee figure could not be
+       set inside them.
+       The capability rows need six distinct floods and the bucket set only has
+       four. These two are the honest fifth and sixth options — already Sorted
+       colours, with recorded provenance — and the constraint that retired them
+       does not apply here, because nothing on this page sets ink inside them.
+       They carry CREAM: 5.42:1 and 5.21:1. Landing page only; they must never
+       return to a chip, a lane or anything behind the login.
+
+       DECLARED ON :root, NOT ON .on-ink. They were first written into the
+       `.on-ink` block, which scopes the dark sections — and the capability
+       rows sit on cream, so `var(--cap-violet)` resolved to nothing and two of
+       the six rows silently lost their flood entirely. A custom property is
+       only as available as the element it is declared on. */
+    --cap-violet: #8a4bd1;
+    --cap-crimson: #c43c63;
+
+    /* The hero board's cell tile — ink lifted just enough to read as a
+       physical flap in a grid rather than as floating characters. Derived,
+       not picked, so it tracks --ink if the ink ever moves. Plain fallback
+       first for browsers without color-mix(). */
+    --board-cell: #232323;
+    --board-cell: color-mix(in srgb, var(--bg) 6%, var(--ink));
+  }
+
+  html {
+    background: var(--bg);
+    color: var(--ink);
+  }
+
+  body {
+    font-family: var(--ui);
+    font-size: var(--type-body);
+    line-height: var(--leading-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* LOCKED · focus rings are always drawn OUTWARD onto cream.
+     --focus on --ink measures 1.37:1, so an inset ring on a filled control is
+     invisible. Never `outline:none` without an equivalent replacement in the
+     same rule, and never box-shadow-as-ring on anything with an ink fill. */
+  :focus-visible {
+    outline: var(--focus-ring);
+    outline-offset: var(--focus-offset);
+  }
+
+  /* Tabular figures everywhere a rupee amount can appear. */
+  .tabular {
+    font-family: var(--num);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   LANDING PAGE ONLY · the ink-ground kit
+   ══════════════════════════════════════════════════════════════════════════
+   The public landing page inverts the ground: it opens on full-bleed ink
+   instead of cream. Three things in the locked system are measured against
+   cream and stop working when the ground flips, so each gets an explicit,
+   scoped, documented inversion here. None of this applies behind the login.
+   ══════════════════════════════════════════════════════════════════════════ */
+@layer components {
+  .on-ink {
+    /* Readable secondary text ON INK, derived rather than guessed.
+       `--dim` (4.37:1) and `--dim-2` (5.71:1) are both measured against CREAM
+       and mean nothing on a black ground, so reusing them here would be a
+       silent accessibility regression.
+         --on-ink-prose  68% cream over ink → 7.99:1  · body-size sentences
+         --on-ink-micro  52% cream over ink → 5.20:1  · mono micro-labels
+         --on-ink-hair   22% cream over ink           · decorative rules only
+       The plain fallbacks come first, so a browser without color-mix() gets
+       full-contrast cream rather than nothing. */
+    --on-ink-prose: var(--bg);
+    --on-ink-micro: var(--bg);
+    --on-ink-hair: var(--bg);
+    --on-ink-prose: color-mix(in srgb, var(--bg) 68%, var(--ink));
+    --on-ink-micro: color-mix(in srgb, var(--bg) 52%, var(--ink));
+    --on-ink-hair: color-mix(in srgb, var(--bg) 22%, var(--ink));
+  }
+
+  /* THE FOCUS RING INVERTS. `--focus` (#14199C) measures 1.37:1 against ink,
+     so the global 2.5px ring is effectively invisible on these sections. It is
+     RECOLOURED to cream (16.08:1) — never removed, never `outline: none`. The
+     width, the offset and the "always outward, never inset" rule are all
+     unchanged. */
+  .on-ink :focus-visible,
+  .on-ink:focus-visible {
+    outline-color: var(--bg);
+  }
+
+  .ink-prose {
+    color: var(--on-ink-prose, var(--bg));
+  }
+  .ink-micro {
+    color: var(--on-ink-micro, var(--bg));
+  }
+  .ink-hair {
+    border-color: var(--on-ink-hair, var(--bg));
+  }
+
+  /* THE STAMP INVERTS. The single permitted shadow in Sorted is
+     `0 2px 0 var(--ink)` — a stamp, not a lift — and an ink shadow on an ink
+     ground is nothing at all. On these sections the CTA is a cream pill and
+     the stamp is drawn in `--bucket-guiltfree`.
+
+     THE PRESS RULE IS UNCHANGED AND IS NOT NEGOTIABLE:
+       · translateY exactly the 2px shadow offset
+       · shadow collapsed to 0 0 0
+       · BOTH properties transitioned together, one duration (110ms), one curve
+       · NEVER scale()
+     translateY and the shadow's y-offset are complementary: on a shared curve
+     they sum to 2px at every frame, so the shadow's lower edge stays pinned
+     where it started and the button descends into it. Transition transform
+     alone and the shadow snaps to zero on frame one — the silhouette jumps 2px
+     shorter and then drifts down to meet nothing. That is the flicker. Add a
+     scale() and the composited scale desyncs from the shadow repaint, so the
+     1.5px hard border visibly glitches. Both were real reported bugs. */
+  .stamp-on-ink {
+    box-shadow: 0 2px 0 var(--bucket-guiltfree);
+    transition:
+      transform var(--dur-press) var(--ease-out),
+      box-shadow var(--dur-press) var(--ease-out);
+  }
+  .stamp-on-ink:active:not([disabled]) {
+    transform: translateY(var(--stamp-offset));
+    box-shadow: 0 0 0 var(--bucket-guiltfree);
+  }
+
+  /* THE HERO PLATE'S GROUND.
+     The wordmark sits over a grid of 480 flickering characters and needs
+     separation from it. The obvious move is a soft `text-shadow` glow — and
+     the shadow policy forbids exactly that: no blur anywhere except the stamp.
+     So the separation is a GROUND rather than an effect. An ink radial is laid
+     between the board and the plate, opaque through the middle and falling off
+     to nothing at the edges, so the type stands on ink at the full 16.08:1
+     instead of on a half-lit grid. A glow could not have promised that ratio;
+     this can, because where the type sits the backdrop is simply --ink.
+     Non-interactive, no blur filter, one paint. */
+  .l-vignette {
+    background: radial-gradient(
+      ellipse 66% 52% at 50% 46%,
+      var(--ink) 0%,
+      var(--ink) 42%,
+      transparent 78%
+    );
+    /* Promoted to its own layer. Without this the gradient is re-rasterised
+       every time a cell underneath it changes opacity — a full-viewport
+       radial, repainted several times a second, for a static backdrop. */
+    transform: translateZ(0);
+  }
+
+  /* The board: 260 cells that flip a few at a time.
+     `contain` is the important line. It tells the browser a cell's paint can
+     never affect anything outside it, so a flip invalidates one 52px tile
+     instead of walking up to the section. The fade is a plain CSS transition
+     rather than a tween per flip — see the note in hero.tsx.
+     The container is promoted too, so the whole grid rasterises once. */
+  .l-board {
+    transform: translateZ(0);
+  }
+  .l-cell {
+    opacity: 0.3;
+    contain: layout paint style;
+    transition: opacity 620ms var(--ease-out);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .l-cell {
+      transition-duration: 1ms;
+    }
+  }
+
+  /* The legend sits at the foot of the board, outside the radial's reach, so
+     on a phone the four bucket names landed directly on grid characters and
+     became unreadable. Same answer as the plate: a ground, not an effect —
+     ink rising from the bottom edge, opaque under the type. */
+  /* THE ROOM RAIL. Segment widths are the buckets' real shares of the month, so
+     the progress indicator and the proportional bar are the same object: it
+     says where you are spatially rather than as "3 / 4", and teaches the split
+     while doing it. The room you are standing in fills ink; the rest sit at
+     their own colour, dimmed. `data-room` is written by the scrub. */
+  .l-rail-seg {
+    background: var(--rule);
+    transition: background-color 260ms var(--ease-out);
+  }
+  .l-rooms[data-room="0"] .l-rail-seg[data-i="0"],
+  .l-rooms[data-room="1"] .l-rail-seg[data-i="1"],
+  .l-rooms[data-room="2"] .l-rail-seg[data-i="2"],
+  .l-rooms[data-room="3"] .l-rail-seg[data-i="3"] {
+    background: var(--ink);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .l-rail-seg {
+      transition-duration: 1ms;
+    }
+  }
+
+  .l-legend-ground {
+    background: linear-gradient(to top, var(--ink) 0%, var(--ink) 62%, transparent 100%);
+  }
+
+  /* THE BIG-LIST HOVER. A full-width capability row floods with its bucket
+     colour on hover AND on keyboard focus — focus is not an afterthought here,
+     it is the same state. The flood is a scaleX on a colour layer from the
+     left edge: transform only, never a width. The description NEVER animates
+     opacity, so it is legible before, during and after, and to a reader that
+     never triggers the state at all. */
+  /* SIX ROWS, SIX FLOODS, NO REPEATS.
+     Colouring by bucket gave two rows the same hue (four buckets, six rows).
+     Flooding everything ink removed the repeat by removing the colour. Both
+     were wrong in the same way — treating six capabilities as if they had to
+     be derived from four buckets. They don't: nothing in this section IS a
+     bucket. Each row carries its own `--cap-fill` and its own `--cap-on` from
+     data.ts, four from the bucket hues and two from the retired chips. */
+  .cap-row {
+    isolation: isolate;
+  }
+  .cap-fill {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--cap-fill, var(--ink));
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform 420ms var(--ease-out);
+  }
+  .cap-row:hover .cap-fill,
+  .cap-row:focus-visible .cap-fill {
+    transform: scaleX(1);
+  }
+  /* The colour arrives first and the type follows it. Equal timing made the
+     row and its contents move as one slab; a 70ms lead lets the flood read as
+     something sweeping THROUGH the row rather than the row sliding sideways. */
+  /* The colour arrives first and the type follows it. Equal timing made the
+     row and its contents move as one slab; a 70ms lead lets the flood read as
+     something sweeping THROUGH the row rather than the row sliding sideways.
+
+     TRANSFORM OWNERSHIP: the travel is on `.cap-title-mask`, never on
+     `.cap-title`. GSAP writes an inline transform on the title for the reveal,
+     and no stylesheet rule can override an inline transform — a hover
+     translate written onto the title would silently do nothing. The mask also
+     happens to be the right element to move: shifting the clip carries the
+     type without letting a long title slide out through its own edge. */
+  .cap-row .cap-title-mask,
+  .cap-row .cap-detail,
+  .cap-row .cap-arrow {
+    transition:
+      transform 420ms var(--ease-out) 70ms,
+      color 200ms var(--ease-out) 70ms;
+  }
+  .cap-row .cap-title {
+    transition: color 200ms var(--ease-out) 70ms;
+  }
+  /* The dot is the row's colour — so on hover it is sitting on its own colour
+     and vanishes. It flips to the row's type colour, which is the one value
+     guaranteed to be legible against that flood. */
+  /* The dot is the row's own colour, so on hover it sits on that colour and
+     disappears. It flips to the row's type colour, which is the one value
+     guaranteed to be legible against that flood.
+     Both values come from the row's custom properties rather than an inline
+     `background` on the dot — an inline style would need `!important` to
+     override, and reaching for `!important` to beat markup you control is a
+     sign the value is declared in the wrong place. */
+  .cap-row .cap-dot {
+    background: var(--cap-fill, var(--ink));
+    transition:
+      transform 420ms var(--ease-out) 70ms,
+      background-color 200ms var(--ease-out) 70ms;
+  }
+  .cap-row:hover .cap-dot,
+  .cap-row:focus-visible .cap-dot {
+    background: var(--cap-on, var(--ink));
+  }
+  .cap-row:hover .cap-title-mask,
+  .cap-row:focus-visible .cap-title-mask,
+  .cap-row:hover .cap-detail,
+  .cap-row:focus-visible .cap-detail {
+    transform: translateX(16px);
+  }
+  /* `--cap-on` is per row because these six do not share a text colour: four
+     floods take ink, the two retired chips take cream. */
+  .cap-row:hover .cap-title,
+  .cap-row:focus-visible .cap-title,
+  .cap-row:hover .cap-detail,
+  .cap-row:focus-visible .cap-detail,
+  .cap-row:hover .cap-arrow,
+  .cap-row:focus-visible .cap-arrow {
+    color: var(--cap-on, var(--ink));
+  }
+  .cap-row:hover .cap-dot,
+  .cap-row:focus-visible .cap-dot {
+    transform: translateX(16px) scale(1.3);
+  }
+  .cap-row:hover .cap-arrow,
+  .cap-row:focus-visible .cap-arrow {
+    transform: translateX(14px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cap-fill,
+    .cap-row .cap-title,
+    .cap-row .cap-title-mask,
+    .cap-row .cap-detail,
+    .cap-row .cap-dot,
+    .cap-row .cap-arrow {
+      transition-duration: 1ms;
+      transition-delay: 0ms;
+    }
+    /* The colour change is kept — it is the state, not the motion. Only the
+       travel is dropped, and the dot keeps its scale so the row still reads as
+       active without anything sliding. */
+    .cap-row:hover .cap-title-mask,
+    .cap-row:focus-visible .cap-title-mask,
+    .cap-row:hover .cap-detail,
+    .cap-row:focus-visible .cap-detail,
+    .cap-row:hover .cap-arrow,
+    .cap-row:focus-visible .cap-arrow {
+      transform: none;
+    }
+    .cap-row:hover .cap-dot,
+    .cap-row:focus-visible .cap-dot {
+      transform: scale(1.3);
+    }
+    .stamp-on-ink {
+      transition-duration: 1ms;
+    }
+    .stamp-on-ink:active:not([disabled]) {
+      transform: none;
+    }
+  }
+
+  /* THE CUSTOM CURSOR hides the native one — but only while it is actually
+     being drawn. The class is added by the component after its
+     `(pointer: fine) and (prefers-reduced-motion: no-preference)` query
+     matches, and removed on unmount, so touch users, reduced-motion users and
+     anyone without JavaScript keep their arrow. */
+  html.sorted-cursor,
+  html.sorted-cursor * {
+    cursor: none !important;
+  }
+
+  /* THE CROSSHAIR. Its strokes are CASED in the component — ink beneath, cream
+     on top — so the mark stays legible on ink, on cream and on a saturated
+     bucket fill without a blend mode, and therefore without forcing a
+     full-document recomposite on every pointer move.
+     The centre only appears over something actionable; the arms rotate 45° at
+     the same time, so a plus becomes a cross. */
+  .sorted-mark__eye {
+    opacity: 0;
+    transform-origin: center;
+    transition:
+      opacity 200ms var(--ease-out),
+      r 200ms var(--ease-out);
+  }
+  .sorted-mark[data-hot="true"] .sorted-mark__eye {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sorted-mark__eye {
+      transition-duration: 1ms;
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   AUTHENTICATED APP · the two entrances the shell is allowed
+   ══════════════════════════════════════════════════════════════════════════
+   Both are opacity-and-translate only, both are short, and both are removed
+   entirely under reduced motion. Nothing behind the login door moves unless a
+   person just caused it to.
+   ══════════════════════════════════════════════════════════════════════════ */
+@layer utilities {
+  /* A toast arriving. It is the only thing on these screens that appears
+     without being where the eye already was, so it gets 8px of travel to say
+     "this is new" — and no more. */
+  @keyframes toast-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* The skeleton→data swap. Opacity only, 190ms, staggered 24ms per row by an
+     inline `--i`. It runs on the SWAP and never on a refetch or a route
+     return: re-animating a list the user is already reading is a flicker, not
+     a transition. */
+  @keyframes row-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  [data-stagger] > .row-stagger {
+    animation: row-in 190ms var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 24ms);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-stagger] > .row-stagger {
+      animation: none;
+    }
+  }
+}

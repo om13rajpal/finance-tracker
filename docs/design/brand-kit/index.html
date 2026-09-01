@@ -1,0 +1,1649 @@
+<!-- @moodforge
+schema: 1.0
+round: 4
+phase: brand-kit
+worker: moodforge-brand-architect
+theme: sorted
+version: v1
+created_at: 2026-08-30T00:00:00Z
+sha256: fa0799165e42cf7002dad3a4cc3dad511c89b4ee97ed7bdb1b8c62115a9cffe4
+palette: [#FAF5F2, #1A1A1A, #E2D8D0, #7D7169, #6B5F57, #F9ACCE, #F1A007, #23B471, #5483D3, #8A4BD1, #C43C63, #14199C, #A61B2B, #FCE4CA, #F1E8E2]
+fonts: [Bricolage Grotesque 800, Geist 400/500/600, Geist Mono 500]
+tokens_used: [--bg, --ink, --rule, --dim, --dim-2, --ink-wash, --hero-field, --food, --bills, --invest, --transport, --shop, --health, --focus, --alert, --disp, --ui, --num, --stamp, --stroke-panel, --stroke-hair, --stroke-tether, --r-panel, --r-pill, --ease-out, --ease-in-out, --ease-drawer, --dur-press, --dur-tooltip, --dur-drawer, --dur-modal]
+screen: brand-book
+summary: Sorted brand kit v1 — twelve sections, measured contrast matrix (no asserted ratios), the six chip icons as shipped SVGs, live motion demos with a slow-motion inspector proving the stamp-press rule, the tether, and the full shadcn/ui component appendix.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sorted · Brand kit v1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   The token block below is a VERBATIM copy of docs/design/brand-kit/tokens.css.
+   It is inlined so this book renders standalone. tokens.css is the source
+   of truth; if the two ever disagree, tokens.css wins.
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  /* surface */
+  --bg:#FAF5F2; --ink:#1A1A1A; --rule:#E2D8D0;
+  --ink-wash:#F1E8E2; --hero-field:#FCE4CA;
+  /* secondary text — NOT interchangeable, see §04 */
+  --dim:#7D7169;    /* 4.37:1 · mono micro-labels only */
+  --dim-2:#6B5F57;  /* 5.71:1 · required for readable prose */
+  /* the six-chip taxonomy */
+  --food:#F9ACCE; --bills:#F1A007; --invest:#23B471;
+  --transport:#5483D3; --shop:#8A4BD1; --health:#C43C63;
+  /* system, never a category */
+  --focus:#14199C; --alert:#A61B2B;
+  /* type */
+  --disp:"Bricolage Grotesque","Geist",system-ui,sans-serif;
+  --ui:"Geist",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --num:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  /* stroke */
+  --stroke-hair:1px; --stroke-panel:1.5px; --stroke-tether:1.6px;
+  --stroke-icon:2px; --stroke-focus:2.5px; --stroke-display:4px; --stroke-core:4.5px;
+  /* radius */
+  --r-xs:4px; --r-sm:14px; --r-otp:16px; --r-notice:18px;
+  --r-panel:22px; --r-card:26px; --r-pill:999px;
+  /* the one shadow */
+  --stamp:0 2px 0 var(--ink); --stamp-pressed:0 0 0 var(--ink); --stamp-offset:2px;
+  /* motion */
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ease-in-out:cubic-bezier(.77,0,.175,1);
+  --ease-drawer:cubic-bezier(.32,.72,0,1);
+  --dur-press:110ms; --dur-hover:150ms; --dur-tooltip:160ms;
+  --dur-dropdown:200ms; --dur-drawer:320ms; --dur-modal:400ms; --dur-skeleton:1150ms;
+  /* book-only: the field the pages float on */
+  --shell:#EFE6DF;
+  /* book-only: slow-motion multiplier, driven by the §08 inspector */
+  --slow:1;
+}
+@media (prefers-reduced-motion:reduce){
+  :root{--dur-press:1ms;--dur-tooltip:1ms;--dur-dropdown:1ms;--dur-drawer:1ms;--dur-modal:1ms}
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--shell);color:var(--ink);
+  font-family:var(--ui);font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+:focus-visible{outline:var(--stroke-focus) solid var(--focus);outline-offset:3px;border-radius:var(--r-xs)}
+::selection{background:var(--food);color:var(--ink)}
+h1,h2,h3,p,ul,ol,figure,table{margin:0}
+code{font-family:var(--num);font-size:.88em;letter-spacing:-.01em}
+
+/* ── book furniture ─────────────────────────────────────────────────── */
+.book{max-width:1240px;margin:0 auto;padding:0 30px 160px}
+.sheet{background:var(--bg);border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-card);
+  padding:56px 60px;margin-top:26px}
+.sec-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:6px}
+.sec-num{font-family:var(--num);font-size:11px;font-weight:600;letter-spacing:.2em;color:var(--dim-2)}
+.sec-head h2{font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:40px;line-height:1.05}
+.lede{font-size:15px;color:var(--dim-2);max-width:70ch;line-height:1.6;margin-top:8px}
+.lede b,.lede strong{color:var(--ink);font-weight:600}
+.rule{height:var(--stroke-panel);background:var(--ink);border:0;margin:22px 0 30px}
+.hair{height:var(--stroke-hair);background:var(--rule);border:0;margin:26px 0}
+.lab{font-family:var(--num);font-size:10px;font-weight:500;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);display:block}
+.h3{font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:22px;line-height:1.1}
+.note{font-size:13.5px;color:var(--dim-2);line-height:1.55;max-width:68ch}
+.note b{color:var(--ink);font-weight:600}
+.money{font-family:var(--num);font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:30px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.stack{display:flex;flex-direction:column;gap:10px}
+.wrap{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+
+/* code specimen */
+pre{background:var(--ink);color:var(--bg);border-radius:var(--r-sm);padding:16px 18px;overflow:auto;
+  font-family:var(--num);font-size:11.5px;line-height:1.65;letter-spacing:-.01em;margin:0}
+pre .c{color:#9A9A9A}
+pre .k{color:var(--food)}
+pre.good{border-left:6px solid var(--invest)}
+pre.bad{border-left:6px solid var(--alert)}
+
+/* ── cover ──────────────────────────────────────────────────────────── */
+.cover{background:var(--bg);border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-card);
+  margin-top:30px;padding:0;overflow:hidden;display:grid;grid-template-columns:1.15fr .85fr}
+.cover .left{padding:56px 60px;display:flex;flex-direction:column;justify-content:space-between}
+.cover .right{background:var(--hero-field);border-left:var(--stroke-panel) solid var(--ink);
+  display:grid;place-items:center;padding:30px}
+.cover .right img{width:100%;max-width:420px;height:auto;display:block}
+.wordmark{font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:180px;line-height:.86;margin:0}
+.tagline{font-size:19px;color:var(--dim-2);max-width:34ch;line-height:1.4;margin-top:18px}
+.tagline b{color:var(--ink);font-weight:600}
+.stamp-line{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;
+  border-top:var(--stroke-panel) solid var(--ink);padding-top:14px;margin-top:44px}
+.stamp-line span{font-family:var(--num);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+
+/* ── nav strip ──────────────────────────────────────────────────────── */
+.toc{position:sticky;top:0;z-index:40;background:var(--ink);color:var(--bg);
+  display:flex;gap:2px;overflow-x:auto;padding:9px 30px;margin-bottom:0}
+.toc a{color:var(--bg);text-decoration:none;font-family:var(--num);font-size:9.5px;letter-spacing:.13em;
+  text-transform:uppercase;white-space:nowrap;padding:5px 11px;border-radius:var(--r-pill);opacity:.62;
+  transition:opacity var(--dur-hover) ease,background var(--dur-hover) ease}
+.toc a:hover{opacity:1;background:#2E2E2E}
+
+/* ── PRODUCT COMPONENT LANGUAGE (verbatim from the approved screens) ── */
+.panel{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);padding:22px 24px;background:var(--bg)}
+.pill{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);background:var(--ink);color:var(--bg);
+  font-family:var(--ui);font-weight:600;font-size:15px;padding:15px 30px;box-shadow:var(--stamp);
+  cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  /* SETTLED §08: transform AND box-shadow, one duration, one curve. */
+  transition:transform calc(var(--dur-press) * var(--slow)) var(--ease-out),
+             box-shadow calc(var(--dur-press) * var(--slow)) var(--ease-out),
+             opacity var(--dur-hover) ease}
+.pill:active:not([disabled]){transform:translateY(var(--stamp-offset));box-shadow:var(--stamp-pressed)}
+.pill[disabled]{opacity:.55;cursor:not-allowed}
+.pill.ghost{background:transparent;color:var(--ink)}
+.pill.quiet{background:transparent;color:var(--ink);border-color:transparent;box-shadow:none;
+  text-decoration:underline;text-underline-offset:4px;padding:15px 10px}
+.pill.quiet:active:not([disabled]){transform:none}
+.pill.sm{font-size:13px;padding:10px 20px}
+.pill.fab{width:44px;height:44px;padding:0;border-radius:var(--r-pill)}
+.pill.fab svg{width:18px;height:18px}
+.pill[data-busy] .sp{width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;
+  border-radius:50%;animation:spin .62s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.pill[data-busy] .sp{animation-duration:1.4s}}
+
+.fld{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);background:transparent;
+  padding:15px 22px;font-family:var(--ui);font-size:16px;color:var(--ink);width:100%;
+  transition:border-color var(--dur-hover) ease}
+.fld::placeholder{color:var(--dim)}
+.fld:focus{outline:var(--focus-ring);outline-offset:var(--focus-offset)}
+.fld.err{box-shadow:0 0 0 var(--stroke-focus) var(--alert)}
+.fld[disabled]{opacity:.5;cursor:not-allowed}
+
+.chip{width:30px;height:30px;border-radius:50%;border:var(--stroke-panel) solid var(--ink);
+  display:grid;place-items:center;flex:none}
+.chip svg{width:17px;height:17px;display:block}
+.chip.lg{width:44px;height:44px}.chip.lg svg{width:25px;height:25px}
+.chip.sm{width:22px;height:22px}.chip.sm svg{width:13px;height:13px}
+.chip.food{background:var(--food)}.chip.bills{background:var(--bills)}
+.chip.invest{background:var(--invest)}.chip.transport{background:var(--transport)}
+.chip.shop{background:var(--shop)}.chip.health{background:var(--health)}
+.chip.hollow{background:transparent}.chip.solid{background:var(--ink);color:var(--bg)}
+
+.row{display:grid;grid-template-columns:30px 1fr auto;gap:14px;align-items:center;
+  padding:13px 0;border-bottom:var(--stroke-hair) solid var(--rule)}
+.row:last-child{border-bottom:0}
+.row.tethered{grid-template-columns:22px 30px 1fr auto;gap:0 14px}
+.row .nm{font-size:14.5px;font-weight:600;line-height:1.25}
+.row .sub{font-family:var(--num);font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--dim);margin-top:3px;display:block}
+.row .amt{font-size:15px}
+
+.bar{height:20px;border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);
+  overflow:hidden;background:transparent}
+.bar>i{display:block;height:100%;transform-origin:0 50%;transform:scaleX(var(--p,1))}
+.bar.ink>i{background:var(--ink)}
+
+.notice{display:flex;gap:12px;align-items:flex-start;border:var(--stroke-panel) solid var(--ink);
+  border-radius:var(--r-notice);padding:13px 17px;background:transparent}
+.notice .bang{width:22px;height:22px;border-radius:50%;border:var(--stroke-panel) solid var(--ink);
+  background:var(--alert);color:var(--bg);font-family:var(--disp);font-weight:800;font-size:13px;
+  display:grid;place-items:center;flex:none;margin-top:1px}
+.notice .h{font-weight:600;font-size:13.5px}
+.notice .d{color:var(--dim-2);font-size:13.5px}
+
+.otp{display:flex;gap:10px}
+.otp i{width:52px;height:60px;border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-otp);
+  display:grid;place-items:center;font-family:var(--num);font-weight:500;font-size:24px;font-style:normal}
+.otp i.cur{box-shadow:0 0 0 var(--stroke-focus) var(--focus)}
+.otp i.empty{color:var(--rule)}
+
+.navrow{display:flex;align-items:center;gap:11px;padding:8px 12px;font-size:14.5px;font-weight:500;
+  color:var(--dim-2);border-radius:var(--r-pill);cursor:pointer;border:0;background:transparent;
+  font-family:var(--ui);text-align:left;width:100%;
+  transition:color var(--dur-hover) ease,background var(--dur-hover) ease}
+.navrow svg{width:14px;height:14px;flex:none}
+@media (hover:hover) and (pointer:fine){.navrow:hover{color:var(--ink);background:var(--ink-wash)}}
+.navrow.on{color:var(--ink);font-weight:600;background:var(--ink-wash)}
+
+@keyframes sk{0%,100%{opacity:.34}50%{opacity:.72}}
+.sk{background:var(--rule);border-radius:var(--r-pill);animation:sk var(--dur-skeleton) var(--ease-in-out) infinite}
+.sk.c{border-radius:50%;background:transparent;border:var(--stroke-panel) dashed var(--ink)}
+@media (prefers-reduced-motion:reduce){.sk{animation:none;opacity:.5}}
+
+/* ── swatches ───────────────────────────────────────────────────────── */
+.sw{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);padding:16px;background:var(--bg)}
+.sw .fill{height:74px;border-radius:var(--r-sm);border:var(--stroke-panel) solid var(--ink);
+  display:grid;place-items:center;margin-bottom:13px}
+.sw .fill svg{width:26px;height:26px}
+.sw b{display:block;font-size:14.5px;font-weight:600}
+.sw code{color:var(--dim-2);display:block;margin-top:3px;font-size:11.5px}
+.sw .meta{font-family:var(--num);font-size:9px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--dim);margin-top:9px;display:block;line-height:1.5}
+.tag{display:inline-block;font-family:var(--num);font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;
+  border:var(--stroke-hair) solid var(--ink);border-radius:var(--r-pill);padding:2px 9px;margin-top:9px}
+.tag.pass{background:var(--invest)}
+.tag.warn{background:var(--bills)}
+.tag.fail{background:var(--alert);color:var(--bg);border-color:var(--alert)}
+
+/* ── tables ─────────────────────────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-family:var(--num);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--dim);font-weight:500;padding:0 14px 10px 0;border-bottom:var(--stroke-panel) solid var(--ink);
+  vertical-align:bottom}
+td{padding:11px 14px 11px 0;border-bottom:var(--stroke-hair) solid var(--rule);vertical-align:top;line-height:1.45}
+tr:last-child td{border-bottom:0}
+td.n{font-family:var(--num);font-variant-numeric:tabular-nums;font-size:12.5px;white-space:nowrap}
+td .swdot{width:15px;height:15px;border-radius:50%;border:var(--stroke-hair) solid var(--ink);
+  display:inline-block;vertical-align:-3px;margin-right:7px}
+.yes{color:var(--ink);font-weight:600}
+.no{color:var(--alert);font-weight:600}
+
+/* ── §08 motion demo furniture ──────────────────────────────────────── */
+.demo{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);padding:22px;background:var(--bg);
+  display:flex;flex-direction:column;gap:14px;min-height:190px}
+.demo .cap{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.demo .stagearea{flex:1;display:grid;place-items:center;position:relative;overflow:hidden;
+  border:var(--stroke-hair) solid var(--rule);border-radius:var(--r-sm);min-height:106px;background:var(--bg)}
+
+/* tooltip */
+.tt-wrap{position:relative;display:inline-block}
+.tt{position:absolute;bottom:calc(100% + 9px);left:50%;transform-origin:bottom center;
+  background:var(--ink);color:var(--bg);font-family:var(--num);font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;padding:7px 12px;border-radius:var(--r-pill);white-space:nowrap;pointer-events:none;
+  opacity:0;transform:translateX(-50%) scale(.97);
+  transition:opacity calc(var(--dur-tooltip) * var(--slow)) var(--ease-out),
+             transform calc(var(--dur-tooltip) * var(--slow)) var(--ease-out)}
+.tt-wrap:hover .tt,.tt-wrap:focus-within .tt{opacity:1;transform:translateX(-50%) scale(1)}
+
+/* drawer */
+.dr-host{position:relative;overflow:hidden;height:150px;border:var(--stroke-hair) solid var(--rule);
+  border-radius:var(--r-sm);display:grid;place-items:center}
+.dr{position:absolute;left:0;right:0;bottom:0;background:var(--bg);
+  border-top:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel) var(--r-panel) 0 0;
+  padding:16px 20px;transform:translateY(100%);
+  transition:transform calc(var(--dur-drawer) * var(--slow)) var(--ease-drawer)}
+.dr[data-open]{transform:translateY(0)}
+
+/* modal */
+.md-host{position:relative;overflow:hidden;height:150px;border:var(--stroke-hair) solid var(--rule);
+  border-radius:var(--r-sm);display:grid;place-items:center}
+.md-scrim{position:absolute;inset:0;background:rgba(26,26,26,.34);opacity:0;pointer-events:none;
+  transition:opacity calc(var(--dur-modal) * var(--slow)) var(--ease-out)}
+.md{position:absolute;left:50%;top:50%;width:78%;background:var(--bg);
+  border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);padding:16px 20px;
+  transform-origin:center;transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;
+  transition:opacity calc(var(--dur-modal) * var(--slow)) var(--ease-out),
+             transform calc(var(--dur-modal) * var(--slow)) var(--ease-out)}
+.md-host[data-open] .md-scrim{opacity:1}
+.md-host[data-open] .md{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
+/* the three press variants, for §08's proof */
+.press-lab{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}
+.press-lab .cell{display:flex;flex-direction:column;gap:11px;align-items:flex-start}
+.pill.v-snap{transition:transform calc(var(--dur-press) * var(--slow)) var(--ease-out)}
+.pill.v-snap:active{transform:translateY(2px);box-shadow:var(--stamp-pressed)}
+.pill.v-scale{transition:transform calc(var(--dur-press) * var(--slow)) var(--ease-out),
+                         box-shadow calc(var(--dur-press) * var(--slow)) var(--ease-out)}
+.pill.v-scale:active{transform:translateY(2px) scale(.985);box-shadow:var(--stamp-pressed)}
+.verdict{font-family:var(--num);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  border:var(--stroke-hair) solid var(--ink);border-radius:var(--r-pill);padding:3px 10px;display:inline-block}
+.verdict.ok{background:var(--invest)}
+.verdict.no{background:var(--alert);color:var(--bg);border-color:var(--alert)}
+
+.toggle{display:inline-flex;align-items:center;gap:9px;border:var(--stroke-panel) solid var(--ink);
+  border-radius:var(--r-pill);padding:7px 14px 7px 8px;background:transparent;cursor:pointer;
+  font-family:var(--num);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.toggle .knob{width:34px;height:19px;border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-pill);
+  position:relative;flex:none;background:transparent;transition:background var(--dur-hover) ease}
+.toggle .knob::after{content:"";position:absolute;top:1.5px;left:1.5px;width:13px;height:13px;border-radius:50%;
+  background:var(--ink);transition:transform var(--dur-dropdown) var(--ease-out)}
+.toggle[aria-pressed="true"] .knob{background:var(--invest)}
+.toggle[aria-pressed="true"] .knob::after{transform:translateX(15px)}
+
+/* ── shadcn appendix ────────────────────────────────────────────────── */
+.map td:first-child{font-weight:600;white-space:nowrap}
+.map code{background:var(--ink-wash);border-radius:var(--r-xs);padding:1px 6px;font-size:11.5px}
+.bespoke{background:var(--food);border-color:var(--ink)}
+
+/* ── voice ──────────────────────────────────────────────────────────── */
+.vt{display:grid;grid-template-columns:1fr 1fr;gap:0;border:var(--stroke-panel) solid var(--ink);
+  border-radius:var(--r-panel);overflow:hidden}
+.vt>div{padding:18px 20px}
+.vt>div:first-child{border-right:var(--stroke-panel) solid var(--ink)}
+.vt .k{font-family:var(--num);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;
+  display:block;margin-bottom:8px}
+.vt .say .k{color:var(--dim)}
+.vt .dont{background:var(--ink-wash)}
+.vt .dont .k{color:var(--alert)}
+.vt p{font-size:14.5px;line-height:1.5}
+.vt .dont p{color:var(--dim-2);text-decoration:line-through;text-decoration-color:var(--alert);
+  text-decoration-thickness:1.5px}
+
+.assetcard{border:var(--stroke-panel) solid var(--ink);border-radius:var(--r-panel);padding:16px;
+  display:flex;gap:14px;align-items:center;background:var(--bg)}
+.assetcard img{width:44px;height:44px;flex:none}
+.assetcard .p{font-family:var(--num);font-size:10px;letter-spacing:.06em;color:var(--dim-2);
+  word-break:break-all;line-height:1.5}
+
+@media (max-width:1000px){
+  .cover{grid-template-columns:1fr}
+  .cover .right{border-left:0;border-top:var(--stroke-panel) solid var(--ink)}
+  .wordmark{font-size:104px}
+  .grid2,.grid3,.press-lab,.vt{grid-template-columns:1fr}
+  .vt>div:first-child{border-right:0;border-bottom:var(--stroke-panel) solid var(--ink)}
+  .sheet,.cover .left{padding:34px 26px}
+  .book{padding:0 16px 90px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ inline icon sprite — mirrors assets/chips/*.svg ═══════════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="i-food" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 8.5h10.5v6a5.25 5.25 0 0 1-10.5 0z"/><path d="M17 10a2.9 2.9 0 0 1 0 4.5"/><path d="M9 5.6V4.2M12.6 5.6V4.2"/></g>
+  <g id="i-bills" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M13.4 3.2 6.4 13.2h4.6l-1 7.6 7.2-10.6h-4.4z"/></g>
+  <g id="i-invest" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 16.6 9.2 10l3.8 3.8L19.4 5"/><path d="M14.8 5h4.8v4.8"/></g>
+  <g id="i-transport" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3.6 15.6V9.4h8.8l3.9 6.2"/><path d="M3.6 15.6h13.9"/><circle cx="7.4" cy="17.8" r="2.1"/><circle cx="16.2" cy="17.8" r="2.1"/></g>
+  <g id="i-shop" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5.2 8h13.6l-1.3 12H6.5z"/><path d="M9.1 8a2.9 2.9 0 0 1 5.8 0"/></g>
+  <g id="i-health" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="rotate(-40 12 12)"><rect x="3.4" y="9" width="17.2" height="6" rx="3"/><path d="M12 9v6"/></g></g>
+  <g id="i-up" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 19V5M6 11l6-6 6 6"/></g>
+  <g id="i-down" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 5v14M6 13l6 6 6-6"/></g>
+  <g id="i-plus" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+    <path d="M12 5v14M5 12h14"/></g>
+  <g id="n-overview" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/>
+    <rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></g>
+</defs></svg>
+
+<nav class="toc" aria-label="Sections">
+  <a href="#manifesto">Manifesto</a>
+  <a href="#logotype">01 Logotype</a>
+  <a href="#colour">02 Colour</a>
+  <a href="#chips">03 Chips</a>
+  <a href="#type">04 Type</a>
+  <a href="#scales">05 Scales</a>
+  <a href="#components">06 Components</a>
+  <a href="#tether">07 Tether</a>
+  <a href="#motion">08 Motion</a>
+  <a href="#a11y">09 Accessibility</a>
+  <a href="#shadcn">10 shadcn</a>
+  <a href="#voice">11 Voice</a>
+  <a href="#assets">12 Assets</a>
+</nav>
+
+<div class="book">
+
+<!-- ══════════════════════════ COVER ══════════════════════════ -->
+<header class="cover">
+  <div class="left">
+    <div>
+      <span class="lab">Brand kit</span>
+      <h1 class="wordmark">Sorted</h1>
+      <p class="tagline">Every rupee goes into a coloured chip. <b>The name is the mechanic, and it doubles as how you should feel when you close the tab.</b></p>
+    </div>
+    <div class="stamp-line">
+      <span>Private personal finance · India · one person, daily</span>
+      <span>v1.0 · 30 Aug 2026</span>
+    </div>
+  </div>
+  <div class="right">
+    <img src="assets/hero/constellation.svg" alt="Six category chips — food, investments, bills, transport, health and shopping — arranged around a rupee symbol and joined to it by dotted connector lines.">
+  </div>
+</header>
+
+<!-- ══════════════════════════ MANIFESTO ══════════════════════════ -->
+<section class="sheet" id="manifesto">
+  <div class="sec-head"><span class="sec-num">§ 00</span><h2>What Sorted is for</h2></div>
+  <hr class="rule">
+  <div class="grid2">
+    <div>
+      <p style="font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:30px;line-height:1.18">
+        Most money apps tell you what you spent. Sorted tells you what you can still spend.
+      </p>
+      <p class="lede" style="margin-top:20px">
+        One person owns this. Nobody is being sold anything, nobody is being onboarded, nobody is being
+        scored. The screen opens on <b>Guilt-Free Money</b> — what is genuinely left after the bills that
+        haven't landed yet and the SIPs that go out on the 5th — because that is the only number that
+        changes what you do next. Net worth sits beside it, quieter, as the number you admire rather than act on.
+      </p>
+    </div>
+    <div class="stack" style="gap:0">
+      <div style="border-top:var(--stroke-panel) solid var(--ink);padding:16px 0">
+        <span class="lab">Sorted will</span>
+        <ul style="padding-left:18px;margin-top:9px;font-size:14.5px;line-height:1.75;color:var(--dim-2)">
+          <li>Put one number where your eye lands first.</li>
+          <li>Read your bank alerts and file them, then <b style="color:var(--ink)">show its working</b>.</li>
+          <li>Give every category one colour and one icon, forever.</li>
+          <li>Stay legible on the ninety-third consecutive morning.</li>
+        </ul>
+      </div>
+      <div style="border-top:var(--stroke-panel) solid var(--ink);padding:16px 0">
+        <span class="lab">Sorted will not</span>
+        <ul style="padding-left:18px;margin-top:9px;font-size:14.5px;line-height:1.75;color:var(--dim-2)">
+          <li>Congratulate you, gamify you, or send a streak.</li>
+          <li>Put an illustration anywhere near a live rupee figure.</li>
+          <li>Use a drop shadow to imply importance.</li>
+          <li>Animate a number into place. A figure that overshoots has lied for 80ms.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 01 LOGOTYPE ══════════════════════════ -->
+<section class="sheet" id="logotype">
+  <div class="sec-head"><span class="sec-num">§ 01</span><h2>Logotype &amp; name</h2></div>
+  <p class="lede">There is no logo. There is a <b>wordmark</b> and a <b>mark</b>, and the mark is just the
+  product's own vocabulary at display weight — two overlapping chips, ink-outlined. Nothing is drawn that
+  isn't already in the interface.</p>
+  <hr class="rule">
+
+  <div class="grid3">
+    <div class="panel">
+      <span class="lab">Full lockup</span>
+      <div style="display:flex;align-items:center;gap:14px;margin:22px 0 8px">
+        <span style="display:flex" aria-hidden="true">
+          <span class="chip food" style="width:26px;height:26px"><svg viewBox="0 0 24 24" style="width:15px;height:15px"><use href="#i-food"/></svg></span>
+          <span class="chip invest" style="width:26px;height:26px;margin-left:-9px"><svg viewBox="0 0 24 24" style="width:15px;height:15px"><use href="#i-invest"/></svg></span>
+        </span>
+        <span style="font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:34px">Sorted</span>
+      </div>
+      <p class="note">Mark + wordmark, baseline-aligned. Chip overlap is −9px at 26px, i.e. 35% of diameter.</p>
+    </div>
+    <div class="panel">
+      <span class="lab">Mono / one-colour</span>
+      <div style="display:flex;align-items:center;gap:14px;margin:22px 0 8px">
+        <span style="display:flex" aria-hidden="true">
+          <span class="chip hollow" style="width:26px;height:26px"></span>
+          <span class="chip hollow" style="width:26px;height:26px;margin-left:-9px"></span>
+        </span>
+        <span style="font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:34px">Sorted</span>
+      </div>
+      <p class="note">For favicons, email signatures, anything that can't guarantee colour fidelity.
+      The chips go hollow, never grey.</p>
+    </div>
+    <div class="panel" style="background:var(--ink)">
+      <span class="lab" style="color:var(--rule)">Inverse</span>
+      <div style="display:flex;align-items:center;gap:14px;margin:22px 0 8px">
+        <span style="display:flex" aria-hidden="true">
+          <span class="chip food" style="width:26px;height:26px;border-color:var(--bg)"></span>
+          <span class="chip invest" style="width:26px;height:26px;margin-left:-9px;border-color:var(--bg)"></span>
+        </span>
+        <span style="font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:34px;color:var(--bg)">Sorted</span>
+      </div>
+      <p class="note" style="color:var(--rule)">On ink, the chip borders flip to cream and the fills stay.
+      Chip fills are never inverted — the taxonomy is absolute.</p>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:24px">
+    <div class="panel">
+      <span class="lab">Clear space &amp; minimum size</span>
+      <p class="note" style="margin-top:12px">
+        Clear space on all four sides equals <b>one chip diameter</b> at whatever size the lockup is set.
+        At 26px chips that is 26px of air. Nothing crosses it — not a rule, not a nav item, not the page edge.
+      </p>
+      <p class="note" style="margin-top:10px">
+        Minimum sizes: <b>full lockup 96px wide</b>; <b>mark alone 22px</b>. Below 22px the 1.5px chip border
+        stops resolving on a 1x display and the mark turns into two grey dots. Under 22px, use the wordmark alone.
+      </p>
+    </div>
+    <div class="panel" style="border-color:var(--alert)">
+      <span class="lab" style="color:var(--alert)">The name is not confirmed yet</span>
+      <p class="note" style="margin-top:12px">
+        <b>Sorted</b> arrived bundled with direction C. Direction C was picked; the name never got a separate
+        yes. This page is where it lands.
+      </p>
+      <p class="note" style="margin-top:10px">
+        On record for it: plain-confident English with one syllable of warmth, no fake Sanskrit, no
+        misspelled vowel. It describes the mechanic literally — every rupee is sorted into a coloured chip —
+        and it describes the intended end state of a session. <em>Sorted.</em>
+      </p>
+      <p class="note" style="margin-top:10px">
+        Against it: it's a common English word, so a <code>.com</code> is unlikely and search is crowded.
+        For a private single-user tool neither of those costs anything.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 02 COLOUR ══════════════════════════ -->
+<section class="sheet" id="colour">
+  <div class="sec-head"><span class="sec-num">§ 02</span><h2>Colour</h2></div>
+  <p class="lede">Nine system colours and six taxonomy colours. Every ratio on this page was
+  <b>computed</b> from the hex values with the WCAG 2.1 relative-luminance formula, not estimated
+  and not inherited from a previous round.</p>
+  <hr class="rule">
+
+  <span class="lab" style="margin-bottom:14px">Surface</span>
+  <div class="grid3">
+    <div class="sw">
+      <div class="fill" style="background:#FAF5F2"></div>
+      <b>Canvas</b><code>--bg · #FAF5F2</code>
+      <span class="meta">rgb(250 245 242) · every screen starts here.<br>Warm cream is load-bearing — cold
+      blue-on-white is a named anti-pattern for this product.</span>
+    </div>
+    <div class="sw">
+      <div class="fill" style="background:#1A1A1A"></div>
+      <b>Ink</b><code>--ink · #1A1A1A</code>
+      <span class="meta">rgb(26 26 26) · text, every border, the one fill.<br>16.08:1 on canvas.</span>
+      <span class="tag pass">AAA</span>
+    </div>
+    <div class="sw">
+      <div class="fill" style="background:#E2D8D0"></div>
+      <b>Rule</b><code>--rule · #E2D8D0</code>
+      <span class="meta">rgb(226 216 208) · 1px row dividers only.<br>1.30:1 — decorative. Never a
+      component boundary, never carries state.</span>
+      <span class="tag warn">Non-text</span>
+    </div>
+  </div>
+
+  <div class="grid3" style="margin-top:22px">
+    <div class="sw">
+      <div class="fill" style="background:#F1E8E2"></div>
+      <b>Ink wash</b><code>--ink-wash · #F1E8E2</code>
+      <span class="meta">Nav hover and active fill.<br>Ink on it: 14.40:1. Dim-2 on it: 5.11:1.</span>
+      <span class="tag pass">AA both</span>
+    </div>
+    <div class="sw">
+      <div class="fill" style="background:#FCE4CA"></div>
+      <b>Hero field</b><code>--hero-field · #FCE4CA</code>
+      <span class="meta">The login hero panel. Nowhere else.<br>Ink on it: 14.16:1.</span>
+      <span class="tag pass">AAA</span>
+    </div>
+    <div class="sw">
+      <div class="fill" style="background:#14199C"></div>
+      <b>Focus</b><code>--focus · #14199C</code>
+      <span class="meta">System. 11.77:1 on canvas.<br><b style="color:var(--alert)">1.37:1 on ink</b> — the
+      ring is always drawn outward with outline-offset, never inset on a filled control.</span>
+      <span class="tag pass">AAA on cream</span>
+    </div>
+  </div>
+
+  <hr class="hair">
+  <span class="lab" style="margin-bottom:14px">Secondary text · the split that gets misused</span>
+  <div class="grid2">
+    <div class="sw" style="border-color:var(--alert)">
+      <div class="fill" style="background:#7D7169"></div>
+      <b>Dim</b><code>--dim · #7D7169</code>
+      <span class="meta">4.37:1 — <b style="color:var(--alert)">fails AA at body size.</b></span>
+      <p class="note" style="margin-top:11px">Permitted <b>only</b> on mono micro-labels: uppercase,
+      ≥0.13em tracking, ≤11px. Those are glanced, not read, and the tracking buys back what the ratio loses.
+      Placeholder text is the one grey area and it is allowed, because the field's own label carries the meaning.</p>
+      <p style="margin-top:12px"><span class="lab" style="color:var(--dim);display:inline">Last synced 08:14</span></p>
+      <span class="tag fail">Micro-labels only</span>
+    </div>
+    <div class="sw">
+      <div class="fill" style="background:#6B5F57"></div>
+      <b>Dim 2</b><code>--dim-2 · #6B5F57</code>
+      <span class="meta">5.71:1 — passes AA at every size.</span>
+      <p class="note" style="margin-top:11px"><b>Required</b> for any secondary text a person actually reads:
+      helper copy, sub-headings, notice detail, empty-state sentences, nav labels, prose in a table cell.
+      The test is simple — <b>if the string contains a verb, it is dim-2.</b></p>
+      <p style="margin-top:12px;color:var(--dim-2);font-size:14.5px">3 transactions from your HDFC and Amex alerts this morning.</p>
+      <span class="tag pass">AA all sizes</span>
+    </div>
+  </div>
+
+  <hr class="hair">
+  <span class="lab" style="margin-bottom:14px">Measured contrast matrix · computed 30 Aug 2026</span>
+  <table>
+    <thead><tr><th style="width:24%">Foreground</th><th style="width:22%">Background</th><th>Ratio</th>
+      <th>AA body 4.5</th><th>AA large 3.0</th><th style="width:30%">Verdict</th></tr></thead>
+    <tbody>
+      <tr><td><span class="swdot" style="background:#1A1A1A"></span><code>--ink</code></td><td><code>--bg</code></td><td class="n">16.08:1</td><td class="yes">Pass</td><td class="yes">Pass</td><td>Body, headings, all borders. AAA.</td></tr>
+      <tr><td><span class="swdot" style="background:#FAF5F2"></span><code>--bg</code></td><td><code>--ink</code></td><td class="n">16.08:1</td><td class="yes">Pass</td><td class="yes">Pass</td><td>Cream label on the ink pill CTA.</td></tr>
+      <tr><td><span class="swdot" style="background:#14199C"></span><code>--focus</code></td><td><code>--bg</code></td><td class="n">11.77:1</td><td class="yes">Pass</td><td class="yes">Pass</td><td>Focus ring where it is actually drawn.</td></tr>
+      <tr><td><span class="swdot" style="background:#1A1A1A"></span><code>--ink</code></td><td><code>--ink-wash</code></td><td class="n">14.40:1</td><td class="yes">Pass</td><td class="yes">Pass</td><td>Active nav row.</td></tr>
+      <tr><td><span class="swdot" style="background:#1A1A1A"></span><code>--ink</code></td><td><code>--hero-field</code></td><td class="n">14.16:1</td><td class="yes">Pass</td><td class="yes">Pass</td><td>Login hero copy.</td></tr>
+      <tr><td><span class="swdot" style="background:#A61B2B"></span><code>--alert</code></td><td><code>--bg</code></td><td class="n">6.90:1</td><td class="yes">Pass</td><td class="yes">Pass</td><td>Error text. Cream on alert is also 6.90:1.</td></tr>
+      <tr><td><span class="swdot" style="background:#6B5F57"></span><code>--dim-2</code></td><td><code>--bg</code></td><td class="n">5.71:1</td><td class="yes">Pass</td><td class="yes">Pass</td><td>All readable secondary prose.</td></tr>
+      <tr><td><span class="swdot" style="background:#6B5F57"></span><code>--dim-2</code></td><td><code>--ink-wash</code></td><td class="n">5.11:1</td><td class="yes">Pass</td><td class="yes">Pass</td><td>Idle nav label on a hovered row.</td></tr>
+      <tr style="background:#FCE4CA"><td><span class="swdot" style="background:#7D7169"></span><code>--dim</code></td><td><code>--bg</code></td><td class="n">4.37:1</td><td class="no">Fail</td><td class="yes">Pass</td><td><b>Restricted.</b> Mono micro-labels ≤11px, uppercase, ≥0.13em tracking, and placeholders. For anything else use <code>--dim-2</code> (5.71:1).</td></tr>
+      <tr style="background:#FCE4CA"><td><span class="swdot" style="background:#E2D8D0"></span><code>--rule</code></td><td><code>--bg</code></td><td class="n">1.30:1</td><td class="no">n/a</td><td class="no">n/a</td><td><b>Non-text, exempt.</b> Purely decorative row rhythm; row separation is also carried by 13px padding and the chip column. Every real boundary is <code>--ink</code> at 16.08:1.</td></tr>
+      <tr style="background:#FCE4CA"><td><span class="swdot" style="background:#14199C"></span><code>--focus</code></td><td><code>--ink</code></td><td class="n">1.37:1</td><td class="no">Fail</td><td class="no">Fail</td><td><b>Forbidden combination.</b> Never draw the ring against an ink fill. Always <code>outline-offset:3px</code> so it lands on cream.</td></tr>
+    </tbody>
+  </table>
+  <p class="note" style="margin-top:16px">Three rows are flagged. None is an unmitigated failure: one is a
+  documented usage restriction, one is a legitimate non-text exemption, and one is a combination the system
+  forbids by construction. Chip fills are audited separately in §03 against the non-text threshold, which is
+  the correct standard for a stroked glyph.</p>
+</section>
+
+<!-- ══════════════════════════ 03 CHIPS ══════════════════════════ -->
+<section class="sheet" id="chips">
+  <div class="sec-head"><span class="sec-num">§ 03</span><h2>The chip taxonomy</h2></div>
+  <p class="lede">Colour is the character of this product. Six categories, six colours, six icons, closed set.
+  The chip runs the sidebar, tags every row and colours every bar — which is exactly why
+  <b>the icon is load-bearing, not decorative.</b></p>
+  <hr class="rule">
+
+  <div class="grid3">
+    <div class="sw"><div class="fill" style="background:#F9ACCE"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></div>
+      <b>Food</b><code>--food · #F9ACCE</code>
+      <span class="meta">H334 S87 L83 · ink glyph 9.80:1<br>Swiggy Instamart, Zepto, Blinkit, restaurants</span><span class="tag pass">Text-safe</span></div>
+    <div class="sw"><div class="fill" style="background:#F1A007"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></div>
+      <b>Bills</b><code>--bills · #F1A007</code>
+      <span class="meta">H39 S94 L49 · ink glyph 8.10:1<br>BSES Rajdhani, Airtel, Netflix, rent</span><span class="tag pass">Text-safe</span></div>
+    <div class="sw"><div class="fill" style="background:#23B471"><svg viewBox="0 0 24 24"><use href="#i-invest"/></svg></div>
+      <b>Investments</b><code>--invest · #23B471</code>
+      <span class="meta">H152 S67 L42 · ink glyph 6.50:1<br>Zerodha, Groww, Parag Parikh Flexi Cap SIP</span><span class="tag pass">Text-safe</span></div>
+  </div>
+  <div class="grid3" style="margin-top:22px">
+    <div class="sw"><div class="fill" style="background:#5483D3"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></div>
+      <b>Transport</b><code>--transport · #5483D3</code>
+      <span class="meta">H218 S59 L58 · ink glyph 4.61:1<br>Rapido, IRCTC, fuel, metro top-ups</span><span class="tag pass">Text-safe</span></div>
+    <div class="sw"><div class="fill" style="background:#8A4BD1"><svg viewBox="0 0 24 24"><use href="#i-shop"/></svg></div>
+      <b>Shopping</b><code>--shop · #8A4BD1</code>
+      <span class="meta">H268 S59 L56 · ink glyph 3.32:1<br>Marketplace orders, retail, electronics</span><span class="tag warn">Graphics only</span></div>
+    <div class="sw"><div class="fill" style="background:#C43C63"><svg viewBox="0 0 24 24"><use href="#i-health"/></svg></div>
+      <b>Health</b><code>--health · #C43C63</code>
+      <span class="meta">H343 S54 L50 · ink glyph 3.46:1<br>Apollo Pharmacy, Cult.fit, clinics, insurance</span><span class="tag warn">Graphics only</span></div>
+  </div>
+
+  <p class="note" style="margin-top:18px"><b>Graphics-only</b> means what it says. 3.32:1 and 3.46:1 clear
+  WCAG 1.4.11's 3:1 threshold for a stroked non-text graphic, which is the right standard for a 1.42px icon.
+  They do not clear 4.5:1 for text. <b>Never set a character inside a shopping or health chip</b> — no initials,
+  no counts, no amount. If you need a number next to a chip, it goes outside it, in ink.</p>
+
+  <hr class="hair">
+  <div class="grid2">
+    <div>
+      <span class="lab">Separation rule</span>
+      <p class="note" style="margin-top:11px">Every pair of chips must be separated by <b>≥45° hue</b> or
+      <b>≥25 points lightness</b>. All 15 pairs pass. Computed, listed here in full because the two closest
+      pairs are the ones people will question.</p>
+      <table style="margin-top:16px">
+        <thead><tr><th>Pair</th><th>Δ hue</th><th>Δ L</th><th>Passes on</th></tr></thead>
+        <tbody>
+          <tr><td>food / health</td><td class="n">9°</td><td class="n">33</td><td><b>lightness alone</b></td></tr>
+          <tr><td>transport / shopping</td><td class="n">50°</td><td class="n">2</td><td><b>hue alone</b></td></tr>
+          <tr><td>bills / health</td><td class="n">56°</td><td class="n">1</td><td>hue</td></tr>
+          <tr><td>food / bills</td><td class="n">65°</td><td class="n">34</td><td>both</td></tr>
+          <tr><td>invest / transport</td><td class="n">66°</td><td class="n">16</td><td>hue</td></tr>
+          <tr><td>food / shopping</td><td class="n">66°</td><td class="n">27</td><td>both</td></tr>
+          <tr><td>shopping / health</td><td class="n">75°</td><td class="n">6</td><td>hue</td></tr>
+          <tr><td>invest / bills</td><td class="n">113°</td><td class="n">7</td><td>hue</td></tr>
+          <tr><td>food / transport</td><td class="n">116°</td><td class="n">25</td><td>both</td></tr>
+          <tr><td>invest / shopping</td><td class="n">116°</td><td class="n">14</td><td>hue</td></tr>
+          <tr><td>transport / health</td><td class="n">125°</td><td class="n">8</td><td>hue</td></tr>
+          <tr><td>bills / shopping</td><td class="n">131°</td><td class="n">7</td><td>hue</td></tr>
+          <tr><td>invest / health</td><td class="n">169°</td><td class="n">8</td><td>hue</td></tr>
+          <tr><td>food / invest</td><td class="n">178°</td><td class="n">41</td><td>both</td></tr>
+          <tr><td>bills / transport</td><td class="n">179°</td><td class="n">9</td><td>hue</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <span class="lab">Why the icon is not decoration</span>
+      <p class="note" style="margin-top:11px">
+        <b>food</b> (H334, L83) and <b>health</b> (H343, L50) are 9° apart in hue. They separate on lightness
+        alone. That was reviewed and accepted — pale pink against deep raspberry is a real distinction at
+        30px on cream. But it means hue is doing no work for that pair, and under deuteranopia the amber,
+        green and raspberry chips converge into three similar mid-tones.
+      </p>
+      <p class="note" style="margin-top:11px">
+        So the rule is absolute: <b>every chip carries its own glyph, always, at every size, including 22px.</b>
+        A chip with no icon is a bug, not a variant. Colour is never the sole carrier of meaning.
+      </p>
+      <div class="panel" style="margin-top:18px">
+        <span class="lab">Simulated deuteranopia — colour removed, glyph surviving</span>
+        <div class="wrap" style="margin-top:14px;gap:10px">
+          <span class="chip" style="background:#C4B8AE"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+          <span class="chip" style="background:#B0A08C"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+          <span class="chip" style="background:#A79C86"><svg viewBox="0 0 24 24"><use href="#i-invest"/></svg></span>
+          <span class="chip" style="background:#8E93B4"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span>
+          <span class="chip" style="background:#7B78A8"><svg viewBox="0 0 24 24"><use href="#i-shop"/></svg></span>
+          <span class="chip" style="background:#8F7C7E"><svg viewBox="0 0 24 24"><use href="#i-health"/></svg></span>
+        </div>
+        <p class="note" style="margin-top:12px">Indicative flattening, not a clinical simulation. The point
+        holds either way: the glyph is still six unambiguous things.</p>
+      </div>
+      <div class="panel" style="margin-top:18px">
+        <span class="lab">Sizes · 44 · 30 · 22</span>
+        <div class="wrap" style="margin-top:14px">
+          <span class="chip invest lg"><svg viewBox="0 0 24 24"><use href="#i-invest"/></svg></span>
+          <span class="chip invest"><svg viewBox="0 0 24 24"><use href="#i-invest"/></svg></span>
+          <span class="chip invest sm"><svg viewBox="0 0 24 24"><use href="#i-invest"/></svg></span>
+        </div>
+        <p class="note" style="margin-top:12px">30px is the product default and the row grid's first column.
+        44px appears in the hero constellation and empty states. 22px is the floor — below it the 1.5px
+        border stops resolving.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 04 TYPE ══════════════════════════ -->
+<section class="sheet" id="type">
+  <div class="sec-head"><span class="sec-num">§ 04</span><h2>Typography</h2></div>
+  <p class="lede">Three faces, three jobs, no overlap. <b>Bricolage Grotesque 800</b> is a grotesk with
+  visible quirks in its <em>a</em>, <em>g</em> and <em>R</em> — warm without being rounded-cute — and it never
+  appears below 22px. <b>Geist</b> runs the interface. <b>Geist Mono 500, tabular</b> sets every rupee figure
+  without exception, so an amount column can be scanned straight down.</p>
+  <hr class="rule">
+
+  <div class="panel">
+    <span class="lab">Display · Bricolage Grotesque 800 · tracking −0.035em</span>
+    <p style="font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:78px;line-height:1;margin-top:16px">
+      Guilt-Free Money</p>
+    <p style="font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:26px;line-height:1.1;margin-top:18px">
+      Sunday, 30 August · Budget vs spend this month</p>
+    <p class="note" style="margin-top:14px">Without the −0.035em the 800 weight sprawls and the counters open up.
+    The tracking is not optional and is baked into every display token.</p>
+  </div>
+
+  <div class="grid2" style="margin-top:22px">
+    <div class="panel">
+      <span class="lab">Numeric · Geist Mono 500 · tabular-nums · tracking −0.02em</span>
+      <p class="money" style="font-size:108px;line-height:.95;margin-top:14px">₹42,180</p>
+      <span class="lab" style="margin-top:6px">Guilt-free this month · type-figure-1</span>
+      <p class="money" style="font-size:52px;line-height:1;margin-top:26px">₹38,64,200</p>
+      <span class="lab" style="margin-top:6px">Net worth · type-figure-2</span>
+      <p class="note" style="margin-top:16px">Indian grouping via <code>Intl.NumberFormat('en-IN')</code>,
+      <code>maximumFractionDigits: 0</code>. Lakh and crore grouping is not cosmetic — <span class="money">₹38,64,200</span>
+      is read instantly by the owner and <span class="money">₹3,864,200</span> is not.</p>
+    </div>
+    <div class="panel">
+      <span class="lab">The ladder · 12 rungs</span>
+      <table style="margin-top:14px">
+        <thead><tr><th>Token</th><th>Size</th><th>Face</th><th>Where</th></tr></thead>
+        <tbody>
+          <tr><td><code>--type-figure-1</code></td><td class="n">108</td><td>mono</td><td>Guilt-Free. One per screen.</td></tr>
+          <tr><td><code>--type-figure-2</code></td><td class="n">52</td><td>mono</td><td>Net worth.</td></tr>
+          <tr><td><code>--type-h1</code></td><td class="n">40</td><td>display</td><td>Page titles.</td></tr>
+          <tr><td><code>--type-h2</code></td><td class="n">26</td><td>display</td><td>Date, module headings.</td></tr>
+          <tr><td><code>--type-h3</code></td><td class="n">22</td><td>display</td><td>Panel titles. Display floor.</td></tr>
+          <tr><td><code>--type-input</code></td><td class="n">16</td><td>ui</td><td>Fields. Never lower — iOS zooms.</td></tr>
+          <tr><td><code>--type-body</code></td><td class="n">15</td><td>ui</td><td>Paragraphs.</td></tr>
+          <tr><td><code>--type-body-s</code></td><td class="n">14.5</td><td>ui 600</td><td>Row names, nav labels.</td></tr>
+          <tr><td><code>--type-caption</code></td><td class="n">13.5</td><td>ui</td><td>Notice body, helper copy.</td></tr>
+          <tr><td><code>--type-meta</code></td><td class="n">11</td><td>mono</td><td>Section numbers.</td></tr>
+          <tr><td><code>--type-label</code></td><td class="n">10</td><td>mono</td><td>Section labels, .16em.</td></tr>
+          <tr><td><code>--type-micro</code></td><td class="n">9.5</td><td>mono</td><td>Row sub-labels, .13em.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:22px">
+    <span class="lab">Real product copy, set in the real scale</span>
+    <div class="grid2" style="margin-top:16px;gap:34px">
+      <div>
+        <p class="h3">Budget vs spend this month</p>
+        <div style="margin-top:12px">
+          <div class="row"><span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+            <span><span class="nm">Food &amp; groceries</span><span class="sub">Swiggy Instamart · Zepto · Blinkit</span></span>
+            <span class="money amt">₹14,620 / ₹18,000</span></div>
+          <div class="row"><span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+            <span><span class="nm">Bills &amp; utilities</span><span class="sub">BSES Rajdhani · Airtel · Netflix</span></span>
+            <span class="money amt">₹9,340 / ₹11,000</span></div>
+          <div class="row"><span class="chip health"><svg viewBox="0 0 24 24"><use href="#i-health"/></svg></span>
+            <span><span class="nm">Health</span><span class="sub">Apollo Pharmacy · Cult.fit</span></span>
+            <span class="money amt">₹3,100 / ₹4,000</span></div>
+        </div>
+      </div>
+      <div>
+        <p class="h3">Upcoming · next 30 days</p>
+        <div style="margin-top:12px">
+          <div class="row"><span class="chip hollow"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
+            <span><span class="nm">Parag Parikh Flexi Cap SIP</span><span class="sub">Zerodha Coin · due 5 Sep</span></span>
+            <span class="money amt">₹25,000</span></div>
+          <div class="row"><span class="chip hollow" style="background:var(--invest)"><svg viewBox="0 0 24 24"><use href="#i-up"/></svg></span>
+            <span><span class="nm">Salary</span><span class="sub">HDFC Bank · due 1 Sep</span></span>
+            <span class="money amt">₹1,86,000</span></div>
+          <div class="row"><span class="chip hollow"><svg viewBox="0 0 24 24"><use href="#i-down"/></svg></span>
+            <span><span class="nm">Rent</span><span class="sub">ICICI auto-debit · due 3 Sep</span></span>
+            <span class="money amt">₹46,000</span></div>
+        </div>
+        <p class="note" style="margin-top:14px">Upcoming rows use hollow and green <b>direction</b> chips, not
+        category chips, because a recurring item has no category field. <b>Chips never guess.</b></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 05 SCALES ══════════════════════════ -->
+<section class="sheet" id="scales">
+  <div class="sec-head"><span class="sec-num">§ 05</span><h2>Spacing · stroke · radius</h2></div>
+  <p class="lede">Sorted has no shadows, so <b>every edge in the product is a stroke</b>. These seven weights
+  carry the entire sense of depth and hierarchy that another system would get from elevation.</p>
+  <hr class="rule">
+
+  <div class="grid3">
+    <div>
+      <span class="lab">Spacing · 2px base, 14 rungs</span>
+      <div class="stack" style="margin-top:14px;gap:5px">
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">2</span><i style="height:9px;width:2px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">4</span><i style="height:9px;width:4px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">6</span><i style="height:9px;width:6px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">8</span><i style="height:9px;width:8px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">10</span><i style="height:9px;width:10px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">12</span><i style="height:9px;width:12px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right;color:var(--invest)">14</span><i style="height:9px;width:14px;background:var(--invest);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">18</span><i style="height:9px;width:18px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right;color:var(--invest)">22</span><i style="height:9px;width:22px;background:var(--invest);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">26</span><i style="height:9px;width:26px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">32</span><i style="height:9px;width:32px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">44</span><i style="height:9px;width:44px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">64</span><i style="height:9px;width:64px;background:var(--ink);display:block"></i></div>
+        <div style="display:flex;align-items:center;gap:12px"><span class="money" style="width:34px;font-size:11px;text-align:right">96</span><i style="height:9px;width:96px;background:var(--ink);display:block"></i></div>
+      </div>
+      <p class="note" style="margin-top:14px">Two rungs in green are <b>structural</b>: 14 is the row grid gap,
+      22 is the panel's inner padding. Changing either re-rhythms every screen. Treat them as fixed.</p>
+    </div>
+
+    <div>
+      <span class="lab">Stroke · 7 weights</span>
+      <div class="stack" style="margin-top:16px;gap:13px">
+        <div><i style="display:block;height:1px;background:var(--rule)"></i><span class="lab" style="margin-top:5px">1 hair · row dividers, in --rule</span></div>
+        <div><i style="display:block;height:1.5px;background:var(--ink)"></i><span class="lab" style="margin-top:5px">1.5 panel · <b style="color:var(--ink)">the structural weight</b></span></div>
+        <div><svg width="100%" height="4" style="display:block"><path d="M0 2h999" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round"/></svg><span class="lab" style="margin-top:5px">1.6 tether · dashed 4 6, round caps</span></div>
+        <div><i style="display:block;height:2px;background:var(--ink)"></i><span class="lab" style="margin-top:5px">2 icon · on a 24-unit grid → 1.42 rendered</span></div>
+        <div><i style="display:block;height:2.5px;background:var(--focus)"></i><span class="lab" style="margin-top:5px">2.5 focus · never thinner</span></div>
+        <div><i style="display:block;height:4px;background:var(--ink)"></i><span class="lab" style="margin-top:5px">4 display · hero chips</span></div>
+        <div><i style="display:block;height:4.5px;background:var(--ink)"></i><span class="lab" style="margin-top:5px">4.5 core · the hero rupee</span></div>
+      </div>
+      <p class="note" style="margin-top:16px"><b>If it is a boundary, it is 1.5.</b> The tether is 1.6 on
+      purpose — one tenth heavier than everything built, so it reads as drawn rather than constructed.</p>
+    </div>
+
+    <div>
+      <span class="lab">Radius · no sharp corner exists</span>
+      <div class="stack" style="margin-top:16px;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px"><i style="width:44px;height:30px;border:1.5px solid var(--ink);border-radius:4px;display:block;flex:none"></i><span class="lab">4 xs · inline focus ring</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><i style="width:44px;height:30px;border:1.5px solid var(--ink);border-radius:14px;display:block;flex:none"></i><span class="lab">14 sm · small blocks</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><i style="width:44px;height:30px;border:1.5px solid var(--ink);border-radius:16px;display:block;flex:none"></i><span class="lab">16 otp · the six code boxes</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><i style="width:44px;height:30px;border:1.5px solid var(--ink);border-radius:18px;display:block;flex:none"></i><span class="lab">18 notice</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><i style="width:44px;height:30px;border:1.5px solid var(--ink);border-radius:22px;display:block;flex:none"></i><span class="lab">22 panel · <b style="color:var(--ink)">the container radius</b></span></div>
+        <div style="display:flex;align-items:center;gap:12px"><i style="width:44px;height:30px;border:1.5px solid var(--ink);border-radius:26px;display:block;flex:none"></i><span class="lab">26 card · frames wrapping panels</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><i style="width:44px;height:30px;border:1.5px solid var(--ink);border-radius:999px;display:block;flex:none"></i><span class="lab">999 pill · every interactive thing</span></div>
+      </div>
+      <p class="note" style="margin-top:16px"><b>Everything interactive is a pill. Everything containing is 22.</b>
+      Buttons, fields, chips, budget bars and nav rows are all 999. If you're reaching for a fourth radius,
+      you're inventing a component that doesn't exist.</p>
+    </div>
+  </div>
+
+  <hr class="hair">
+  <span class="lab" style="margin-bottom:12px">Layout patterns</span>
+  <div class="grid2">
+    <div>
+      <p class="note" style="margin-bottom:10px"><b>The row</b> — the single most repeated layout in the product.
+      Chip, content, amount. The 30px first column is exactly the chip diameter, so the chip column aligns
+      down the whole screen regardless of what's in it.</p>
+      <pre class="good"><span class="c">/* the row */</span>
+.row{
+  <span class="k">display</span>:grid;
+  <span class="k">grid-template-columns</span>:30px 1fr auto;
+  <span class="k">gap</span>:14px;
+  <span class="k">align-items</span>:center;
+  <span class="k">padding</span>:13px 0;
+  <span class="k">border-bottom</span>:1px solid var(--rule);
+}
+.row:last-child{<span class="k">border-bottom</span>:0}
+
+<span class="c">/* tethered variant: 22px gutter for the
+   parser mark; manual rows leave it empty */</span>
+.row.tethered{
+  <span class="k">grid-template-columns</span>:22px 30px 1fr auto;
+}</pre>
+    </div>
+    <div>
+      <p class="note" style="margin-bottom:10px"><b>The panel and the rail.</b> A panel is a 1.5px ink box at
+      22px radius with 22/24 padding and no shadow. The sidebar is 232px with a 1.5px ink right border —
+      a border, not a background change, because Sorted has one surface colour.</p>
+      <pre class="good"><span class="c">/* the panel */</span>
+.panel{
+  <span class="k">border</span>:1.5px solid var(--ink);
+  <span class="k">border-radius</span>:22px;
+  <span class="k">padding</span>:22px 24px;
+  <span class="k">background</span>:var(--bg);
+  <span class="c">/* no box-shadow. ever. */</span>
+}
+
+<span class="c">/* the rail */</span>
+.side{
+  <span class="k">width</span>:232px;
+  <span class="k">border-right</span>:1.5px solid var(--ink);
+  <span class="k">padding</span>:26px 22px;
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 06 COMPONENTS ══════════════════════════ -->
+<section class="sheet" id="components">
+  <div class="sec-head"><span class="sec-num">§ 06</span><h2>Components</h2></div>
+  <p class="lede">Everything below is live — hover it, press it, tab to it. Every example is drawn from the
+  login or the dashboard; nothing here previews a screen that hasn't been designed.</p>
+  <hr class="rule">
+
+  <div class="panel" style="border-color:var(--alert)">
+    <span class="lab" style="color:var(--alert)">Shadow policy</span>
+    <p class="note" style="margin-top:10px">
+      <b>There are no shadows in Sorted.</b> No blur, no spread, no elevation, no ambient occlusion, nothing
+      that fakes light. Depth comes from strokes. The <em>one</em> exception is the stamp on the primary pill:
+      <code>box-shadow: 0 2px 0 var(--ink)</code> — zero blur, zero spread, hard ink offset. It is not a lift,
+      it is a stamp: the button sits on the paper and can be pressed into it. <b>This exception is not a
+      licence for shadows generally.</b> If you find yourself adding a second one, you have found a boundary
+      that wants a border.
+    </p>
+  </div>
+
+  <div class="grid2" style="margin-top:24px">
+    <div>
+      <span class="lab">Buttons · all variants, all states</span>
+      <div class="wrap" style="margin-top:16px">
+        <button class="pill">Send code</button>
+        <button class="pill ghost">Cancel</button>
+        <button class="pill quiet">Use a different email</button>
+        <button class="pill fab" aria-label="Add transaction"><svg viewBox="0 0 24 24"><use href="#i-plus"/></svg></button>
+      </div>
+      <div class="wrap" style="margin-top:16px">
+        <button class="pill" data-busy><i class="sp"></i>Verifying…</button>
+        <button class="pill" disabled>Verify</button>
+        <button class="pill sm">Add transaction</button>
+      </div>
+      <table style="margin-top:22px">
+        <thead><tr><th>State</th><th>Treatment</th></tr></thead>
+        <tbody>
+          <tr><td><b>Default</b></td><td>Ink fill, cream label, 1.5px ink border, stamp shadow.</td></tr>
+          <tr><td><b>Hover</b></td><td><b>Nothing.</b> A button that changes on hover in a single-user tool is noise. The press is the feedback.</td></tr>
+          <tr><td><b>Active</b></td><td><code>translateY(2px)</code>, shadow collapsed, both over 110ms <code>--ease-out</code>. See §08.</td></tr>
+          <tr><td><b>Focus</b></td><td>2.5px <code>--focus</code> outline, offset 3px outward onto the cream. Never inset.</td></tr>
+          <tr><td><b>Busy</b></td><td>Label swaps to present participle (<em>Sending… / Verifying…</em>), 13px spinner inline. Width is not animated — the label is written so it doesn't jump.</td></tr>
+          <tr><td><b>Disabled</b></td><td><code>opacity:.55</code>, <code>cursor:not-allowed</code>, keeps the stamp. A disabled button still looks pressable, which is honest — it will be.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div>
+      <span class="lab">Fields, OTP, notices</span>
+      <div class="stack" style="margin-top:16px;gap:14px">
+        <input class="fld" type="email" placeholder="you@example.com" aria-label="Email, idle">
+        <input class="fld err" type="email" value="om@example" aria-label="Email, error" aria-invalid="true">
+        <input class="fld" type="email" value="om@example.com" disabled aria-label="Email, submitting">
+      </div>
+      <div class="otp" style="margin-top:18px">
+        <i>4</i><i>8</i><i>1</i><i class="cur">2</i><i class="empty">0</i><i class="empty">0</i>
+      </div>
+      <span class="lab" style="margin-top:9px">Six boxes, mono, 52×60 at 16px radius. Position is a focus ring, not a fill.</span>
+      <div class="notice" style="margin-top:18px">
+        <span class="bang" aria-hidden="true">!</span>
+        <p><span class="h">That code didn't match.</span><br>
+        <span class="d">Check the six digits in the email from Sorted, or send a new code.</span></p>
+      </div>
+      <p class="note" style="margin-top:12px">Errors are ink-bordered notices, not red boxes. <code>--alert</code>
+      appears only in the 22px bang and in field ring — the message itself stays in ink so it reads as
+      information rather than alarm.</p>
+    </div>
+  </div>
+
+  <hr class="hair">
+  <div class="grid3">
+    <div>
+      <span class="lab">Rows · with and without the tether</span>
+      <div class="panel" style="margin-top:14px">
+        <div class="row tethered">
+          <svg width="16" height="12" viewBox="0 0 16 12" aria-hidden="true" style="align-self:center"><path d="M1 6h14" stroke="#1A1A1A" stroke-width="1.6" stroke-dasharray="4 6" stroke-linecap="round"/></svg>
+          <span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+          <span><span class="nm">Swiggy Instamart</span><span class="sub">HDFC ···4417 · filed automatically</span></span>
+          <span class="money amt">₹1,284</span>
+        </div>
+        <div class="row tethered">
+          <span></span>
+          <span class="chip transport"><svg viewBox="0 0 24 24"><use href="#i-transport"/></svg></span>
+          <span><span class="nm">Rapido</span><span class="sub">Added by you · 29 Aug</span></span>
+          <span class="money amt">₹148</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <span class="lab">Budget bar</span>
+      <div class="panel" style="margin-top:14px">
+        <div class="stack" style="gap:16px">
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">
+              <span style="font-size:14.5px;font-weight:600">Food &amp; groceries</span>
+              <span class="money" style="font-size:13px">₹14,620 / ₹18,000</span></div>
+            <div class="bar"><i style="--p:.81;background:var(--food)"></i></div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">
+              <span style="font-size:14.5px;font-weight:600">Bills &amp; utilities</span>
+              <span class="money" style="font-size:13px">₹9,340 / ₹11,000</span></div>
+            <div class="bar"><i style="--p:.849;background:var(--bills)"></i></div>
+          </div>
+        </div>
+      </div>
+      <p class="note" style="margin-top:12px">Bar fill is the category chip colour; the track is a 1.5px ink
+      pill. The fill uses <code>transform:scaleX()</code>, never <code>width</code> — width animates layout,
+      scale animates on the compositor.</p>
+    </div>
+    <div>
+      <span class="lab">Nav rows &amp; the chip-rhythm skeleton</span>
+      <div class="panel" style="margin-top:14px">
+        <button class="navrow on"><svg viewBox="0 0 24 24"><use href="#n-overview"/></svg>Overview</button>
+        <button class="navrow"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg>Transactions</button>
+        <button class="navrow"><svg viewBox="0 0 24 24"><use href="#i-invest"/></svg>Investments</button>
+        <hr class="hair" style="margin:14px 0">
+        <div class="row"><span class="sk c" style="width:30px;height:30px"></span>
+          <span><span class="sk" style="display:block;width:132px;height:11px"></span>
+          <span class="sk" style="display:block;width:88px;height:8px;margin-top:6px"></span></span>
+          <span class="sk" style="display:block;width:62px;height:12px"></span></div>
+        <div class="row"><span class="sk c" style="width:30px;height:30px"></span>
+          <span><span class="sk" style="display:block;width:104px;height:11px"></span>
+          <span class="sk" style="display:block;width:72px;height:8px;margin-top:6px"></span></span>
+          <span class="sk" style="display:block;width:54px;height:12px"></span></div>
+      </div>
+      <p class="note" style="margin-top:12px">The skeleton is the row grid with a dashed chip in column one.
+      Same silhouette as the loaded state, so <b>nothing reflows when the data lands</b>. Pulse is opacity
+      only, 1150ms, and it stops entirely under reduced motion.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 07 TETHER ══════════════════════════ -->
+<section class="sheet" id="tether">
+  <div class="sec-head"><span class="sec-num">§ 07</span><h2>The tether</h2></div>
+  <p class="lede">Sorted's most unusual capability — it reads your bank alert emails and files the
+  transactions itself — is invisible by default. The tether makes it visible with <b>one mark, used once,
+  meaning one thing.</b></p>
+  <hr class="rule">
+
+  <div class="grid2">
+    <div>
+      <div class="panel">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px">
+          <div><p style="font-family:var(--disp);font-weight:800;letter-spacing:-.035em;font-size:26px;line-height:1.05">Sunday, 30 August</p>
+          <p style="font-size:13.5px;color:var(--dim-2);margin-top:4px">Two days left in August.</p></div>
+          <button class="pill sm">Add transaction</button>
+        </div>
+        <div style="border-top:var(--stroke-hair) solid var(--rule);padding-top:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <span class="lab" style="white-space:nowrap;display:inline">Filed themselves</span>
+          <span style="display:flex;align-items:center;gap:6px">
+            <img src="assets/tether.svg" width="16" height="12" alt="">
+            <span class="chip food"><svg viewBox="0 0 24 24"><use href="#i-food"/></svg></span>
+            <img src="assets/tether.svg" width="16" height="12" alt="">
+            <span class="chip bills"><svg viewBox="0 0 24 24"><use href="#i-bills"/></svg></span>
+            <img src="assets/tether.svg" width="16" height="12" alt="">
+            <span class="chip shop"><svg viewBox="0 0 24 24"><use href="#i-shop"/></svg></span>
+          </span>
+          <span style="font-size:13.5px;color:var(--dim-2)">3 transactions from your HDFC and Amex alerts this morning.</span>
+          <span class="lab" style="margin-left:auto;color:var(--ink);text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap;display:inline">Review</span>
+        </div>
+      </div>
+      <p class="note" style="margin-top:16px">The strip only renders on days the parser actually ran, so it can
+      never become furniture. On a manual day it is absent, not empty.</p>
+    </div>
+    <div>
+      <span class="lab">Where it comes from</span>
+      <p class="note" style="margin-top:11px">
+        The tether is the login constellation's connector stroke, extracted: <b>1.6px ink, dasharray 4 6,
+        round caps.</b> Identical values, no variation. That identity is the whole idea — the connector you
+        meet at the door turns out to be the machinery. <b>Do not restyle one without the other.</b>
+      </p>
+      <p class="note" style="margin-top:11px">
+        Provenance for the record: the tether was invented inside Sorted's own chip vocabulary as this
+        direction's answer to the signature-moment problem. It is not an import of direction D's rubber stamp.
+      </p>
+      <pre class="good" style="margin-top:16px"><span class="c">/* the only three values that matter */</span>
+<span class="k">stroke</span>: var(--ink);
+<span class="k">stroke-width</span>: 1.6;      <span class="c">/* --stroke-tether */</span>
+<span class="k">stroke-dasharray</span>: 4 6;  <span class="c">/* --dash-tether  */</span>
+<span class="k">stroke-linecap</span>: round;</pre>
+      <div class="notice" style="margin-top:18px;border-color:var(--ink)">
+        <span class="bang" style="background:var(--invest);color:var(--ink)" aria-hidden="true">i</span>
+        <p><span class="h">A tether means exactly one thing.</span><br>
+        <span class="d">“This row was created by the Gmail parser, not by you.” It is never a status, never a
+        sync indicator, never decoration on a heading. One meaning, one mark.</span></p>
+      </div>
+      <p class="note" style="margin-top:14px"><b>Accessibility:</b> the tether is decorative in the accessibility
+      tree (<code>alt=""</code>). The meaning it carries is duplicated in the row's own sub-label —
+      <em>“filed automatically”</em> — so a screen reader loses nothing.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 08 MOTION ══════════════════════════ -->
+<section class="sheet" id="motion">
+  <div class="sec-head"><span class="sec-num">§ 08</span><h2>Motion</h2></div>
+  <p class="lede">Three curves, seven durations, and one rule that came out of a real bug. Sorted has
+  <b>no springs, no bounce, no overshoot.</b> The playfulness in this product lives in the colour taxonomy,
+  not in the timing function — a financial figure that overshoots its final value has lied to the owner
+  for eighty milliseconds.</p>
+  <hr class="rule">
+
+  <div class="wrap" style="margin-bottom:24px">
+    <button class="toggle" id="slowmo" aria-pressed="false">
+      <span class="knob" aria-hidden="true"></span>Slow motion ×12
+    </button>
+    <span class="note" style="margin:0">Turn this on, then press the buttons below. Every demo on this page
+    scales with it. This is how the press bug was found.</span>
+  </div>
+
+  <!-- ── the stamp press ── -->
+  <div class="panel" style="border-width:var(--stroke-focus);border-color:var(--ink)">
+    <span class="lab">The stamp press · locked rule</span>
+    <p class="h3" style="margin-top:8px">translateY exactly the shadow offset. Both properties, one curve. Never scale.</p>
+    <p class="note" style="margin-top:12px;max-width:none">
+      Any component carrying <code>box-shadow:0 2px 0 var(--ink)</code> presses by translating down exactly
+      2px while the shadow collapses to <code>0 0 0</code>. Three things must be true at once, and each one
+      was a separate bug before it was a rule.
+    </p>
+
+    <div class="press-lab" style="margin-top:22px">
+      <div class="cell">
+        <button class="pill">Send code</button>
+        <span class="verdict ok">Correct · ships</span>
+        <p class="note"><b>translateY only, both properties transitioned.</b> translate and shadow-offset are
+        complementary: on a shared curve they always sum to 2px, so the shadow's lower edge stays pinned
+        exactly where it started and the button descends into it. One object, one motion.</p>
+      </div>
+      <div class="cell">
+        <button class="pill v-scale">Send code</button>
+        <span class="verdict no">Wrong · scale</span>
+        <p class="note"><b>scale() added.</b> The shadow repaint and the GPU-composited scale run on different
+        pipelines. A 1.5px hard-edged border shrinking against a repainting shadow desyncs — the border
+        appears to glitch instead of reading as one press. <b>This is the user-reported bug.</b> Turn on
+        slow motion and watch the border edge.</p>
+      </div>
+      <div class="cell">
+        <button class="pill v-snap">Send code</button>
+        <span class="verdict no">Wrong · shadow snap</span>
+        <p class="note"><b>Only transform transitioned.</b> The shadow drops to zero on frame one, so the
+        silhouette jumps 2px shorter and <em>then</em> the button drifts down to meet nothing. A flicker on
+        every press. This was the open question and it is settled here: <b>transition both.</b></p>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:24px">
+      <pre class="good"><span class="c">/* CORRECT — ships in tokens.css as .stamp */</span>
+.pill{
+  <span class="k">box-shadow</span>: 0 2px 0 var(--ink);
+  <span class="k">transition</span>:
+    transform  110ms var(--ease-out),
+    box-shadow 110ms var(--ease-out);
+}
+.pill:active:not([disabled]){
+  <span class="k">transform</span>: translateY(2px);
+  <span class="k">box-shadow</span>: 0 0 0 var(--ink);
+}</pre>
+      <pre class="bad"><span class="c">/* WRONG — both of these, for different reasons */</span>
+.pill:active{
+  <span class="k">transform</span>: translateY(2px) scale(.985);  <span class="c">/* desync */</span>
+  <span class="k">box-shadow</span>: 0 0 0 var(--ink);
+}
+
+.pill{
+  <span class="c">/* shadow snaps on frame 1 → flicker */</span>
+  <span class="k">transition</span>: transform 110ms var(--ease-out);
+}</pre>
+    </div>
+    <p class="note" style="margin-top:16px;max-width:none"><b>Scope:</b> this applies to every component
+    carrying the stamp, not just the button. Today that is the primary pill and its <code>sm</code> and
+    <code>fab</code> variants. If a future component takes the stamp, it takes this press with it.</p>
+  </div>
+
+  <hr class="hair">
+  <span class="lab" style="margin-bottom:16px">Tokens</span>
+  <div class="grid2">
+    <div>
+      <table>
+        <thead><tr><th>Easing</th><th>Curve</th><th>Use</th></tr></thead>
+        <tbody>
+          <tr><td><code>--ease-out</code></td><td class="n">.23, 1, .32, 1</td><td>Enter, press, reveal. The default. Starts fast, so the interface feels like it heard you.</td></tr>
+          <tr><td><code>--ease-in-out</code></td><td class="n">.77, 0, .175, 1</td><td>Movement of something already on screen.</td></tr>
+          <tr><td><code>--ease-drawer</code></td><td class="n">.32, .72, 0, 1</td><td>Drawers and sheets only.</td></tr>
+        </tbody>
+      </table>
+      <p class="note" style="margin-top:14px"><b>Never <code>ease-in</code> on UI.</b> It withholds movement at
+      exactly the moment the eye is watching hardest, so it feels slower than an ease-out of identical duration.</p>
+      <table style="margin-top:20px">
+        <thead><tr><th>Duration</th><th>ms</th><th>Applies to</th></tr></thead>
+        <tbody>
+          <tr><td><code>--dur-press</code></td><td class="n">110</td><td>Stamp press and release.</td></tr>
+          <tr><td><code>--dur-hover</code></td><td class="n">150</td><td>Colour and background only. Survives reduced motion.</td></tr>
+          <tr><td><code>--dur-tooltip</code></td><td class="n">160</td><td>Tooltips, small popovers.</td></tr>
+          <tr><td><code>--dur-dropdown</code></td><td class="n">200</td><td>Selects, menus, chip pickers.</td></tr>
+          <tr><td><code>--dur-drawer</code></td><td class="n">320</td><td>With <code>--ease-drawer</code>.</td></tr>
+          <tr><td><code>--dur-modal</code></td><td class="n">400</td><td>With <code>--ease-out</code>, origin centre.</td></tr>
+          <tr><td><code>--dur-skeleton</code></td><td class="n">1150</td><td>Chip-rhythm pulse. Opacity only.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <span class="lab">CSS or GSAP?</span>
+      <p class="note" style="margin-top:11px">
+        <b>CSS for state.</b> Anything a pointer or a class toggle drives: presses, hovers, focus, drawer
+        open/close, a chip filter turning on. CSS transitions are interruptible and retarget mid-flight;
+        they also run off the main thread, so they stay smooth while TanStack Query is deserialising a
+        year of transactions. Keyframes restart from zero — avoid them for anything a person can trigger twice quickly.
+      </p>
+      <p class="note" style="margin-top:11px">
+        <b>GSAP for sequence.</b> The login constellation is the only place in Sorted that earns it: six chips
+        staggered, a core scale, and a dashoffset draw that has to land in order. That is a timeline, and a
+        timeline is what GSAP is for. Play it <b>once</b>, never on a loop — a repeating hero on a login screen
+        reads as a spinner and implies the app is stuck.
+      </p>
+      <pre style="margin-top:14px"><span class="c">// same press, in GSAP — for when you need it
+// on a timeline. Values are identical.</span>
+gsap.to(el, {
+  y: 2, boxShadow: <span class="k">'0 0 0 #1A1A1A'</span>,
+  duration: .11, ease: <span class="k">'power4.out'</span>
+});           <span class="c">// never add scale</span>
+
+<span class="c">// the login hero. once:true, and the static
+// SVG is already the final frame — animation
+// is a layer, never a dependency.</span>
+gsap.matchMedia().add(
+  <span class="k">'(prefers-reduced-motion: no-preference)'</span>, () =&gt; {
+  <span class="k">const</span> tl = gsap.timeline();
+  tl.from(<span class="k">'#hero-core'</span>, {scale:.9, opacity:0,
+      duration:.42, ease:<span class="k">'power3.out'</span>})
+    .from(<span class="k">'#hero-chips .hc'</span>, {scale:.92, opacity:0,
+      duration:.4, stagger:.06, ease:<span class="k">'power4.out'</span>}, <span class="k">'-=.2'</span>)
+    .to(<span class="k">'#hero-links'</span>, {opacity:1, duration:.4}, <span class="k">'-=.15'</span>);
+});</pre>
+      <p class="note" style="margin-top:12px"><b>Never animate a rupee figure.</b> No count-ups, no
+      odometer roll. The number is either known or it is a skeleton.</p>
+    </div>
+  </div>
+
+  <hr class="hair">
+  <span class="lab" style="margin-bottom:16px">Live demos · all four respect <code>prefers-reduced-motion</code></span>
+  <div class="grid2" style="gap:22px">
+    <div class="demo">
+      <div class="cap"><span class="lab" style="display:inline">Press · 110ms · ease-out</span><span class="money" style="font-size:11px">--dur-press</span></div>
+      <div class="stagearea"><button class="pill">Verify</button></div>
+      <p class="note">Hold it down. The shadow's bottom edge does not move.</p>
+    </div>
+    <div class="demo">
+      <div class="cap"><span class="lab" style="display:inline">Tooltip · 160ms · ease-out</span><span class="money" style="font-size:11px">--dur-tooltip</span></div>
+      <div class="stagearea">
+        <span class="tt-wrap">
+          <button class="pill sm ghost">Hover or focus me</button>
+          <span class="tt" role="tooltip">HDFC ···4417 · 08:14</span>
+        </span>
+      </div>
+      <p class="note">Scales from <code>0.97</code>, never <code>0</code>, and its origin is the trigger's
+      edge — not centre. Nothing in the world appears out of nothing.</p>
+    </div>
+    <div class="demo">
+      <div class="cap"><span class="lab" style="display:inline">Drawer · 320ms · ease-drawer</span><span class="money" style="font-size:11px">--dur-drawer</span></div>
+      <div class="dr-host" id="drhost">
+        <button class="pill sm" data-drawer>Open drawer</button>
+        <div class="dr">
+          <span class="lab">Filed automatically</span>
+          <p style="font-size:14.5px;font-weight:600;margin-top:5px">Swiggy Instamart · <span class="money">₹1,284</span></p>
+          <button class="pill sm ghost" style="margin-top:11px" data-drawer-close>Close</button>
+        </div>
+      </div>
+      <p class="note"><code>translateY(100%)</code> — a percentage, so it works at any height.</p>
+    </div>
+    <div class="demo">
+      <div class="cap"><span class="lab" style="display:inline">Modal · 400ms · ease-out</span><span class="money" style="font-size:11px">--dur-modal</span></div>
+      <div class="md-host" id="mdhost">
+        <button class="pill sm" data-modal>Open modal</button>
+        <div class="md-scrim"></div>
+        <div class="md" role="dialog" aria-modal="true" aria-label="Confirm">
+          <p style="font-size:14.5px;font-weight:600">Delete this transaction?</p>
+          <p class="note" style="margin-top:5px">Rapido · <span class="money">₹148</span> · 29 Aug</p>
+          <div class="wrap" style="margin-top:12px;gap:10px">
+            <button class="pill sm" data-modal-close>Keep it</button>
+            <button class="pill sm ghost" data-modal-close>Delete</button>
+          </div>
+        </div>
+      </div>
+      <p class="note">Origin stays <b>centre</b> — a modal is not anchored to a trigger, unlike the tooltip.</p>
+    </div>
+  </div>
+
+  <hr class="hair">
+  <div class="grid2">
+    <div>
+      <span class="lab">The ten rules</span>
+      <ol style="padding-left:20px;margin-top:12px;font-size:14px;line-height:1.7;color:var(--dim-2)">
+        <li>Ask whether it should animate at all. Anything seen a hundred times a day gets no animation.</li>
+        <li>Every animation answers “why”. If the answer is “it looks cool” and it's seen daily, cut it.</li>
+        <li>Entering or exiting → <code>--ease-out</code>. Moving on screen → <code>--ease-in-out</code>. Never <code>ease-in</code>.</li>
+        <li>UI motion stays under 300ms. Only the modal is allowed 400.</li>
+        <li>Animate <code>transform</code> and <code>opacity</code> only. Never width, height, padding, margin.</li>
+        <li>Never enter from <code>scale(0)</code>. Start at <code>0.95–0.97</code> with opacity.</li>
+        <li>Popovers scale from their trigger. Modals stay centred.</li>
+        <li>Transitions, not keyframes, for anything a person can trigger twice quickly.</li>
+        <li>Exit faster than enter. Slow where the user decides, fast where the system responds.</li>
+        <li>Reduced motion means fewer and gentler, not zero: keep opacity and colour, drop movement.</li>
+      </ol>
+    </div>
+    <div>
+      <span class="lab">Sorted's own additions</span>
+      <ol start="11" style="padding-left:20px;margin-top:12px;font-size:14px;line-height:1.7;color:var(--dim-2)">
+        <li><b>The stamp press never scales.</b> translateY matched to the shadow offset, both properties on one curve. Locked, from a real bug.</li>
+        <li><b>No rupee figure ever animates.</b> No count-up, no odometer. Known, or skeleton.</li>
+        <li><b>No springs, no bounce, no overshoot</b> anywhere in the product.</li>
+        <li><b>The hero plays once.</b> A looping hero on a login screen reads as a spinner.</li>
+        <li><b>The static SVG is the final frame.</b> Animation is a layer on top of a complete asset, never a dependency. If GSAP fails to load, the screen is still correct.</li>
+      </ol>
+      <div class="notice" style="margin-top:18px">
+        <span class="bang" style="background:var(--bills);color:var(--ink)" aria-hidden="true">!</span>
+        <p><span class="h">All motion in this product is reviewed by <code>emil-design-eng</code>.</span><br>
+        <span class="d">Change an easing or a duration without consulting it and you're breaking the system.</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 09 ACCESSIBILITY ══════════════════════════ -->
+<section class="sheet" id="a11y">
+  <div class="sec-head"><span class="sec-num">§ 09</span><h2>Accessibility</h2></div>
+  <p class="lede">One person uses this every day for years. That is a stronger accessibility argument than
+  compliance, not a weaker one — an interface you can't read at 6am in November is a broken tool.</p>
+  <hr class="rule">
+  <div class="grid2">
+    <div>
+      <table>
+        <thead><tr><th>Requirement</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><b>1.4.3 Contrast (AA)</b></td><td>Pass, with two documented restrictions — <code>--dim</code> is confined to mono micro-labels and <code>--rule</code> is a non-text exemption. Every ratio in §02 is computed.</td></tr>
+          <tr><td><b>1.4.1 Use of colour</b></td><td>Pass. Every chip carries a distinct glyph; colour is never the sole carrier of meaning. Direction on upcoming rows is an arrow, not a hue.</td></tr>
+          <tr><td><b>1.4.11 Non-text contrast</b></td><td>Pass. All six chip glyphs clear 3:1 against their fill (lowest 3.32:1). Every component boundary is ink at 16.08:1.</td></tr>
+          <tr><td><b>2.4.7 Focus visible</b></td><td>Pass. 2.5px <code>--focus</code>, offset 3px outward. Never removed, never inset on a filled control.</td></tr>
+          <tr><td><b>2.3.3 Animation from interactions</b></td><td>Pass. <code>prefers-reduced-motion</code> collapses every duration to 1ms, stops the skeleton pulse, and drops the press translate while keeping the shadow collapse so the state change stays legible.</td></tr>
+          <tr><td><b>1.4.4 Resize text</b></td><td>Pass to 200%. All type is px in a fixed single-user desktop layout; the browser's own zoom is the resize path and every panel reflows.</td></tr>
+          <tr><td><b>1.4.12 Text spacing</b></td><td>Pass. No fixed-height text containers; rows grow.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <span class="lab">Hard rules for implementation</span>
+      <ul style="padding-left:19px;margin-top:12px;font-size:14px;line-height:1.75;color:var(--dim-2)">
+        <li><b>Never <code>outline:none</code></b> without an equivalent replacement in the same rule.</li>
+        <li><b>Focus rings are always offset outward.</b> <code>--focus</code> on <code>--ink</code> is 1.37:1; an inset ring on the primary CTA is invisible.</li>
+        <li><b>Fields never go below 16px</b> — iOS zooms the viewport on focus at 15px and under.</li>
+        <li><b>The tether is <code>alt=""</code>.</b> Its meaning is duplicated in the row's sub-label.</li>
+        <li><b>Every chip in the DOM needs an accessible name</b>, either a <code>&lt;title&gt;</code> in the SVG or an <code>aria-label</code> on its container. A bare coloured circle says nothing.</li>
+        <li><b>Errors are announced.</b> Notices carry <code>role="alert"</code>; the field carries <code>aria-invalid</code> and <code>aria-describedby</code> pointing at the notice.</li>
+        <li><b>Hover effects are gated</b> behind <code>@media (hover:hover) and (pointer:fine)</code> so a tap doesn't leave a stuck hover state.</li>
+        <li><b>OTP boxes are one input</b>, not six. Six inputs break paste, autofill, and every screen reader.</li>
+      </ul>
+      <div class="panel" style="margin-top:18px">
+        <span class="lab">Edge cases the system already answers</span>
+        <p class="note" style="margin-top:10px"><b>Long merchant names.</b> The row's middle column is
+        <code>1fr</code> and wraps to two lines; the amount column is <code>auto</code> and never compresses.
+        A number is never truncated — a truncated rupee figure is a wrong rupee figure.</p>
+        <p class="note" style="margin-top:9px"><b>Large amounts.</b> <span class="money">₹1,86,42,000</span>
+        at 108px overflows a narrow panel. Guilt-Free steps down to 78px above 8 glyphs; it does not shrink to fit.</p>
+        <p class="note" style="margin-top:9px"><b>Negative guilt-free money.</b> The figure stays in ink, not
+        red. <code>--alert</code> is for things that failed, not things that are true. The sub-label carries
+        the news: <em>“₹4,200 over. Two days left.”</em></p>
+        <p class="note" style="margin-top:9px"><b>Devanagari and long English.</b> Geist and Geist Mono cover
+        Latin; a Devanagari merchant name falls back to the system stack and grows the line height. The row
+        grid handles it because nothing has a fixed height.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 10 SHADCN ══════════════════════════ -->
+<section class="sheet" id="shadcn">
+  <div class="sec-head"><span class="sec-num">§ 10</span><h2>Component appendix · shadcn/ui</h2></div>
+  <p class="lede">shadcn/ui is <b>not installed yet</b>. Today <code>web/components/ui/</code> holds hand-rolled
+  <code>Button</code>, <code>Card</code>, <code>Input</code> and <code>Toast</code>. This table is the migration
+  map: which primitive replaces what, and exactly which token overrides stop it looking like default shadcn.</p>
+  <hr class="rule">
+
+  <div class="grid2" style="align-items:start">
+    <div>
+      <pre><span class="c"># install order — form last, it depends on label + input</span>
+npx shadcn@latest init
+npx shadcn@latest add button input card badge \
+  progress separator skeleton label form sonner</pre>
+      <p class="note" style="margin-top:14px">Then delete the hand-rolled four. Do not run both — two Button
+      components in one codebase is how a design system dies.</p>
+    </div>
+    <div>
+      <span class="lab">The variable bridge · app/globals.css</span>
+      <pre class="good" style="margin-top:12px"><span class="c">/* shadcn reads these names. Point them at Sorted
+   tokens and `add button` stops looking generic. */</span>
+@import <span class="k">'../../docs/design/brand-kit/tokens.css'</span>;
+
+:root{
+  <span class="k">--background</span>: var(--bg);
+  <span class="k">--foreground</span>: var(--ink);
+  <span class="k">--primary</span>: var(--ink);
+  <span class="k">--primary-foreground</span>: var(--bg);
+  <span class="k">--border</span>: var(--ink);      <span class="c">/* not a grey */</span>
+  <span class="k">--input</span>: var(--ink);
+  <span class="k">--ring</span>: var(--focus);
+  <span class="k">--muted</span>: var(--ink-wash);
+  <span class="k">--muted-foreground</span>: var(--dim-2);  <span class="c">/* not --dim */</span>
+  <span class="k">--destructive</span>: var(--alert);
+  <span class="k">--radius</span>: 22px;          <span class="c">/* --r-panel */</span>
+}</pre>
+    </div>
+  </div>
+
+  <hr class="hair">
+  <table class="map">
+    <thead><tr><th style="width:15%">Sorted</th><th style="width:15%">shadcn</th><th>Overrides that matter</th></tr></thead>
+    <tbody>
+      <tr><td>Pill CTA</td><td><code>button</code></td><td>Add a <code>sorted</code> variant: <code>bg-ink text-bg border-panel border-ink rounded-pill shadow-stamp</code>. <b>Delete the default <code>active:scale-[0.98]</code>.</b> Replace with the <code>.stamp</code> component class from the Tailwind preset — translateY only, both properties transitioned. Kill <code>hover:bg-primary/90</code>; Sorted buttons have no hover state. <code>size</code>: <code>default</code> 15/30, <code>sm</code> 10/20, <code>icon</code> 44×44.</td></tr>
+      <tr><td>Ghost / quiet</td><td><code>button</code></td><td><code>variant="outline"</code> → transparent fill, ink border, ink text, keeps the stamp. <code>variant="ghost"</code> → borderless, underlined, <code>underline-offset-4</code>, no stamp and no press translate.</td></tr>
+      <tr><td>Field</td><td><code>input</code></td><td><code>rounded-pill border-panel border-ink bg-transparent text-input px-22 py-15</code>. Replace the ring with <code>focus-visible:shadow-[0_0_0_2.5px_var(--focus)]</code> — shadcn's default <code>ring-offset-background</code> assumes a white page. Placeholder is the one sanctioned use of <code>--dim</code>.</td></tr>
+      <tr><td>Panel</td><td><code>card</code></td><td><code>rounded-panel border-panel border-ink bg-bg</code> and <b><code>shadow-none</code></b>. shadcn's Card ships <code>shadow-sm</code>; that must go. Drop <code>CardHeader</code>'s default <code>p-6</code> for <code>22px 24px</code>.</td></tr>
+      <tr><td>Budget bar</td><td><code>progress</code></td><td>Track: <code>h-20 rounded-pill border-panel border-ink bg-transparent</code> (shadcn defaults to a filled muted track — remove it). Indicator: chip colour via a CSS variable, <code>transform:scaleX()</code> with <code>transform-origin:left</code>, not <code>translateX(-100%+x)</code>.</td></tr>
+      <tr><td>Toast</td><td><code>sonner</code></td><td>Sonner over the hand-rolled Toast. <code>toastOptions.classNames</code>: <code>rounded-panel border-panel border-ink bg-bg shadow-none</code>. Set <code>duration: 4000</code>, position bottom-right. <b>Disable the default lift shadow.</b> Success toasts carry the <code>invest</code> chip, errors the alert bang — never a coloured toast background.</td></tr>
+      <tr><td>Label / Form</td><td><code>label</code>, <code>form</code></td><td><code>FormLabel</code> → the mono micro-label (10px, .16em, uppercase, <code>--dim</code>). <code>FormMessage</code> → <code>--alert</code>, but at <code>--type-caption</code> in ink with only the bang in alert. <code>FormDescription</code> → <code>--dim-2</code>, never <code>--dim</code>.</td></tr>
+      <tr><td>Separator</td><td><code>separator</code></td><td>Two variants Sorted needs and shadcn has one of: <code>hair</code> = 1px <code>--rule</code> (row rhythm), <code>panel</code> = 1.5px <code>--ink</code> (structural). Default the component to <code>hair</code> and require an explicit prop for the ink one.</td></tr>
+      <tr><td>Skeleton</td><td><code>skeleton</code></td><td>Replace <code>animate-pulse</code> with <code>animate-chip-pulse</code> (1150ms, <code>--ease-in-out</code>, opacity .34→.72). Ship a <code>SkeletonRow</code> composite that reproduces the exact row grid with a dashed circle in column one, so nothing reflows on load.</td></tr>
+      <tr><td>Tooltip</td><td><code>tooltip</code></td><td>Ink fill, cream mono label, <code>rounded-pill</code>. Duration to 160ms and easing to <code>--ease-out</code>. Keep Radix's <code>--radix-tooltip-content-transform-origin</code> — origin-aware is correct here.</td></tr>
+      <tr><td>Drawer / Dialog</td><td><code>drawer</code>, <code>dialog</code></td><td>Drawer 320ms <code>--ease-drawer</code>; Dialog 400ms <code>--ease-out</code> from <code>scale(.96)</code>, origin centre. Both overlays <code>rgba(26,26,26,.34)</code> — flat ink at low alpha, <b>no backdrop blur</b>.</td></tr>
+      <tr class="bespoke"><td><b>Chip</b></td><td><b>None</b></td><td><b>Bespoke.</b> <code>badge</code> is the nearest primitive and it is wrong: a Badge is a text pill, the chip is a fixed 30px circle whose meaning lives in a glyph. Build <code>&lt;Chip category icon size /&gt;</code> from scratch, typed against <code>ChipToken</code> so an unknown category can't compile. <b>Do not let anyone <code>add badge</code> and call it done.</b></td></tr>
+      <tr class="bespoke"><td><b>Tether</b></td><td><b>None</b></td><td><b>Bespoke.</b> No primitive resembles it. A 16×12 inline SVG in a 22px grid gutter. Ships as <code>assets/tether.svg</code> and as a <code>&lt;Tether /&gt;</code> component that renders <code>aria-hidden</code>.</td></tr>
+      <tr class="bespoke"><td><b>Row</b></td><td><b>None</b></td><td><b>Bespoke.</b> shadcn's <code>table</code> is for tabular data with headers; the Sorted row is a 3-column grid with a chip gutter and no header. Build <code>&lt;Row /&gt;</code> and use <code>table</code> only if a real data table appears in a later phase.</td></tr>
+      <tr class="bespoke"><td><b>OTP boxes</b></td><td><code>input-otp</code></td><td>Closest real match — and it is the right one, because it is a <b>single input</b> behind six visual slots, which is what keeps paste and autofill working. Restyle the slots: 52×60, <code>rounded-otp</code>, 1.5px ink, mono 24px. Active slot gets the focus ring, not a fill.</td></tr>
+    </tbody>
+  </table>
+  <p class="note" style="margin-top:18px"><b>The rule for the whole table:</b> shadcn gives you behaviour,
+  accessibility and keyboard handling. Sorted gives you every visual value. If a shadcn default survives
+  into the product looking like shadcn, the override was incomplete.</p>
+</section>
+
+<!-- ══════════════════════════ 11 VOICE ══════════════════════════ -->
+<section class="sheet" id="voice">
+  <div class="sec-head"><span class="sec-num">§ 11</span><h2>Voice &amp; tone</h2></div>
+  <p class="lede">Sorted talks to exactly one person, who owns it, and who already knows what a SIP is.
+  <b>Plain, specific, unhurried, never congratulatory.</b> It does not have a personality; it has manners.</p>
+  <hr class="rule">
+
+  <div class="grid2">
+    <div>
+      <span class="lab">Word swaps</span>
+      <table style="margin-top:14px">
+        <thead><tr><th>Not this</th><th>This</th><th>Because</th></tr></thead>
+        <tbody>
+          <tr><td>Transaction</td><td>Transaction</td><td>It really is one. Don't get poetic about a ledger.</td></tr>
+          <tr><td>User</td><td>You</td><td>There is one person. Second person, always.</td></tr>
+          <tr><td>Auto-imported</td><td>Filed itself</td><td>Names the machine's action in plain English.</td></tr>
+          <tr><td>Sync failed</td><td>Couldn't read your inbox</td><td>Says what didn't happen, in a thing you own.</td></tr>
+          <tr><td>Disposable income</td><td>Guilt-free money</td><td>The product's own named concept. Never paraphrase it.</td></tr>
+          <tr><td>Submit</td><td>Send code / Verify</td><td>A button says what happens when you press it.</td></tr>
+          <tr><td>Uncategorised</td><td>No chip yet</td><td>Uses the system's own vocabulary and implies a fix.</td></tr>
+          <tr><td>Great job! 🎉</td><td>—</td><td>Delete it. Sorted never congratulates.</td></tr>
+          <tr><td>Oops!</td><td>—</td><td>Errors don't apologise and they are never cute.</td></tr>
+          <tr><td>Delete</td><td>Delete</td><td>Softening a destructive verb is dishonest.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div>
+      <span class="lab">Four samples</span>
+      <div class="stack" style="margin-top:14px;gap:14px">
+        <div class="panel"><span class="lab">Empty · no budgets yet</span>
+          <p style="font-size:15px;margin-top:8px">No budgets yet.</p>
+          <p class="note" style="margin-top:4px">Set a limit on a category and it'll show up here with a bar.</p>
+          <p class="note" style="margin-top:6px;color:var(--dim)">— An empty screen is an invitation to act, not a mood.</p></div>
+        <div class="panel"><span class="lab">Empty · nothing upcoming</span>
+          <p style="font-size:15px;margin-top:8px">Nothing due in the next 30 days.</p>
+          <p class="note" style="margin-top:4px">Your next recurring item is the Parag Parikh SIP on 5 October.</p>
+          <p class="note" style="margin-top:6px;color:var(--dim)">— Empty still carries a fact. It's never blank.</p></div>
+        <div class="panel"><span class="lab">Error · dashboard</span>
+          <p style="font-size:15px;margin-top:8px">Couldn't load your dashboard.</p>
+          <p class="note" style="margin-top:4px">The server didn't answer. Try again, and if it keeps happening check that the API is running.</p>
+          <p class="note" style="margin-top:6px;color:var(--dim)">— What broke, then what to do. No apology, no blame.</p></div>
+        <div class="panel"><span class="lab">Success · after parsing</span>
+          <p style="font-size:15px;margin-top:8px">3 transactions filed from your inbox.</p>
+          <p class="note" style="margin-top:4px">Two from HDFC, one from Amex. Review them if the chips look wrong.</p>
+          <p class="note" style="margin-top:6px;color:var(--dim)">— States the result and offers the correction. No celebration.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="hair">
+  <span class="lab" style="margin-bottom:14px">Do / don't</span>
+  <div class="stack" style="gap:16px">
+    <div class="vt">
+      <div class="say"><span class="k">Say</span><p>₹4,200 over. Two days left in August.</p></div>
+      <div class="dont"><span class="k">Don't</span><p>Uh oh — looks like you've overspent! 😬</p></div>
+    </div>
+    <div class="vt">
+      <div class="say"><span class="k">Say</span><p>That code didn't match. Check the six digits in the email from Sorted, or send a new code.</p></div>
+      <div class="dont"><span class="k">Don't</span><p>Invalid OTP. Please try again.</p></div>
+    </div>
+    <div class="vt">
+      <div class="say"><span class="k">Say</span><p>Sending…</p></div>
+      <div class="dont"><span class="k">Don't</span><p>Please wait while we process your request</p></div>
+    </div>
+    <div class="vt">
+      <div class="say"><span class="k">Say</span><p>Swiggy Instamart · filed automatically · HDFC ···4417</p></div>
+      <div class="dont"><span class="k">Don't</span><p>SWIGGY*INSTAMART BLR (auto-imported via GmailIngestionService)</p></div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:20px;max-width:none"><b>One vocabulary throughout.</b> The button that
+  says <em>Send code</em> produces a state that says <em>Sending…</em> and a screen that says <em>Code sent
+  to om@example.com</em>. An action keeps its name through the whole flow. That consistency is the signposting
+  someone uses to learn their way around a tool they'll open a thousand times.</p>
+</section>
+
+<!-- ══════════════════════════ 12 ASSETS ══════════════════════════ -->
+<section class="sheet" id="assets">
+  <div class="sec-head"><span class="sec-num">§ 12</span><h2>Shipped assets &amp; files</h2></div>
+  <p class="lede">Everything on this page is backed by a real file. Nothing here is a mockup of an asset
+  that doesn't exist.</p>
+  <hr class="rule">
+
+  <span class="lab" style="margin-bottom:14px">The six chip icons · <code>assets/chips/</code></span>
+  <div class="grid3">
+    <div class="assetcard"><img src="assets/chips/food.svg" alt="Food chip"><div><b style="font-size:14.5px">Food</b><p class="p">assets/chips/food.svg</p></div></div>
+    <div class="assetcard"><img src="assets/chips/bills.svg" alt="Bills chip"><div><b style="font-size:14.5px">Bills</b><p class="p">assets/chips/bills.svg</p></div></div>
+    <div class="assetcard"><img src="assets/chips/invest.svg" alt="Investments chip"><div><b style="font-size:14.5px">Investments</b><p class="p">assets/chips/invest.svg</p></div></div>
+  </div>
+  <div class="grid3" style="margin-top:18px">
+    <div class="assetcard"><img src="assets/chips/transport.svg" alt="Transport chip"><div><b style="font-size:14.5px">Transport</b><p class="p">assets/chips/transport.svg</p></div></div>
+    <div class="assetcard"><img src="assets/chips/shopping.svg" alt="Shopping chip"><div><b style="font-size:14.5px">Shopping</b><p class="p">assets/chips/shopping.svg</p></div></div>
+    <div class="assetcard"><img src="assets/chips/health.svg" alt="Health chip"><div><b style="font-size:14.5px">Health</b><p class="p">assets/chips/health.svg</p></div></div>
+  </div>
+  <p class="note" style="margin-top:14px">Each is the complete chip — 30px circle, 1.5px ink border, flat fill,
+  glyph — with the glyph wrapped in <code>&lt;g id="glyph-*"&gt;</code> so it can be lifted out for a sprite.
+  The glyph stroke renders at 1.42px, deliberately just under the 1.5px border so the border stays the
+  dominant edge and the chip reads as one object rather than a ring with a drawing in it.</p>
+
+  <hr class="hair">
+  <div class="grid2">
+    <div>
+      <span class="lab">Hero · <code>assets/hero/constellation.svg</code></span>
+      <div class="panel" style="margin-top:12px;background:var(--hero-field);display:grid;place-items:center;padding:20px">
+        <img src="assets/hero/constellation.svg" alt="" style="width:100%;max-width:300px">
+      </div>
+      <p class="note" style="margin-top:12px">This file is the <b>static fallback and the canonical final
+      frame</b>. The GSAP entrance animates toward this exact state. If the script never runs, the login screen
+      is still complete and still correct — animation is a layer, never a dependency.</p>
+    </div>
+    <div>
+      <span class="lab">File index</span>
+      <table style="margin-top:12px">
+        <thead><tr><th>File</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td><code>index.html</code></td><td>This book. The human-facing artifact.</td></tr>
+          <tr><td><code>tokens.css</code></td><td><b>Source of truth.</b> Import once, above everything.</td></tr>
+          <tr><td><code>tokens.ts</code></td><td>Typed twin, plus the measured contrast table and chip metadata.</td></tr>
+          <tr><td><code>tokens.json</code></td><td>DTCG. Style Dictionary and Figma plugins.</td></tr>
+          <tr><td><code>tailwind.preset.js</code></td><td>Tailwind 3.4 preset. <code>presets:[sorted]</code> in <code>web/tailwind.config.ts</code> — no duplicated hex.</td></tr>
+          <tr><td><code>README.md</code></td><td>Engineer-facing: install, the shadcn map, the motion rules verbatim.</td></tr>
+          <tr><td><code>assets/chips/*.svg</code></td><td>Six chips.</td></tr>
+          <tr><td><code>assets/hero/constellation.svg</code></td><td>Login hero, static fallback.</td></tr>
+          <tr><td><code>assets/tether.svg</code></td><td>The parser signature mark.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="stamp-line" style="margin-top:40px">
+    <span>Sorted · brand kit v1.0 · theme <code>sorted</code> · round 4</span>
+    <span>Name provisional — awaiting confirmation</span>
+  </div>
+</section>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* slow-motion inspector — multiplies every demo duration via --slow.
+     This is how the press bug is visible: at 1x the desync is one frame. */
+  var slow = document.getElementById('slowmo');
+  slow.addEventListener('click', function(){
+    var on = slow.getAttribute('aria-pressed') === 'true';
+    slow.setAttribute('aria-pressed', String(!on));
+    document.documentElement.style.setProperty('--slow', on ? '1' : '12');
+  });
+
+  /* drawer */
+  var drHost = document.getElementById('drhost');
+  var dr = drHost.querySelector('.dr');
+  drHost.querySelector('[data-drawer]').addEventListener('click', function(){
+    dr.setAttribute('data-open','');
+  });
+  drHost.querySelector('[data-drawer-close]').addEventListener('click', function(){
+    dr.removeAttribute('data-open');
+  });
+
+  /* modal */
+  var mdHost = document.getElementById('mdhost');
+  mdHost.querySelector('[data-modal]').addEventListener('click', function(){
+    mdHost.setAttribute('data-open','');
+    mdHost.querySelector('.md').style.pointerEvents = 'auto';
+  });
+  Array.prototype.forEach.call(mdHost.querySelectorAll('[data-modal-close]'), function(b){
+    b.addEventListener('click', function(){
+      mdHost.removeAttribute('data-open');
+      mdHost.querySelector('.md').style.pointerEvents = 'none';
+    });
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') {
+      mdHost.removeAttribute('data-open');
+      mdHost.querySelector('.md').style.pointerEvents = 'none';
+      dr.removeAttribute('data-open');
+    }
+  });
+
+  /* the busy button is a specimen, not a control */
+  Array.prototype.forEach.call(document.querySelectorAll('.pill[data-busy]'), function(b){
+    b.setAttribute('aria-busy','true');
+    b.addEventListener('click', function(e){ e.preventDefault(); });
+  });
+})();
+</script>
+</body>
+</html>

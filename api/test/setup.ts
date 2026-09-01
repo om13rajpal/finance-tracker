@@ -1,6 +1,26 @@
 process.env.NODE_ENV ??= "test";
 process.env.MONGO_URI ??= "mongodb://localhost/unused";
-process.env.REDIS_URL ??= "redis://localhost:6379";
+/**
+ * DATABASE 15, NOT THE DEFAULT 0.
+ *
+ * Mongo is isolated per run by mongodb-memory-server, but Redis was not: the
+ * tests connected to exactly the same instance and the same database a running
+ * `pnpm dev:api` uses. That is a real, reproducible cross-process failure, not
+ * a theoretical one — with the dev API up, two tests fail every time:
+ *
+ *   · priceRefreshFanout "enqueues one job per distinct symbol" — the dev
+ *     server's live price-refresh WORKER consumes a job out of the shared queue
+ *     between the enqueue and the assertion, so only one of the two is still
+ *     waiting when the test looks.
+ *   · dashboard "computeFullNetWorth" — a `price:INFY` key cached by ordinary
+ *     dev usage is read by `getLatestPrice`, so the holding is valued at a live
+ *     price instead of the cost basis the test set up.
+ *
+ * Both look like product bugs and neither is. A separate database index costs
+ * nothing and makes the suite deterministic whether or not the app is running.
+ * Still `??=`, so CI can point it wherever it likes.
+ */
+process.env.REDIS_URL ??= "redis://localhost:6379/15";
 process.env.JWT_SECRET ??= "test-secret";
 process.env.RESEND_API_KEY ??= "test-key";
 process.env.ALLOWED_LOGIN_EMAIL ??= "test@example.com";

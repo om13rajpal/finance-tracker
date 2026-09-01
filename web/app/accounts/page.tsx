@@ -1,61 +1,387 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { apiFetch } from "@/lib/api-client";
+import type { Account, AccountType, BalanceSnapshot } from "@/lib/api-types";
+import { formatDate, formatInr } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Icon, type IconName } from "@/components/app/icons";
+import { Field, FieldGrid, FormActions, MoneyInput, Select } from "@/components/app/form";
+import {
+  Amount,
+  EmptyState,
+  Helper,
+  Notice,
+  PageHeader,
+  Panel,
+  PanelFooter,
+  PanelHeader,
+  Readout,
+  RowName,
+  SectionLabel,
+  Skeleton,
+  Sparkline,
+} from "@/components/app/primitives";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
 import { useToast } from "@/components/ui/Toast";
 
-type AccountType = "bank" | "credit_card" | "ppf" | "cash";
+/**
+ * Sorted · Accounts
+ *
+ * Where net worth comes from. The dashboard prints one figure; this screen is
+ * the arithmetic behind it, grouped the way the API's own `AccountType` enum
+ * groups it.
+ *
+ * ACCOUNT TYPE IS NOT A BUCKET. The four bucket fills mean "this is where money
+ * GOES"; an account is where money SITS. So account rows carry ink-stroke
+ * glyphs in the chip's circular form with no fill — the same vocabulary the
+ * nav rail uses for routes, for the same reason. Reusing a bucket colour here
+ * would be the colour system telling a lie.
+ *
+ * A CREDIT CARD IS A LIABILITY. `computeNetWorth` subtracts `Math.abs(balance)`
+ * for `type === "credit_card"` regardless of the sign it is stored with, so
+ * that is exactly how it is shown: as a negative, with the word "owed".
+ */
 
-interface Account {
-  _id: string;
-  type: AccountType;
-  institution: string;
-  nickname: string;
-  currentBalance: number;
-  isLiability: boolean;
-}
+const TYPE_META: Record<AccountType, { label: string; icon: IconName; note: string }> = {
+  bank: { label: "Bank", icon: "accounts", note: "Counts towards net worth in full." },
+  credit_card: {
+    label: "Credit card",
+    icon: "card",
+    note: "Subtracted from net worth. A balance here is money you owe.",
+  },
+  ppf: { label: "PPF", icon: "vault", note: "Locked in, but yours. Counts in full." },
+  cash: { label: "Cash", icon: "cash", note: "Whatever is in the wallet." },
+};
 
-interface BalanceSnapshot {
-  _id: string;
-  balance: number;
-  date: string;
-}
-
-// Fixed display order + labels for account groups, independent of whatever
-// order the API happens to return accounts in.
-const TYPE_GROUPS: { type: AccountType; label: string }[] = [
-  { type: "bank", label: "Bank" },
-  { type: "credit_card", label: "Credit Card" },
-  { type: "ppf", label: "PPF" },
-  { type: "cash", label: "Cash" },
-];
-
-function formatInr(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+const TYPE_ORDER: AccountType[] = ["bank", "credit_card", "ppf", "cash"];
 
 export default function AccountsPage() {
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
-
-  const {
-    data: accounts,
-    isLoading,
-    isError,
-  } = useQuery({
+  const accounts = useQuery({
     queryKey: ["accounts"],
     queryFn: () => apiFetch<Account[]>("/accounts"),
   });
 
+  // Memoised for identity: see the note in budgets/page.tsx — a fresh `[]`
+  // each render silently defeats the grouping memo below.
+  const list = useMemo(() => accounts.data ?? [], [accounts.data]);
+  const grouped = useMemo(() => {
+    const map = new Map<AccountType, Account[]>();
+    for (const a of list) {
+      const bucket = map.get(a.type) ?? [];
+      bucket.push(a);
+      map.set(a.type, bucket);
+    }
+    return map;
+  }, [list]);
+
+  const assets = list
+    .filter((a) => a.type !== "credit_card")
+    .reduce((sum, a) => sum + a.currentBalance, 0);
+  const owed = list
+    .filter((a) => a.type === "credit_card")
+    .reduce((sum, a) => sum + Math.abs(a.currentBalance), 0);
+
+  return (
+    <ProtectedLayout>
+      <PageHeader
+        title="Accounts"
+        meta={list.length > 0 ? `${list.length} open` : undefined}
+      />
+
+      <div className="grid items-start gap-22 xl:grid-cols-[7fr_5fr]">
+        <div className="flex min-w-0 flex-col gap-22">
+          {!accounts.isLoading && !accounts.isError && list.length > 0 ? (
+            <Panel>
+              <PanelHeader title="§ What it adds up to" />
+              <div className="grid gap-22 sm:grid-cols-3">
+                <Readout label="In accounts" value={assets} />
+                <Readout label="Owed on cards" value={owed > 0 ? `−${formatInr(owed)}` : formatInr(0)} />
+                <Readout label="Net" value={assets - owed} />
+              </div>
+              <PanelFooter>Holdings are counted separately, on Investments</PanelFooter>
+            </Panel>
+          ) : null}
+
+          {accounts.isLoading ? (
+            <Panel>
+              <PanelHeader title="§ Accounts" />
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-row items-center gap-14 border-b border-rule py-14 last:border-b-0"
+                >
+                  <Skeleton className="h-chip w-chip rounded-pill opacity-40" />
+                  <Skeleton className="h-[15px] w-[160px] rounded-sm" />
+                  <Skeleton className="h-[15px] w-[100px] rounded-sm" />
+                </div>
+              ))}
+            </Panel>
+          ) : accounts.isError ? (
+            <Notice
+              title="Could not load your accounts."
+              body="Please try again shortly. Nothing has been lost."
+            />
+          ) : list.length === 0 ? (
+            <Panel>
+              <EmptyState
+                title="No accounts yet."
+                body="Add the first one on the right — a bank account, a card, your PPF, or the cash in your wallet. Net worth starts counting from there."
+              />
+            </Panel>
+          ) : (
+            /* ONE panel, with the type groups as headings inside it.
+               Four separate panels for five accounts put three 1.5px frames
+               and three footnotes around a total of five rows — the chrome
+               outweighed the ledger. This reads as one list that happens to be
+               grouped, which is what it is. */
+            <Panel>
+              <PanelHeader title="§ Accounts" />
+              {TYPE_ORDER.filter((type) => (grouped.get(type) ?? []).length > 0).map(
+                (type, groupIndex) => {
+                  const meta = TYPE_META[type];
+                  const rows = grouped.get(type) ?? [];
+                  const subtotal = rows.reduce(
+                    (sum, a) =>
+                      sum + (type === "credit_card" ? -Math.abs(a.currentBalance) : a.currentBalance),
+                    0
+                  );
+                  return (
+                    <section key={type} className={cn(groupIndex > 0 && "mt-22")}>
+                      <div className="flex items-baseline justify-between gap-14 border-b border-ink pb-8">
+                        <SectionLabel>§ {meta.label}</SectionLabel>
+                        <span className="money text-body-s">{formatInr(subtotal)}</span>
+                      </div>
+                      {rows.map((account) => (
+                        <AccountRow key={account._id} account={account} icon={meta.icon} />
+                      ))}
+                      {/* Only the card group gets a note. "Counts towards net
+                          worth in full" under Bank, PPF and Cash is three lines
+                          saying the obvious thing three times; the one that is
+                          NOT obvious is that a card subtracts. */}
+                      {type === "credit_card" ? (
+                        <p className="m-0 pt-8 font-num text-micro uppercase tracking-micro text-dim">
+                          {meta.note}
+                        </p>
+                      ) : null}
+                    </section>
+                  );
+                }
+              )}
+            </Panel>
+          )}
+        </div>
+
+        <div className="xl:sticky xl:top-32">
+          <AddAccountPanel />
+        </div>
+      </div>
+    </ProtectedLayout>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// One account
+// ═══════════════════════════════════════════════════════════════════════════
+
+function AccountRow({ account, icon }: { account: Account; icon: IconName }) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  const isCard = account.type === "credit_card";
+  const displayed = isCard ? -Math.abs(account.currentBalance) : account.currentBalance;
+
+  const history = useQuery({
+    queryKey: ["balance-history", account._id],
+    queryFn: () => apiFetch<BalanceSnapshot[]>(`/accounts/${account._id}/balance-history`),
+    enabled: open,
+  });
+
+  const updateBalance = useMutation({
+    mutationFn: (balance: number) =>
+      apiFetch<Account>(`/accounts/${account._id}/balance`, {
+        method: "POST",
+        body: JSON.stringify({ balance }),
+      }),
+    onSuccess: () => {
+      // One POST both updates `currentBalance` AND appends a BalanceSnapshot,
+      // so both caches have to be invalidated from this single mutation — plus
+      // the dashboard, whose net worth just moved.
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["balance-history", account._id] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      setDraft("");
+      showToast("Balance updated", "success");
+    },
+    onError: () => showToast("Could not update that balance", "error"),
+  });
+
+  const remove = useMutation({
+    mutationFn: () => apiFetch<void>(`/accounts/${account._id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      showToast("Account deleted", "success");
+    },
+    onError: () => showToast("Could not delete that account", "error"),
+  });
+
+  // Oldest → newest, which is the order a line has to be drawn in. The API
+  // sorts ascending already; sorting again costs nothing and means this does
+  // not silently invert if that ever changes.
+  const series = (history.data ?? [])
+    .slice()
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  return (
+    <div className="border-b border-rule last:border-b-0">
+      <div className="grid grid-cols-row items-center gap-14 py-14">
+        <span className="grid h-chip w-chip place-items-center rounded-pill border-panel border-ink text-ink">
+          <Icon name={icon} size={17} />
+        </span>
+        <RowName name={account.nickname} sub={account.institution} />
+        <span className="flex items-center gap-14">
+          <span className="text-right">
+            <Amount className="block text-body">{formatInr(displayed)}</Amount>
+            {isCard ? (
+              <span className="block font-num text-micro uppercase tracking-micro text-dim">
+                Owed
+              </span>
+            ) : null}
+          </span>
+          {/* The accessible name carries the account.
+              Five rows each offering a button called only "Update" gives a
+              screen-reader user a list of five identical controls with no way
+              to tell which account they belong to. The visible label stays
+              short; the announced one does not. */}
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-expanded={open}
+            aria-label={`${open ? "Close" : "Update"} ${account.nickname}`}
+            className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink"
+          >
+            {open ? "Close" : "Update"}
+          </button>
+        </span>
+      </div>
+
+      {open ? (
+        <div className="mb-14 flex flex-col gap-18 rounded-panel border-panel border-ink p-18">
+          <form
+            noValidate
+            className="flex flex-wrap items-end gap-12"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const value = Number(draft);
+              if (draft.trim() === "" || Number.isNaN(value)) {
+                showToast("Enter a valid balance");
+                return;
+              }
+              updateBalance.mutate(value);
+            }}
+          >
+            <div className="min-w-[200px] flex-1">
+              <label htmlFor={`balance-${account._id}`} className="sr-only">
+                Update balance for {account.nickname}
+              </label>
+              <MoneyInput
+                id={`balance-${account._id}`}
+                placeholder={isCard ? "Amount owed today" : "Balance today"}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+              />
+            </div>
+            <Button type="submit" size="sm" busy={updateBalance.isPending}>
+              Update
+            </Button>
+          </form>
+
+          <Helper>
+            {isCard
+              ? "Enter what you owe as a positive number — it is subtracted from net worth either way."
+              : "Each update is kept, so the line below is your real balance history."}
+          </Helper>
+
+          <div>
+            <SectionLabel>§ Balance history</SectionLabel>
+            {history.isLoading ? (
+              <Skeleton className="mt-12 h-[28px] w-full rounded-sm opacity-40" />
+            ) : history.isError ? (
+              <Helper className="mt-8">Could not load the history for this account.</Helper>
+            ) : series.length === 0 ? (
+              <Helper className="mt-8">
+                Nothing recorded yet. The next update you make starts the line.
+              </Helper>
+            ) : (
+              <>
+                {series.length > 1 ? (
+                  <Sparkline
+                    className="mt-12"
+                    values={series.map((s) => s.balance)}
+                    label={`Balance from ${formatInr(series[0].balance)} on ${formatDate(
+                      series[0].date
+                    )} to ${formatInr(series[series.length - 1].balance)} on ${formatDate(
+                      series[series.length - 1].date
+                    )}`}
+                  />
+                ) : null}
+                <ul className="m-0 mt-12 flex list-none flex-col p-0">
+                  {series
+                    .slice()
+                    .reverse()
+                    .slice(0, 6)
+                    .map((snapshot) => (
+                      <li
+                        key={snapshot._id}
+                        className="flex items-baseline justify-between gap-14 border-t border-rule py-8"
+                      >
+                        <span className="font-num text-micro uppercase tracking-micro text-dim">
+                          {formatDate(snapshot.date)}
+                        </span>
+                        <Amount>{formatInr(snapshot.balance)}</Amount>
+                      </li>
+                    ))}
+                </ul>
+              </>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              if (
+                window.confirm(
+                  `Delete "${account.nickname}"? Its transactions stay, but this cannot be undone.`
+                )
+              ) {
+                remove.mutate();
+              }
+            }}
+            disabled={remove.isPending}
+            className="self-start rounded-xs bg-transparent p-0 font-sans text-caption text-alert underline underline-offset-[3px] disabled:opacity-[.55]"
+          >
+            Delete this account
+          </button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Add
+// ═══════════════════════════════════════════════════════════════════════════
+
+function AddAccountPanel() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [form, setForm] = useState({
     type: "bank" as AccountType,
     institution: "",
@@ -63,246 +389,107 @@ export default function AccountsPage() {
     currentBalance: "",
   });
 
-  const createMutation = useMutation({
+  const create = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
       apiFetch<Account>("/accounts", { method: "POST", body: JSON.stringify(payload) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       setForm({ type: "bank", institution: "", nickname: "", currentBalance: "" });
-      showToast("Account created", "success");
+      showToast("Account added", "success");
     },
-    onError: () => showToast("Failed to create account", "error"),
+    onError: () => showToast("Could not create that account", "error"),
   });
-
-  function submitCreateAccount() {
-    if (!form.institution.trim()) {
-      showToast("Enter an institution name");
-      return;
-    }
-    if (!form.nickname.trim()) {
-      showToast("Enter a nickname");
-      return;
-    }
-    const startingBalance = Number(form.currentBalance);
-    if (form.currentBalance.trim() === "" || Number.isNaN(startingBalance)) {
-      showToast("Enter a valid starting balance");
-      return;
-    }
-    createMutation.mutate({
-      type: form.type,
-      institution: form.institution,
-      nickname: form.nickname,
-      currentBalance: startingBalance,
-    });
-  }
-
-  // Per-account draft input for the "update balance" field, keyed by
-  // account id, so editing one account's balance never clobbers another's.
-  const [balanceDrafts, setBalanceDrafts] = useState<Record<string, string>>({});
-  const [historyAccountId, setHistoryAccountId] = useState<string | null>(null);
-
-  const { data: history, isLoading: isHistoryLoading } = useQuery({
-    queryKey: ["balance-history", historyAccountId],
-    queryFn: () => apiFetch<BalanceSnapshot[]>(`/accounts/${historyAccountId}/balance-history`),
-    enabled: !!historyAccountId,
-  });
-
-  const updateBalanceMutation = useMutation({
-    mutationFn: ({ id, balance }: { id: string; balance: number }) =>
-      apiFetch<Account>(`/accounts/${id}/balance`, {
-        method: "POST",
-        body: JSON.stringify({ balance }),
-      }),
-    onSuccess: (_data, variables) => {
-      // A single POST /accounts/:id/balance call both updates the account's
-      // currentBalance AND appends a BalanceSnapshot on the backend (Task 9),
-      // so both caches need to be invalidated from this one mutation.
-      queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      queryClient.invalidateQueries({ queryKey: ["balance-history", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      setBalanceDrafts((prev) => ({ ...prev, [variables.id]: "" }));
-      showToast("Balance updated", "success");
-    },
-    onError: () => showToast("Failed to update balance", "error"),
-  });
-
-  function submitBalanceUpdate(accountId: string) {
-    const raw = balanceDrafts[accountId] ?? "";
-    const balance = Number(raw);
-    if (raw.trim() === "" || Number.isNaN(balance)) {
-      showToast("Enter a valid balance");
-      return;
-    }
-    updateBalanceMutation.mutate({ id: accountId, balance });
-  }
-
-  const accountsByType = new Map<AccountType, Account[]>();
-  for (const account of accounts ?? []) {
-    const bucket = accountsByType.get(account.type) ?? [];
-    bucket.push(account);
-    accountsByType.set(account.type, bucket);
-  }
 
   return (
-    <ProtectedLayout>
-      <h1 className="mb-6 text-2xl font-semibold">Accounts</h1>
+    <Panel>
+      <PanelHeader title="§ Add an account" />
+      <form
+        noValidate
+        className="flex flex-col gap-14"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!form.institution.trim()) {
+            showToast("Enter the institution");
+            return;
+          }
+          if (!form.nickname.trim()) {
+            showToast("Give it a nickname");
+            return;
+          }
+          const balance = Number(form.currentBalance);
+          if (form.currentBalance.trim() === "" || Number.isNaN(balance)) {
+            showToast("Enter a valid starting balance");
+            return;
+          }
+          create.mutate({
+            type: form.type,
+            institution: form.institution.trim(),
+            nickname: form.nickname.trim(),
+            currentBalance: balance,
+          });
+        }}
+      >
+        <Field
+          id="acct-type"
+          label="Type"
+          helper={TYPE_META[form.type].note}
+        >
+          <Select
+            id="acct-type"
+            value={form.type}
+            onChange={(e) => setForm({ ...form, type: e.target.value as AccountType })}
+          >
+            {TYPE_ORDER.map((type) => (
+              <option key={type} value={type}>
+                {TYPE_META[type].label}
+              </option>
+            ))}
+          </Select>
+        </Field>
 
-      <Card className="mb-6">
-        <p className="mb-3 font-medium">Add Account</p>
-        <div className="flex flex-col gap-3">
-          <label htmlFor="acct-type" className="text-sm">
-            Type
-            <select
-              id="acct-type"
-              className="mt-1 w-full rounded border px-3 py-2"
-              value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value as AccountType })}
-            >
-              <option value="bank">Bank</option>
-              <option value="credit_card">Credit Card</option>
-              <option value="ppf">PPF</option>
-              <option value="cash">Cash</option>
-            </select>
-          </label>
-          <label htmlFor="acct-institution" className="text-sm">
-            Institution
+        <FieldGrid>
+          <Field id="acct-institution" label="Institution">
             <Input
               id="acct-institution"
-              className="mt-1 w-full"
+              placeholder="HDFC Bank"
               value={form.institution}
               onChange={(e) => setForm({ ...form, institution: e.target.value })}
             />
-          </label>
-          <label htmlFor="acct-nickname" className="text-sm">
-            Nickname
+          </Field>
+          <Field id="acct-nickname" label="Nickname">
             <Input
               id="acct-nickname"
-              className="mt-1 w-full"
+              placeholder="Salary account"
               value={form.nickname}
               onChange={(e) => setForm({ ...form, nickname: e.target.value })}
             />
-          </label>
-          <label htmlFor="acct-balance" className="text-sm">
-            Starting Balance
-            <Input
-              id="acct-balance"
-              className="mt-1 w-full"
-              type="number"
-              value={form.currentBalance}
-              onChange={(e) => setForm({ ...form, currentBalance: e.target.value })}
-            />
-          </label>
-          <Button onClick={submitCreateAccount} disabled={createMutation.isPending}>
+          </Field>
+        </FieldGrid>
+
+        <Field
+          id="acct-balance"
+          label="Starting Balance"
+          helper={
+            form.type === "credit_card"
+              ? "What you owe on it right now, as a positive number."
+              : "What is in it right now."
+          }
+        >
+          <MoneyInput
+            id="acct-balance"
+            placeholder="0"
+            value={form.currentBalance}
+            onChange={(e) => setForm({ ...form, currentBalance: e.target.value })}
+          />
+        </Field>
+
+        <FormActions>
+          <Button type="submit" busy={create.isPending}>
             Add Account
           </Button>
-        </div>
-      </Card>
-
-      {isLoading ? (
-        <p className="text-sm text-gray-500">Loading...</p>
-      ) : isError ? (
-        <p className="text-sm text-red-600">Could not load accounts. Please try again shortly.</p>
-      ) : (accounts ?? []).length === 0 ? (
-        <p className="text-sm text-gray-500">No accounts yet.</p>
-      ) : (
-        <div className="flex flex-col gap-8">
-          {TYPE_GROUPS.filter((group) => (accountsByType.get(group.type) ?? []).length > 0).map(
-            (group) => (
-              <div key={group.type}>
-                <h2 className="mb-3 text-lg font-medium">{group.label}</h2>
-                <div className="flex flex-col gap-4">
-                  {(accountsByType.get(group.type) ?? []).map((a) => {
-                    const isHistoryOpen = historyAccountId === a._id;
-                    const balanceDraft = balanceDrafts[a._id] ?? "";
-                    return (
-                      <Card key={a._id}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="font-medium">{a.nickname}</p>
-                            <p className="text-sm text-gray-500">{a.institution}</p>
-                          </div>
-                          <div className="text-right">
-                            <p
-                              className={
-                                a.isLiability
-                                  ? "font-semibold text-red-600"
-                                  : "font-semibold text-green-700"
-                              }
-                            >
-                              {formatInr(a.currentBalance)}
-                            </p>
-                            {a.isLiability && <p className="text-xs text-red-600">Liability</p>}
-                          </div>
-                        </div>
-                        <div className="mt-3 flex items-center gap-2">
-                          <label htmlFor={`balance-${a._id}`} className="sr-only">
-                            Update balance for {a.nickname}
-                          </label>
-                          <Input
-                            id={`balance-${a._id}`}
-                            className="flex-1"
-                            type="number"
-                            placeholder="New balance"
-                            value={balanceDraft}
-                            onChange={(e) =>
-                              setBalanceDrafts((prev) => ({ ...prev, [a._id]: e.target.value }))
-                            }
-                          />
-                          <Button
-                            onClick={() => submitBalanceUpdate(a._id)}
-                            disabled={updateBalanceMutation.isPending}
-                          >
-                            Update
-                          </Button>
-                          <Button
-                            className="bg-gray-400"
-                            onClick={() => setHistoryAccountId(isHistoryOpen ? null : a._id)}
-                          >
-                            {isHistoryOpen ? "Hide History" : "View History"}
-                          </Button>
-                        </div>
-                        {isHistoryOpen && (
-                          <div className="mt-3">
-                            {isHistoryLoading ? (
-                              <p className="text-sm text-gray-500">Loading history...</p>
-                            ) : (history ?? []).length === 0 ? (
-                              <p className="text-sm text-gray-500">No balance history yet.</p>
-                            ) : (
-                              <table className="w-full text-sm">
-                                <thead>
-                                  <tr>
-                                    <th className="text-left font-medium text-gray-500">Date</th>
-                                    <th className="text-left font-medium text-gray-500">Balance</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {(history ?? [])
-                                    .slice()
-                                    .sort(
-                                      (x, y) =>
-                                        new Date(y.date).getTime() - new Date(x.date).getTime()
-                                    )
-                                    .map((h) => (
-                                      <tr key={h._id}>
-                                        <td>{new Date(h.date).toLocaleDateString()}</td>
-                                        <td>{formatInr(h.balance)}</td>
-                                      </tr>
-                                    ))}
-                                </tbody>
-                              </table>
-                            )}
-                          </div>
-                        )}
-                      </Card>
-                    );
-                  })}
-                </div>
-              </div>
-            )
-          )}
-        </div>
-      )}
-    </ProtectedLayout>
+        </FormActions>
+      </form>
+    </Panel>
   );
 }

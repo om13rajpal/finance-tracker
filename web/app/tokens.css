@@ -1,0 +1,281 @@
+/* ─────────────────────────────────────────────────────────────────────
+   GENERATED FILE — DO NOT EDIT.
+   Source: docs/design/brand-kit/tokens.css
+   Regenerate: pnpm --filter web sync:tokens
+   ───────────────────────────────────────────────────────────────────── */
+
+/* @moodforge
+schema: 1.0
+round: 4
+phase: brand-kit
+worker: moodforge-brand-architect
+theme: sorted
+version: v1
+created_at: 2026-08-30T00:00:00Z
+sha256: e6adf1329bb6f2a46f82c2b06c8bef4f332ac10d2747da5d34125872b49e11c0
+artifact_role: tokens
+exports: [colors, chips, typography, type-scale, spacing, stroke, radius, motion]
+palette: [#FAF5F2, #1A1A1A, #E2D8D0, #7D7169, #6B5F57, #F9ACCE, #F1A007, #23B471, #5483D3, #8A4BD1, #C43C63, #14199C, #A61B2B, #FCE4CA, #F1E8E2]
+fonts: [Bricolage Grotesque 800, Geist 400/500/600, Geist Mono 500]
+summary: Sorted production CSS custom properties — 15 colours (6 of them the chip taxonomy), 12 type levels, 14 spacing rungs, 7 stroke weights, 7 radii, 3 easings, 7 durations. Every ratio in the comments was computed, not estimated.
+*/
+
+/* ══════════════════════════════════════════════════════════════════════
+   SORTED · design tokens
+   Drop this file in once, above everything else. Nothing in the product
+   should contain a hex value, a cubic-bezier, or a bare pixel radius.
+   Contrast ratios in the comments are measured (WCAG 2.1 relative
+   luminance) — see docs/design/brand-kit/README.md for the full matrix.
+   ══════════════════════════════════════════════════════════════════════ */
+
+@font-face { font-family: 'Bricolage Grotesque'; font-display: swap; src: local('Bricolage Grotesque'); }
+
+:root {
+
+  /* ── surface ────────────────────────────────────────────────────────
+     Warm cream is load-bearing. A cold blue-on-white SaaS base is an
+     explicit anti-pattern for this product. */
+  --bg:        #FAF5F2;  /* the canvas. Every screen starts here.            */
+  --ink:       #1A1A1A;  /* text, borders, the one fill. 16.08:1 on --bg     */
+  --rule:      #E2D8D0;  /* 1px row dividers. 1.30:1 — decorative only,      */
+                         /* never a component boundary, never carries state. */
+  --ink-wash:  #F1E8E2;  /* nav row hover/active fill. 1.12:1 on --bg —      */
+                         /* a whisper, not a surface. Ink on it: 14.40:1     */
+  --hero-field:#FCE4CA;  /* the login hero panel only. Ink on it: 14.16:1    */
+
+  /* ── secondary text · READ THIS BEFORE YOU PICK ONE ─────────────────
+     These two are NOT interchangeable. The split is the single most
+     misusable thing in the system.
+
+       --dim    4.37:1  FAILS AA at body size.
+                Permitted ONLY on mono micro-labels: uppercase, >=0.13em
+                tracking, at --type-micro / --type-label / --type-meta.
+                Those are glanced, not read, and the tracking buys back
+                the legibility the ratio loses. Never on a sentence.
+
+       --dim-2  5.71:1  PASSES AA at every size.
+                REQUIRED for any secondary text a person actually reads:
+                helper copy, sub-headings, notice detail, empty-state
+                sentences, nav labels, table meta prose.
+
+     If you are about to set --dim on something with a verb in it, you
+     want --dim-2. */
+  --dim:       #7D7169;
+  --dim-2:     #6B5F57;
+
+  /* ── the four-bucket taxonomy ───────────────────────────────────────
+     Colour is for the CLOSED set; language is for the unbounded one.
+     These are the four literal values of CategoryNode.bucket. They are
+     fixed in the API type, so a chip can always be assigned honestly —
+     never guessed. Category NAMES are user-defined, unbounded and of
+     arbitrary depth, so they carry in text, never in colour.
+
+     All 6 pairs satisfy the separation rule (>=45deg hue OR >=25pt L),
+     and every pair passes on HUE ALONE. Tightest gap is 65deg.
+     Every bucket is textSafe (>=4.5:1) — the retired six-chip set was
+     not, which is why its icons were load-bearing. Here the icon
+     reinforces rather than rescues, but it is still always present.
+
+     Replaces the invented six-category set (food/bills/invest/
+     transport/shopping/health), which had no counterpart in the data
+     model. See docs round12-taxonomy. */
+  --bucket-fixed:     #F1A007;  /* fixed_costs · H39  S94 L49 · ink 8.10:1 */
+  --bucket-invest:    #23B471;  /* investments · H152 S67 L42 · ink 6.50:1 */
+  --bucket-savings:   #5483D3;  /* savings     · H218 S59 L58 · ink 4.61:1 */
+  --bucket-guiltfree: #F9ACCE;  /* guilt_free  · H334 S87 L83 · ink 9.80:1 · the hero bucket */
+
+  /* ── direction · for rows that have no bucket ───────────────────────
+     RecurringItem has no category, and income has no destination
+     bucket. Both use a hollow chip with an arrow, never a fill.
+     Chips never guess. */
+  --direction-stroke: var(--ink);
+
+  /* ── system colours · never a category ──────────────────────────────
+     These two are reserved. A chip may never be assigned either one, and
+     neither may ever be used decoratively. */
+  --focus:     #14199C;  /* 11.77:1 on --bg. See --focus-ring rules below. */
+  --alert:     #A61B2B;  /* 6.90:1 on --bg. Cream on it: 6.90:1.           */
+
+  /* ── typefaces ──────────────────────────────────────────────────────
+     Three roles, no overlap. --disp is never used below 22px. --num is
+     used for every rupee figure without exception, so amounts align in
+     a column and the eye can scan a ledger vertically. */
+  --disp: "Bricolage Grotesque", "Geist", system-ui, sans-serif;
+  --ui:   "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --num:  "Geist Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --tracking-disp:  -0.035em;  /* locked. Bricolage 800 needs this or it sprawls. */
+  --tracking-num:   -0.02em;   /* Geist Mono at figure sizes only.               */
+  --tracking-label:  0.16em;   /* mono micro-labels, uppercase.                  */
+  --tracking-micro:  0.13em;   /* row sub-labels, uppercase.                     */
+
+  --weight-disp:     800;
+  --weight-strong:   600;
+  --weight-num:      500;
+  --weight-body:     400;
+
+  /* ── type scale · 12 rungs ──────────────────────────────────────────
+     The two load-bearing rungs are --type-figure-1 (the Guilt-Free
+     number, the emotional centre of the product) and --type-body. */
+  --type-micro:     9.5px;  /* mono, uppercase, --tracking-micro · row sub-labels */
+  --type-label:      10px;  /* mono, uppercase, --tracking-label · section labels  */
+  --type-meta:       11px;  /* mono · section numbers, timestamps                  */
+  --type-caption:  13.5px;  /* ui · notice body, helper copy                       */
+  --type-body-s:   14.5px;  /* ui · row names, nav labels                          */
+  --type-body:       15px;  /* ui · default paragraph                              */
+  --type-input:      16px;  /* ui · form fields. Never below 16 — iOS zooms.       */
+  --type-h3:         22px;  /* disp · panel titles                                 */
+  --type-h2:         26px;  /* disp · dashboard date, module headings              */
+  --type-h1:         40px;  /* disp · page titles, wordmark at small lockup        */
+  --type-figure-2:   52px;  /* num  · Net Worth. The number you admire.            */
+  --type-figure-1:  108px;  /* num  · Guilt-Free Money. The number that changes    */
+                            /*        behaviour. One per screen, never two.        */
+  --type-wordmark:  180px;  /* disp · cover / brand-book lockup only               */
+
+  --leading-tight:  1.05;
+  --leading-snug:   1.25;
+  --leading-body:   1.55;
+
+  /* ── spacing · 2px base, 14 rungs ───────────────────────────────────
+     Two rungs are structural and should be treated as fixed:
+       --sp-14  the row grid gap
+       --sp-22  the panel inner padding */
+  --sp-2:    2px;
+  --sp-4:    4px;
+  --sp-6:    6px;
+  --sp-8:    8px;
+  --sp-10:  10px;
+  --sp-12:  12px;
+  --sp-14:  14px;
+  --sp-18:  18px;
+  --sp-22:  22px;
+  --sp-26:  26px;
+  --sp-32:  32px;
+  --sp-44:  44px;
+  --sp-64:  64px;
+  --sp-96:  96px;
+
+  /* ── stroke ─────────────────────────────────────────────────────────
+     Sorted has no shadows (one documented exception, below). Every edge
+     in the product is a stroke, so these weights carry the whole sense
+     of depth and hierarchy. */
+  --stroke-hair:    1px;    /* row dividers in --rule                          */
+  --stroke-panel:   1.5px;  /* THE structural weight: panels, fields, pills,   */
+                            /* chips, sidebar. If it is a boundary, it is 1.5. */
+  --stroke-tether:  1.6px;  /* the dotted connector. Deliberately 0.1 above    */
+                            /* the panel weight so it reads as drawn, not      */
+                            /* built. dasharray: 4 6, round caps.              */
+  --stroke-icon:    2px;    /* icon glyphs on a 24-unit grid → 1.42px at 17px  */
+  --stroke-focus:   2.5px;  /* focus ring. Never thinner.                      */
+  --stroke-display: 4px;    /* hero chips                                      */
+  --stroke-core:    4.5px;  /* hero rupee core                                 */
+
+  --dash-tether: 4 6;
+
+  /* ── radius ─────────────────────────────────────────────────────────
+     Everything interactive is a pill. Everything containing is 22.
+     There is no sharp corner anywhere in Sorted. */
+  --r-xs:     4px;   /* focus-ring corner on inline text                */
+  --r-sm:    14px;   /* small inline blocks                            */
+  --r-otp:   16px;   /* the six OTP boxes                              */
+  --r-notice:18px;   /* notices                                        */
+  --r-panel: 22px;   /* THE container radius: panels, modules, cards   */
+  --r-card:  26px;   /* outer frames that wrap panels                  */
+  --r-pill:  999px;  /* buttons, fields, chips, budget bars, nav rows   */
+
+  /* ── shadow · the single exception ──────────────────────────────────
+     There are no shadows in Sorted. No blur, no spread, no elevation,
+     no ambient occlusion, nothing that fakes light. The one exception
+     is the stamp: a hard 2px ink offset with zero blur and zero spread,
+     permitted ONLY on the primary pill CTA. It is not a lift. It is a
+     stamp — the button sits on the paper and can be pressed into it.
+     Read --dur-press and the press rule below before you use it. */
+  --stamp:          0 2px 0 var(--ink);
+  --stamp-pressed:  0 0 0 var(--ink);
+  --stamp-offset:   2px;   /* MUST equal the translateY of the press state. */
+
+  /* ── focus ring ─────────────────────────────────────────────────────
+     MEASURED FINDING: --focus against --ink is 1.37:1. A focus ring drawn
+     *inside* or directly against an ink fill is effectively invisible.
+     So the ring is always drawn outside the element, on the cream, where
+     it measures 11.77:1. Always use outline-offset, never an inset ring,
+     and never box-shadow-as-ring on an ink-filled control. */
+  --focus-ring:   var(--stroke-focus) solid var(--focus);
+  --focus-offset: 3px;
+
+  /* ── motion ─────────────────────────────────────────────────────────
+     Three curves. No fourth. No springs, no bounce, no overshoot — the
+     register is playful-premium, and the playfulness lives in the colour
+     taxonomy, not in the timing function. A financial figure that
+     overshoots its final value has lied to the user for 80ms. */
+  --ease-out:    cubic-bezier(.23, 1, .32, 1);    /* enter, press, reveal   */
+  --ease-in-out: cubic-bezier(.77, 0, .175, 1);   /* on-screen movement     */
+  --ease-drawer: cubic-bezier(.32, .72, 0, 1);    /* drawers and sheets     */
+
+  --dur-press:     110ms;  /* stamp press + release                        */
+  --dur-hover:     150ms;  /* colour and background only                   */
+  --dur-tooltip:   160ms;  /* tooltips, small popovers                     */
+  --dur-dropdown:  200ms;  /* selects, menus, chip pickers                 */
+  --dur-drawer:    320ms;  /* with --ease-drawer                           */
+  --dur-modal:     400ms;  /* with --ease-out, origin centre               */
+  --dur-skeleton: 1150ms;  /* the chip-rhythm loading pulse                */
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   THE STAMP PRESS · locked motion rule
+   ══════════════════════════════════════════════════════════════════════
+   Any component carrying --stamp presses by translating down exactly the
+   shadow offset while the shadow collapses to zero, over --dur-press with
+   --ease-out, BOTH PROPERTIES TRANSITIONED TOGETHER.
+
+     NEVER add scale().
+       Scaling a 1.5px hard-edged border alongside a box-shadow collapse
+       desyncs. The shadow repaint and the GPU-composited scale run on
+       different pipelines, so the border appears to shrink or glitch on
+       press instead of reading as one clean motion.
+
+     ALWAYS transition box-shadow with transform.
+       translateY and the shadow offset are complementary: at every frame
+       of a shared curve, translate + offset = 2px, so the shadow's lower
+       edge stays pinned exactly where it started and the button descends
+       into it. Transition transform alone and the shadow snaps to zero on
+       frame 1 — the silhouette jumps 2px shorter, then the button drifts
+       down to meet nothing. That is the flicker. This is the settled
+       answer to the open question, and it ships here.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.stamp {
+  box-shadow: var(--stamp);
+  transition:
+    transform  var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out);
+}
+.stamp:active:not([disabled]) {
+  transform: translateY(var(--stamp-offset));
+  box-shadow: var(--stamp-pressed);
+}
+
+/* ── reduced motion ───────────────────────────────────────────────────
+   Reduced motion means fewer and gentler, not zero. Colour and opacity
+   transitions survive because they aid comprehension. Movement does not.
+   The stamp press keeps its shadow collapse — the state change is still
+   legible — and drops the translate. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-press: 1ms; --dur-tooltip: 1ms; --dur-dropdown: 1ms;
+    --dur-drawer: 1ms; --dur-modal: 1ms;
+    /* --dur-hover survives: a 150ms colour fade is not vestibular motion. */
+  }
+  .stamp:active:not([disabled]) { transform: none; box-shadow: var(--stamp-pressed); }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+
+/* ── global floor ─────────────────────────────────────────────────────
+   Two lines that must be present in the app shell. Focus is visible on
+   every focusable thing, always, and it is offset so it lands on cream. */
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: var(--r-xs);
+}
+::selection { background: var(--bucket-guiltfree); color: var(--ink); }

@@ -1,0 +1,20 @@
+<!-- @moodforge
+schema: 1.0
+round: 12
+phase: brand-kit
+worker: moodforge-queen
+theme: sorted
+version: v1
+created_at: 2026-08-31T03:00:00Z
+sha256: 7b89886f054cf5f74b9994b2c9ee6cc2739b2d5b5d70ed8b11f5a3aec511f96e
+artifact_role: asset-bucket
+summary: Sorted bucket asset — fixed_costs #F1A007. 30px circle, 1.5px ink border, flat fill, a closed padlock: obligations that recur whether you look or not. Ink on fill 8.10:1, textSafe.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" role="img" aria-label="Fixed costs">
+  <circle cx="15" cy="15" r="14.25" fill="#F1A007" stroke="#1A1A1A" stroke-width="1.5"/>
+  <g transform="translate(6.5 6.5) scale(0.708)" fill="none" stroke="#1A1A1A" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4.5" y="10.5" width="15" height="9.5" rx="2.4"/>
+    <path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9"/>
+  </g>
+</svg>
