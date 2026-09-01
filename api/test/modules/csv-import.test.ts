@@ -233,8 +233,12 @@ describe("CSV import", () => {
       .attach("file", Buffer.from(CSV), "statement.csv");
 
     expect(res.status).toBe(200);
-    const tx = await Transaction.findOne({ userId, merchant: "SWIGGY ORDER" });
+    // The stored merchant is the CLEANED "Swiggy", not the raw CSV
+    // "SWIGGY ORDER" — see `cleanMerchantLabel` — but the rule (matchValue
+    // "SWIGGY", case-insensitive `contains`) still matches it either way.
+    const tx = await Transaction.findOne({ userId, merchant: "Swiggy" });
     expect(tx).not.toBeNull();
     expect(tx!.categoryId).toBe("cat-dining");
+    expect(tx!.note).toBe("SWIGGY ORDER");
   });
 });

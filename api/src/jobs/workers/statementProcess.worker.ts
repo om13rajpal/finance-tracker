@@ -13,6 +13,7 @@ import {
 } from "../../modules/statements/statement-row-parser.service.js";
 import { invalidateDashboardCache } from "../../modules/dashboard/dashboard.service.js";
 import { reconcileBalance } from "../../modules/accounts/balance.service.js";
+import { cleanMerchantLabel } from "../../lib/merchant-cleanup.js";
 
 export type StatementProcessJob = {
   batchId: string;
@@ -75,6 +76,73 @@ function latestRowDate(rows: StatementRowResult[]): Date | null {
     if (!latest || date.getTime() > latest.getTime()) latest = date;
   }
   return latest;
+}
+
+/** This statement's own [earliest, latest] row-date span, for the overlap
+ * check against previously-imported statements on the same account (see
+ * `findOverlapWarning`). `null` under the same conditions `latestRowDate`
+ * returns `null` for. */
+function rowDateRange(rows: StatementRowResult[]): { start: Date; end: Date } | null {
+  let start: Date | null = null;
+  let end: Date | null = null;
+  for (const row of rows) {
+    if ("error" in row) continue;
+    const date = new Date(row.date);
+    if (!start || date.getTime() < start.getTime()) start = date;
+    if (!end || date.getTime() > end.getTime()) end = date;
+  }
+  if (!start || !end) return null;
+  return { start, end };
+}
+
+/**
+ * Looks for a previously-imported, still-existing `pdf_statement` batch on
+ * the SAME account whose own `dateRange` overlaps `range` — a genuinely
+ * common scenario (re-downloading a statement, or downloading a fresh one
+ * that covers some of the same days as one already imported), and one that
+ * used to be an unhandled blind spot: the person would only discover the
+ * overlap row-by-row, once they got to reviewing/confirming, via a 409 or a
+ * bulk-confirm skip. This surfaces it up front instead, on the batch itself.
+ *
+ * Deliberately excludes `currentBatchId` (a retry of THIS job re-parses the
+ * same bytes and would otherwise "overlap" its own prior partial attempt)
+ * and any batch with no stored `dateRange` (predates this field, or itself
+ * had no dateable rows — nothing to compare against, not a reason to warn).
+ * Picks the LARGEST overlap when more than one prior batch qualifies, since
+ * that's the one most worth calling out.
+ */
+async function findOverlapWarning(
+  userId: string,
+  accountId: string,
+  currentBatchId: string,
+  range: { start: Date; end: Date }
+): Promise<string | null> {
+  const priorBatches = await ImportBatch.find({
+    userId,
+    accountId,
+    source: "pdf_statement",
+    _id: { $ne: currentBatchId },
+    dateRange: { $ne: null },
+  })
+    .select("filename dateRange")
+    .lean();
+
+  let best: { filename: string; overlapDays: number } | null = null;
+  for (const prior of priorBatches) {
+    const priorRange = prior.dateRange as { start: Date; end: Date } | null;
+    if (!priorRange) continue;
+    const overlapStart = Math.max(range.start.getTime(), priorRange.start.getTime());
+    const overlapEnd = Math.min(range.end.getTime(), priorRange.end.getTime());
+    if (overlapStart > overlapEnd) continue; // no overlap
+    const overlapDays = Math.max(1, Math.round((overlapEnd - overlapStart) / (24 * 60 * 60 * 1000)) + 1);
+    if (!best || overlapDays > best.overlapDays) {
+      best = { filename: prior.filename, overlapDays };
+    }
+  }
+
+  if (!best) return null;
+  const dayWord = best.overlapDays === 1 ? "day" : "days";
+  return `Overlaps about ${best.overlapDays} ${dayWord} with an already-imported statement ("${best.filename}") — some rows below may turn out to be duplicates.`;
 }
 
 const MISMATCH_TOLERANCE = 0.01;
@@ -186,6 +254,13 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
   // reconciled) can never regress a more current balance. `null` when there are
   // no dateable rows at all (see `latestRowDate`'s doc comment).
   const asOfDate = latestRowDate(rows);
+  // This statement's own date span + whether it overlaps a previously-
+  // imported statement on the same account — see `findOverlapWarning`.
+  // Computed once, up front (before the chunk loop below, which can take a
+  // while on a large statement), on the reasoning that a retry re-parses
+  // the exact same deterministic bytes into the exact same range either way.
+  const dateRange = rowDateRange(rows);
+  const overlapWarning = dateRange ? await findOverlapWarning(userId, accountId, batchId, dateRange) : null;
   // Pair each row with its 1-based row number up front (rather than
   // `rows.indexOf(row)` inside the loop below) so numbering a chunk stays
   // O(chunk size), not O(n) per row / O(n^2) per statement.
@@ -232,6 +307,14 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
         continue;
       }
 
+      // Raw statement narration ("UPI/DR/103523751353/NETFLIX/HDFC/netflix.bd/
+      // Execu...") is technically correct but unreadable — `cleanMerchantLabel`
+      // turns it into a short display name ("Netflix"). The original text is
+      // never discarded: it moves into `note` whenever the parser left that
+      // empty (true for every bank-specific parser today), so nothing is lost,
+      // it's just not what's shown by default. A parser that DOES populate its
+      // own `note` (carrying real information, not narration) keeps it as-is.
+      const cleanedMerchant = cleanMerchantLabel(row.merchant);
       docsToInsert.push({
         row: rowNumber,
         doc: {
@@ -240,8 +323,8 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
           categoryId: null,
           amount: row.amount,
           date,
-          note: row.note,
-          merchant: row.merchant,
+          note: row.note || row.merchant,
+          merchant: cleanedMerchant || row.merchant,
           source: "pdf_statement_parsed",
         },
       });
@@ -326,6 +409,8 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
     closingBalance,
     expectedClosingBalance,
     closingBalanceMismatch,
+    dateRange,
+    overlapWarning,
   });
   await cleanupTempFile(filePath);
   // Deliberately no cleanup on a thrown error above (a chunk's DB write

@@ -8,6 +8,7 @@ import { applyCategorizationRules } from "../../categorization/categorization.en
 import { parseGenericBankCsv } from "./parsers/genericBank.parser.js";
 import { invalidateDashboardCache } from "../../dashboard/dashboard.service.js";
 import { applyBalanceDelta } from "../../accounts/balance.service.js";
+import { cleanMerchantLabel } from "../../../lib/merchant-cleanup.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 export const csvImportRouter = Router();
@@ -39,15 +40,24 @@ csvImportRouter.post("/import", upload.single("file"), async (req, res, next) =>
         continue;
       }
 
-      const categoryId = await applyCategorizationRules(userId, { merchant: row.merchant, note: row.note });
+      // Same cleanup as the PDF-statement path (see `cleanMerchantLabel`'s
+      // doc comment) — a generic bank CSV's "Description" column is exactly
+      // as noisy as PDF narration, since it's the same underlying bank
+      // export. Categorization matches against the CLEANED merchant, not
+      // the raw text, so a rule created from what the person actually sees
+      // (via the Categorize popup, pre-filled from this same field) keeps
+      // matching consistently on future imports too.
+      const cleanedMerchant = cleanMerchantLabel(row.merchant) || row.merchant;
+      const noteWithRaw = row.note || row.merchant;
+      const categoryId = await applyCategorizationRules(userId, { merchant: cleanedMerchant, note: noteWithRaw });
       const transaction = await Transaction.create({
         userId,
         accountId,
         categoryId,
         amount: row.amount,
         date,
-        merchant: row.merchant,
-        note: row.note,
+        merchant: cleanedMerchant,
+        note: noteWithRaw,
         source: "csv_import",
         status: "confirmed",
       });
@@ -60,6 +70,7 @@ csvImportRouter.post("/import", upload.single("file"), async (req, res, next) =>
 
     const batch = await ImportBatch.create({
       userId,
+      accountId,
       source: "bank_statement",
       filename: req.file.originalname,
       rowResults,

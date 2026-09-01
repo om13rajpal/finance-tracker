@@ -195,6 +195,31 @@ describe("recurring transactions API", () => {
     expect(listAfter.body).toHaveLength(0);
   });
 
+  it("GET /recurring/suggestions surfaces a detected pattern from real transaction history", async () => {
+    const cookie = authCookie("user-suggestions");
+    for (let i = 0; i < 4; i++) {
+      await Transaction.create({
+        userId: "user-suggestions",
+        accountId: "acc-1",
+        amount: -199,
+        date: new Date(Date.UTC(2026, i, 23)),
+        merchant: "Netflix",
+        source: "pdf_statement_parsed",
+        status: "confirmed",
+      });
+    }
+
+    const res = await request(app).get("/recurring/suggestions").set("Cookie", cookie);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toMatchObject({ merchant: "Netflix", frequency: "monthly", amount: 199 });
+  });
+
+  it("GET /recurring/suggestions requires auth", async () => {
+    const res = await request(app).get("/recurring/suggestions");
+    expect(res.status).toBe(401);
+  });
+
   it("rejects unauthenticated requests", async () => {
     const res = await request(app).get("/recurring/upcoming");
     expect(res.status).toBe(401);

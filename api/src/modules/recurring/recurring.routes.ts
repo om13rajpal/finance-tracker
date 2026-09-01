@@ -3,9 +3,22 @@ import { z } from "zod";
 import { requireAuth } from "../auth/auth.middleware.js";
 import { RecurringTransaction } from "../../models/RecurringTransaction.js";
 import { invalidateDashboardCache } from "../dashboard/dashboard.service.js";
+import { detectRecurringSuggestions } from "./recurring-detection.service.js";
 
 export const recurringRouter = Router();
 recurringRouter.use(requireAuth);
+
+// Mounted before "/:id"-shaped routes further down would ever get a chance
+// to swallow it (there are none above this line, but this route itself must
+// stay above any future `/:id` route for the same reason `/upcoming` does).
+recurringRouter.get("/suggestions", async (req, res, next) => {
+  try {
+    const suggestions = await detectRecurringSuggestions((req as any).userId);
+    res.json(suggestions);
+  } catch (err) {
+    next(err);
+  }
+});
 
 recurringRouter.get("/upcoming", async (req, res, next) => {
   try {

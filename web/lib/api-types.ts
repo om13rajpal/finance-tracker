@@ -77,6 +77,16 @@ export interface PendingTransaction {
   note?: string;
   merchant?: string;
   source: "email_parsed" | "pdf_statement_parsed";
+  /**
+   * True when a confirmed Transaction already exists on the same account,
+   * for the same amount, within 2 days of this row's date — the same check
+   * `POST /:id/confirm` and `/bulk-confirm` apply before filing anything,
+   * surfaced here up front so the review queue itself can show it instead of
+   * the person only discovering it via a skip/409 after trying to confirm.
+   * Always `false` for a row with no `accountId` yet (nothing to check
+   * against).
+   */
+  possibleDuplicate: boolean;
 }
 
 export interface ImportBatchResult {
@@ -95,6 +105,14 @@ export interface ImportBatchResult {
    */
   status: "processing" | "completed" | "failed";
   error: string | null;
+  /**
+   * Non-blocking heads-up: this statement's own date range overlaps an
+   * already-imported statement on the same account (a common, ordinary
+   * scenario — re-downloading one, or downloading a newer one that covers
+   * some of the same days). `null` when no overlap was found, or for a
+   * source other than `pdf_statement`.
+   */
+  overlapWarning?: string | null;
 }
 
 /** The immediate response from `POST /transactions/import-pdf` — enqueues a
@@ -131,6 +149,42 @@ export interface CategorizationRule {
   categoryId: string;
   /** Lower runs first. First match wins. */
   priority: number;
+}
+
+/**
+ * A merchant that keeps showing up without a category (3+ times, across the
+ * pending queue and/or already-confirmed transactions) and has no existing
+ * rule that would already match it. `pendingIds`/`transactionIds` are the
+ * EXACT items behind `count` — accepting a suggestion (`POST
+ * /categorization-rules` with `applyToPendingIds`/`applyToTransactionIds`)
+ * categorizes only these specific items, never a broader retroactive sweep.
+ */
+export interface CategorizationSuggestion {
+  key: string;
+  merchant: string;
+  count: number;
+  pendingIds: string[];
+  transactionIds: string[];
+}
+
+/**
+ * A (account, merchant) pair that repeats at a regular interval in confirmed
+ * transaction history and isn't already tracked as a `RecurringItem` — see
+ * `GET /recurring/suggestions`. Nothing persists this; accepting one just
+ * means calling `POST /recurring` with these fields pre-filled.
+ */
+export interface RecurringSuggestion {
+  key: string;
+  merchant: string;
+  accountId: string;
+  type: RecurringType;
+  amount: number;
+  frequency: Frequency;
+  nextDueDate: string;
+  occurrenceCount: number;
+  firstSeen: string;
+  lastSeen: string;
+  categoryId: string | null;
 }
 
 // ── dashboard ──────────────────────────────────────────────────────────────

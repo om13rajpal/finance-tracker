@@ -57,6 +57,35 @@ const importBatchSchema = new Schema({
   // parser, or the statement had no closing balance to compare against at all.
   expectedClosingBalance: { type: Number, default: null },
   closingBalanceMismatch: { type: Boolean, default: false },
+  // The account this batch's rows belong to. `null` for batches created
+  // before this field existed — those are simply never checked for overlap
+  // (see `overlapWarning` below) or matched against by a later import; they
+  // aren't retroactively backfilled. Set for every NEW pdf_statement batch
+  // (`statement-upload.routes.ts`) and bank_statement CSV batch
+  // (`csv-import.routes.ts`).
+  accountId: { type: String, default: null },
+  // This statement's own date span, derived from its successfully-parsed
+  // rows' dates (min/max) — `null` when there were no dateable rows at all,
+  // or for a batch predating this field. Used only to detect overlap with
+  // another statement already imported for the SAME account (see
+  // `overlapWarning`); never used for anything balance- or transaction-
+  // affecting.
+  dateRange: {
+    type: new Schema({ start: { type: Date, required: true }, end: { type: Date, required: true } }, { _id: false }),
+    default: null,
+  },
+  // Non-blocking, informational: set when this batch's `dateRange` overlaps
+  // an already-imported, still-existing `pdf_statement` batch for the same
+  // account — a real, common scenario (re-downloading a statement, or
+  // downloading a fresh one that covers some of the same days as one
+  // already imported). Naming which prior file and how much it overlaps by,
+  // so the person knows to expect some of this batch's rows to look like
+  // duplicates of already-confirmed transactions (flagged individually via
+  // `GET /pending-transactions`'s `possibleDuplicate`) or of each other's
+  // still-pending rows once they get to reviewing them. `null` when no
+  // overlap was found, there was no dateable row to compare, or no prior
+  // batch for this account has a stored `dateRange` to compare against.
+  overlapWarning: { type: String, default: null },
 });
 
 export const ImportBatch = model("ImportBatch", importBatchSchema);

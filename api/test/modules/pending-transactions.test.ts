@@ -29,6 +29,58 @@ describe("pending transactions", () => {
     expect(res.body).toHaveLength(1);
   });
 
+  it("flags a pending row as possibleDuplicate when a confirmed Transaction already matches it, and leaves an unmatched one unflagged", async () => {
+    const userId = "user-pending-dup-flag";
+    const cookie = authCookie(userId);
+
+    await Transaction.create({
+      userId,
+      accountId: "acc-1",
+      amount: -199,
+      date: new Date("2026-08-10"),
+      merchant: "Netflix",
+      source: "manual",
+      status: "confirmed",
+    });
+
+    await PendingTransaction.create({
+      userId,
+      accountId: "acc-1",
+      amount: -199,
+      date: new Date("2026-08-11"), // within the 2-day window
+      merchant: "Netflix",
+      source: "pdf_statement_parsed",
+    });
+    await PendingTransaction.create({
+      userId,
+      accountId: "acc-1",
+      amount: -450,
+      date: new Date("2026-08-11"),
+      merchant: "Zepto",
+      source: "pdf_statement_parsed",
+    });
+    // No accountId yet — must never be flagged (nothing to check it against).
+    await PendingTransaction.create({
+      userId,
+      accountId: null,
+      amount: -199,
+      date: new Date("2026-08-11"),
+      merchant: "Netflix",
+      source: "email_parsed",
+    });
+
+    const res = await request(app).get("/pending-transactions").set("Cookie", cookie);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(3);
+
+    const byMerchantAndAccount = (merchant: string, hasAccount: boolean) =>
+      res.body.find((i: any) => i.merchant === merchant && (hasAccount ? i.accountId !== null : i.accountId === null));
+
+    expect(byMerchantAndAccount("Netflix", true).possibleDuplicate).toBe(true);
+    expect(byMerchantAndAccount("Zepto", true).possibleDuplicate).toBe(false);
+    expect(byMerchantAndAccount("Netflix", false).possibleDuplicate).toBe(false);
+  });
+
   it("does not list another user's pending transactions", async () => {
     await PendingTransaction.create({
       userId: "user-a",

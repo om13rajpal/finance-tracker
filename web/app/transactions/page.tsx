@@ -12,6 +12,7 @@ import {
 import { API_BASE, ApiError, apiFetch } from "@/lib/api-client";
 import type {
   Account,
+  CategorizationSuggestion,
   CategoryNode,
   ImportBatchResult,
   ImportPdfEnqueuedResult,
@@ -113,6 +114,10 @@ export default function TransactionsPage() {
     queryKey: ["pending-transactions"],
     queryFn: () => apiFetch<PendingTransaction[]>("/pending-transactions"),
   });
+  const categorizationSuggestions = useQuery({
+    queryKey: ["categorization-suggestions"],
+    queryFn: () => apiFetch<CategorizationSuggestion[]>("/categorization-rules/suggestions"),
+  });
 
   const index = useMemo(() => indexCategories(categories.data), [categories.data]);
   const flatCategories = useMemo(() => flattenCategories(categories.data), [categories.data]);
@@ -154,6 +159,14 @@ export default function TransactionsPage() {
 
       <div className="grid items-start gap-22 xl:grid-cols-[7fr_5fr]">
         <div className="flex min-w-0 flex-col gap-22">
+          {(categorizationSuggestions.data?.length ?? 0) > 0 ? (
+            <CategorizationSuggestionsPanel
+              suggestions={categorizationSuggestions.data ?? []}
+              categories={flatCategories}
+              index={index}
+            />
+          ) : null}
+
           {(pending.data?.length ?? 0) > 0 ? (
             <PendingPanel
               items={pending.data ?? []}
@@ -571,6 +584,120 @@ function TransactionRow({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// Suggested rules — a merchant that keeps showing up uncategorized
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Categorization here has always been 100% reactive — a rule only ever
+ * applies going forward, to whatever gets confirmed or imported AFTER it's
+ * created (see `categorization.engine.ts`). Nothing used to notice when the
+ * SAME merchant kept landing uncategorized over and over, which is exactly
+ * the pattern a rule exists to solve. `GET /categorization-rules/suggestions`
+ * finds those merchants; accepting one here creates the rule AND applies it
+ * to exactly the items that prompted the suggestion (`applyToPendingIds` /
+ * `applyToTransactionIds`) — a deliberate, visible, one-time action, not a
+ * silent retroactive sweep over everything else that merchant ever touched.
+ */
+function CategorizationSuggestionsPanel({
+  suggestions,
+  categories,
+  index,
+}: {
+  suggestions: CategorizationSuggestion[];
+  categories: { node: CategoryNode; depth: number }[];
+  index: CategoryIndex;
+}) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [chosenCategory, setChosenCategory] = useState<Record<string, string>>({});
+
+  const accept = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiFetch("/categorization-rules", { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: (_data, payload) => {
+      queryClient.invalidateQueries({ queryKey: ["categorization-suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["categorization-rules"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      const count =
+        ((payload as { applyToPendingIds?: string[] }).applyToPendingIds?.length ?? 0) +
+        ((payload as { applyToTransactionIds?: string[] }).applyToTransactionIds?.length ?? 0);
+      showToast(`Categorized ${count} and saved the rule for next time`, "success");
+    },
+    onError: () => showToast("Could not save that rule", "error"),
+  });
+
+  const visible = suggestions.filter((s) => !dismissed.has(s.key));
+  if (visible.length === 0) return null;
+
+  return (
+    <Panel>
+      <PanelHeader title="§ Keeps showing up uncategorised" meta={`${visible.length}`} />
+      {visible.map((s) => {
+        const categoryId = chosenCategory[s.key] ?? "";
+        const spec = resolveChip(categoryId || null, index);
+        return (
+          <div
+            key={s.key}
+            className="flex flex-wrap items-center gap-14 border-b border-rule py-12 last:border-b-0"
+          >
+            <div className="grid min-w-[240px] flex-1 grid-cols-row items-center gap-14">
+              <Chip spec={spec} labelled />
+              <RowName name={s.merchant} sub={`${s.count} transactions, uncategorised`} />
+            </div>
+            <div className="flex flex-none items-center gap-8">
+              <Select
+                id={`cat-suggest-${s.key}`}
+                aria-label={`Category for ${s.merchant}`}
+                value={categoryId}
+                onChange={(e) => setChosenCategory({ ...chosenCategory, [s.key]: e.target.value })}
+                className="w-[160px]"
+              >
+                <option value="">Category…</option>
+                {categories.map(({ node, depth }) => (
+                  <option key={node._id} value={node._id}>
+                    {"— ".repeat(depth)}
+                    {node.name}
+                  </option>
+                ))}
+              </Select>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!categoryId}
+                busy={accept.isPending}
+                onClick={() =>
+                  accept.mutate({
+                    matchField: "merchant",
+                    matchType: "contains",
+                    matchValue: s.merchant,
+                    categoryId,
+                    applyToPendingIds: s.pendingIds,
+                    applyToTransactionIds: s.transactionIds,
+                  })
+                }
+              >
+                Categorize all {s.count}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setDismissed(new Set([...dismissed, s.key]))}
+                className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        );
+      })}
+      <PanelFooter>Also saves a rule, so future ones from the same merchant are filed already categorised.</PanelFooter>
+    </Panel>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // The parser's queue
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -808,7 +935,13 @@ function PendingPanel({
                 <Chip spec={spec} labelled />
                 <RowName
                   name={item.merchant || item.note || "Untitled"}
-                  sub={`${formatDate(item.date)}${item.note && item.merchant ? ` · ${item.note}` : ""}`}
+                  sub={[
+                    formatDate(item.date),
+                    item.note && item.merchant ? item.note : null,
+                    item.possibleDuplicate ? "possible duplicate" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                 />
                 <Amount>{formatSignedInr(item.amount)}</Amount>
               </div>
@@ -825,12 +958,26 @@ function PendingPanel({
                   size="sm"
                   busy={confirm.isPending}
                   disabled={needsAccount && !chosen}
-                  onClick={() =>
+                  onClick={() => {
+                    // A flagged row can still be filed — it might genuinely be
+                    // a second real charge, not a re-import — but it must be a
+                    // deliberate choice, not a silent one, since the same
+                    // check that flagged it is what the confirm route itself
+                    // would otherwise 409 on.
+                    if (
+                      item.possibleDuplicate &&
+                      !window.confirm(
+                        "This looks like a duplicate of a transaction you've already confirmed. File it anyway?"
+                      )
+                    ) {
+                      return;
+                    }
                     confirm.mutate({
                       id: item._id,
                       accountId: needsAccount ? chosen : undefined,
-                    })
-                  }
+                      force: item.possibleDuplicate,
+                    });
+                  }}
                 >
                   File it
                 </Button>
@@ -1336,6 +1483,15 @@ function ImportPanel({
                   {waiting} row{waiting === 1 ? "" : "s"} read from the statement — waiting for you
                   in “From your inbox” above.
                 </p>
+                {/* Non-blocking heads-up: this statement's own date range
+                    overlaps one already imported for this account — a normal
+                    thing to happen (a re-download, or a fresh statement that
+                    covers some of the same days), surfaced here instead of
+                    only being discovered row-by-row once confirming starts
+                    skipping things. */}
+                {pdfBatch.overlapWarning ? (
+                  <p className="m-0 mt-8 text-body-s text-dim-2">{pdfBatch.overlapWarning}</p>
+                ) : null}
               </div>
             ) : (
               <Notice

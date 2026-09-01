@@ -76,6 +76,7 @@ statementUploadRouter.post("/import-pdf", upload.single("file"), async (req, res
 
     const batch = await ImportBatch.create({
       userId,
+      accountId,
       source: "pdf_statement",
       filename: req.file.originalname,
       fileHash,

@@ -10,6 +10,7 @@ import type {
   Frequency,
   RecurringItem,
   RecurringStatus,
+  RecurringSuggestion,
   RecurringType,
 } from "@/lib/api-types";
 import { flattenCategories, indexCategories, resolveChip, type CategoryIndex } from "@/lib/buckets";
@@ -100,6 +101,10 @@ export default function RecurringPage() {
     queryKey: ["categories"],
     queryFn: () => apiFetch<CategoryNode[]>("/categories"),
   });
+  const suggestions = useQuery({
+    queryKey: ["recurring-suggestions"],
+    queryFn: () => apiFetch<RecurringSuggestion[]>("/recurring/suggestions"),
+  });
 
   const index = useMemo(() => indexCategories(categories.data), [categories.data]);
   const accountName = useMemo(() => {
@@ -137,6 +142,15 @@ export default function RecurringPage() {
 
       <div className="grid items-start gap-22 xl:grid-cols-[7fr_5fr]">
         <div className="flex min-w-0 flex-col gap-22">
+          {suggestions.data && suggestions.data.length > 0 ? (
+            <RecurringSuggestionsPanel
+              suggestions={suggestions.data}
+              accountName={accountName}
+              categories={flattenCategories(categories.data)}
+              index={index}
+            />
+          ) : null}
+
           {!items.isLoading && !items.isError && list.length > 0 ? (
             <Panel>
               <PanelHeader
@@ -334,6 +348,139 @@ function RecurringRow({
         )}
       </div>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Suggested — detected from real transaction history, never auto-created
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * This app never auto-detected a recurring pattern before — every item on
+ * this whole page used to require someone to notice the pattern themselves
+ * and fill in the form on the right by hand. `GET /recurring/suggestions`
+ * scans confirmed transaction history for (account, merchant) pairs that
+ * repeat at a regular interval and aren't already tracked, and this panel
+ * is the "want to track this?" nudge for what it finds — accepting one is
+ * just today's `POST /recurring`, pre-filled; nothing here is auto-created
+ * on its own.
+ */
+function RecurringSuggestionsPanel({
+  suggestions,
+  accountName,
+  categories,
+  index,
+}: {
+  suggestions: RecurringSuggestion[];
+  accountName: Map<string, string>;
+  categories: { node: CategoryNode; depth: number }[];
+  index: CategoryIndex;
+}) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [chosenCategory, setChosenCategory] = useState<Record<string, string>>({});
+
+  const accept = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiFetch<RecurringItem>("/recurring", { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["recurring"] });
+      queryClient.invalidateQueries({ queryKey: ["recurring-upcoming"] });
+      queryClient.invalidateQueries({ queryKey: ["recurring-suggestions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      showToast("Added to recurring", "success");
+    },
+    onError: () => showToast("Could not add that item", "error"),
+  });
+
+  const visible = suggestions.filter((s) => !dismissed.has(s.key));
+  if (visible.length === 0) return null;
+
+  return (
+    <Panel>
+      <PanelHeader title="§ Suggested" meta={`${visible.length}`} />
+      {visible.map((s) => {
+        const categoryId = s.categoryId ?? chosenCategory[s.key] ?? "";
+        const spec = resolveChip(categoryId || null, index, {
+          direction: s.type === "income" ? "income" : "expense",
+        });
+        const logoUrl = resolveLogoUrl(s.merchant);
+        const signed = s.type === "income" ? Math.abs(s.amount) : -Math.abs(s.amount);
+
+        return (
+          <div
+            key={s.key}
+            className="flex flex-wrap items-center gap-14 border-b border-rule py-12 last:border-b-0"
+          >
+            <div className="grid min-w-[240px] flex-1 grid-cols-row items-center gap-14">
+              <Chip spec={spec} labelled logoUrl={logoUrl} />
+              <RowName
+                name={s.merchant}
+                sub={[
+                  FREQUENCY_LABELS[s.frequency],
+                  `seen ${s.occurrenceCount}×`,
+                  accountName.get(s.accountId),
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              />
+              <Amount>{formatSignedInr(signed)}</Amount>
+            </div>
+
+            <div className="flex flex-none items-center gap-8">
+              {!s.categoryId ? (
+                <Select
+                  id={`suggest-cat-${s.key}`}
+                  aria-label={`Category for ${s.merchant}`}
+                  value={chosenCategory[s.key] ?? ""}
+                  onChange={(e) => setChosenCategory({ ...chosenCategory, [s.key]: e.target.value })}
+                  className="w-[160px]"
+                >
+                  <option value="">Category…</option>
+                  {categories.map(({ node, depth }) => (
+                    <option key={node._id} value={node._id}>
+                      {"— ".repeat(depth)}
+                      {node.name}
+                    </option>
+                  ))}
+                </Select>
+              ) : null}
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={!categoryId}
+                busy={accept.isPending && accept.variables ? (accept.variables as { name: string }).name === s.merchant : false}
+                onClick={() =>
+                  accept.mutate({
+                    name: s.merchant,
+                    type: s.type,
+                    amount: s.amount,
+                    frequency: s.frequency,
+                    nextDueDate: s.nextDueDate,
+                    accountId: s.accountId,
+                    categoryId,
+                    autoCreate: false,
+                  })
+                }
+              >
+                Add
+              </Button>
+              <button
+                type="button"
+                onClick={() => setDismissed(new Set([...dismissed, s.key]))}
+                className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        );
+      })}
+      <PanelFooter>
+        Detected from your transaction history — nothing is tracked until you add it.
+      </PanelFooter>
+    </Panel>
   );
 }
 

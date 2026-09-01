@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireAuth } from "../auth/auth.middleware.js";
 import { PendingTransaction } from "../../models/PendingTransaction.js";
 import { Transaction } from "../../models/Transaction.js";
-import { findLikelyDuplicate } from "./duplicate-detection.js";
+import { findLikelyDuplicate, findLikelyDuplicatesBatch } from "./duplicate-detection.js";
 import { maybeCreateRuleFromCorrection } from "./transactions.service.js";
 import { applyCategorizationRules } from "../categorization/categorization.engine.js";
 import { invalidateDashboardCache } from "../dashboard/dashboard.service.js";
@@ -14,8 +14,36 @@ pendingTransactionsRouter.use(requireAuth);
 
 pendingTransactionsRouter.get("/", async (req, res, next) => {
   try {
-    const items = await PendingTransaction.find({ userId: (req as any).userId }).sort({ date: -1 });
-    res.json(items);
+    const userId = (req as any).userId;
+    const items = await PendingTransaction.find({ userId }).sort({ date: -1 });
+
+    // Flag each row that's likely a duplicate of an already-confirmed
+    // Transaction UP FRONT, in the list itself — not just at confirm time.
+    // This is the same window/account/amount check `findLikelyDuplicate`
+    // does per-item at confirm; batched here (see
+    // `findLikelyDuplicatesBatch`'s doc comment) so the review queue itself
+    // can show it before the person tries to file anything, which matters
+    // most exactly when several overlapping statement imports have queued
+    // up the same real transaction more than once. Only rows with an
+    // account assigned can be checked at all (the query needs one) — an
+    // email-parsed row still waiting on an account is never flagged.
+    const withAccount = items
+      .map((item, index) => ({ item, index }))
+      .filter((x) => x.item.accountId);
+    const duplicateIndexes = await findLikelyDuplicatesBatch(
+      userId,
+      withAccount.map((x) => ({ accountId: x.item.accountId as string, amount: x.item.amount, date: x.item.date }))
+    );
+    const duplicatePendingIds = new Set(
+      withAccount.filter((x, i) => duplicateIndexes.has(i)).map((x) => x.item._id.toString())
+    );
+
+    const withFlags = items.map((item) => ({
+      ...item.toObject(),
+      possibleDuplicate: duplicatePendingIds.has(item._id.toString()),
+    }));
+
+    res.json(withFlags);
   } catch (err) {
     next(err);
   }

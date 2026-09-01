@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 import { CategorizationRule } from "../../src/models/CategorizationRule.js";
+import { PendingTransaction } from "../../src/models/PendingTransaction.js";
+import { Transaction } from "../../src/models/Transaction.js";
 import { applyCategorizationRules } from "../../src/modules/categorization/categorization.engine.js";
 import { app } from "../../src/app.js";
 
@@ -197,5 +199,113 @@ describe("categorization rules routes", () => {
 
     const finalList = await request(app).get("/categorization-rules").set("Cookie", ownerCookie);
     expect(finalList.body).toHaveLength(0);
+  });
+
+  it("GET /suggestions surfaces a merchant that keeps appearing uncategorized", async () => {
+    const userId = "user-suggest-route";
+    const cookie = authCookie(userId);
+    for (let i = 0; i < 3; i++) {
+      await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        categoryId: null,
+        amount: -100,
+        date: new Date(),
+        merchant: "Zepto",
+        source: "pdf_statement_parsed",
+      });
+    }
+
+    const res = await request(app).get("/categorization-rules/suggestions").set("Cookie", cookie);
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toMatchObject({ merchant: "Zepto", count: 3 });
+  });
+
+  it("accepting a suggestion creates the rule AND categorizes exactly the flagged items, nothing else", async () => {
+    const userId = "user-accept-suggest";
+    const cookie = authCookie(userId);
+
+    const flagged = await PendingTransaction.create({
+      userId,
+      accountId: "acc-1",
+      categoryId: null,
+      amount: -100,
+      date: new Date(),
+      merchant: "Zepto",
+      source: "pdf_statement_parsed",
+    });
+    // Same merchant, but NOT in the accepted list — must stay untouched
+    // (this app never backfills existing data beyond exactly what the
+    // person accepted).
+    const notFlagged = await PendingTransaction.create({
+      userId,
+      accountId: "acc-1",
+      categoryId: null,
+      amount: -200,
+      date: new Date(),
+      merchant: "Zepto",
+      source: "pdf_statement_parsed",
+    });
+    const flaggedTx = await Transaction.create({
+      userId,
+      accountId: "acc-1",
+      categoryId: null,
+      amount: -300,
+      date: new Date(),
+      merchant: "Zepto",
+      source: "csv_import",
+      status: "confirmed",
+    });
+
+    const res = await request(app)
+      .post("/categorization-rules")
+      .set("Cookie", cookie)
+      .send({
+        matchField: "merchant",
+        matchType: "contains",
+        matchValue: "ZEPTO",
+        categoryId: "cat-groceries",
+        applyToPendingIds: [flagged._id.toString()],
+        applyToTransactionIds: [flaggedTx._id.toString()],
+      });
+    expect(res.status).toBe(201);
+
+    const updatedFlagged = await PendingTransaction.findById(flagged._id);
+    expect(updatedFlagged!.categoryId).toBe("cat-groceries");
+
+    const updatedNotFlagged = await PendingTransaction.findById(notFlagged._id);
+    expect(updatedNotFlagged!.categoryId).toBeNull();
+
+    const updatedTx = await Transaction.findById(flaggedTx._id);
+    expect(updatedTx!.categoryId).toBe("cat-groceries");
+  });
+
+  it("applying a suggestion never overwrites an item that already has a category", async () => {
+    const userId = "user-accept-no-overwrite";
+    const cookie = authCookie(userId);
+    const alreadyCategorized = await PendingTransaction.create({
+      userId,
+      accountId: "acc-1",
+      categoryId: "cat-existing",
+      amount: -100,
+      date: new Date(),
+      merchant: "Zepto",
+      source: "pdf_statement_parsed",
+    });
+
+    await request(app)
+      .post("/categorization-rules")
+      .set("Cookie", cookie)
+      .send({
+        matchField: "merchant",
+        matchType: "contains",
+        matchValue: "ZEPTO",
+        categoryId: "cat-groceries",
+        applyToPendingIds: [alreadyCategorized._id.toString()],
+      });
+
+    const unchanged = await PendingTransaction.findById(alreadyCategorized._id);
+    expect(unchanged!.categoryId).toBe("cat-existing");
   });
 });
