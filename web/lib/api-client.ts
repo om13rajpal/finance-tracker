@@ -1,4 +1,8 @@
-export const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "/api";
+// Always same-origin, proxied through next.config.mjs's rewrite to the real
+// API. The browser must never call the API's own origin directly — the
+// session cookie is sameSite=lax, so a cross-site fetch silently drops it,
+// and every request after login comes back 401.
+export const API_BASE = "/api";
 
 export class ApiError extends Error {
   status: number;

@@ -149,9 +149,15 @@ A few things worth knowing before trusting a number this module prints:
 
 `render.yaml` deploys the API to Render from `api/Dockerfile` (build context is the
 repo root), with every secret set to `sync: false` so it comes from Render's secret
-manager. The frontend deploys to Vercel from `web/`, with `NEXT_PUBLIC_API_BASE`
-pointed at the Render URL. MongoDB Atlas and Upstash Redis (TCP mode, not the REST
-API, since BullMQ needs blocking commands) back it.
+manager. The frontend deploys to Vercel from `web/`, with `API_PROXY_TARGET`
+pointed at the Render URL — server-side only, so it never reaches the browser
+bundle. (This used to be `NEXT_PUBLIC_API_BASE`, which the browser also read as
+its own fetch base URL: the browser ended up calling the Render API directly,
+cross-site, and the session cookie — `sameSite: "lax"` — was silently dropped
+on every request after login. If you deployed before this fix, rename the
+Vercel env var from `NEXT_PUBLIC_API_BASE` to `API_PROXY_TARGET` and redeploy.)
+MongoDB Atlas and Upstash Redis (TCP mode, not the REST API, since BullMQ needs
+blocking commands) back it.
 
 Build the API image locally with:
 
