@@ -2,6 +2,7 @@ import { Router } from "express";
 import { requireAuth } from "../auth/auth.middleware.js";
 import { env } from "../../config/env.js";
 import { getAuthUrl, exchangeCodeForTokens, verifyOAuthState } from "./gmail-oauth.service.js";
+import { registerWatch } from "./gmail-watch.service.js";
 import { encrypt } from "../../lib/encryption.js";
 import { GmailConnection } from "../../models/GmailConnection.js";
 
@@ -43,6 +44,21 @@ gmailRouter.get("/oauth/callback", async (req, res, next) => {
       { refreshTokenEncrypted: encrypt(refreshToken), status: "connected", connectedAt: new Date() },
       { upsert: true }
     );
+
+    // Register the actual push-notification watch now, not just the token.
+    // Without this, the connection sits at status "connected" with no watch
+    // ever registered — nothing Google-side is watching the inbox, so no
+    // email ever triggers ingestion, and the daily renewal job's query
+    // (watchExpiration <= cutoff) never rescues a connection whose
+    // watchExpiration is still null from having skipped this step.
+    // Failure here must not fail the OAuth callback itself: the token is
+    // already saved, the user is already connected, and the renewal job
+    // (which also now catches watchExpiration: null) will retry.
+    try {
+      await registerWatch(userId);
+    } catch (err) {
+      console.error(`Failed to register initial Gmail watch for user ${userId}:`, err);
+    }
 
     res.redirect(`${env.WEB_ORIGIN}/settings?gmail=connected`);
   } catch (err) {

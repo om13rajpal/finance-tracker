@@ -1,9 +1,20 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 import { app } from "../../src/app.js";
 import { GmailConnection } from "../../src/models/GmailConnection.js";
 import { signOAuthState } from "../../src/modules/email-ingestion/gmail-oauth.service.js";
+
+// vi.mock factories are hoisted above ordinary top-level declarations, and
+// app.js (imported below) pulls in gmail-oauth.service.js - which imports
+// googleapis - as a side effect of module loading, before a plain `const`
+// here would have run. vi.hoisted() guarantees watchMock exists by the time
+// the factory below executes.
+const { watchMock } = vi.hoisted(() => ({
+  watchMock: vi.fn().mockResolvedValue({
+    data: { historyId: "mock-history-id", expiration: String(Date.now() + 6 * 24 * 60 * 60 * 1000) },
+  }),
+}));
 
 vi.mock("googleapis", () => {
   const OAuth2 = vi.fn().mockImplementation(() => ({
@@ -11,7 +22,7 @@ vi.mock("googleapis", () => {
     getToken: vi.fn().mockResolvedValue({ tokens: { refresh_token: "mock-refresh-token" } }),
     setCredentials: vi.fn(),
   }));
-  return { google: { auth: { OAuth2 }, gmail: vi.fn() } };
+  return { google: { auth: { OAuth2 }, gmail: vi.fn().mockReturnValue({ users: { watch: watchMock } }) } };
 });
 
 function authCookie(userId = "user-1") {
@@ -20,6 +31,13 @@ function authCookie(userId = "user-1") {
 }
 
 describe("gmail oauth flow", () => {
+  beforeEach(() => {
+    watchMock.mockClear();
+    watchMock.mockResolvedValue({
+      data: { historyId: "mock-history-id", expiration: String(Date.now() + 6 * 24 * 60 * 60 * 1000) },
+    });
+  });
+
   it("requires authentication to initiate connect", async () => {
     const res = await request(app).get("/gmail/connect");
     expect(res.status).toBe(401);
@@ -45,6 +63,35 @@ describe("gmail oauth flow", () => {
     expect(connection?.refreshTokenEncrypted).not.toBeNull();
     // The raw token must never appear anywhere in the stored ciphertext.
     expect(connection?.refreshTokenEncrypted).not.toContain("mock-refresh-token");
+  });
+
+  // Regression: the callback used to save the token and mark the connection
+  // "connected" without ever registering the actual Gmail push-notification
+  // watch, so nothing Google-side was ever watching the inbox and no email
+  // ever triggered ingestion, even though /gmail/status reported connected.
+  it("registers a Gmail watch immediately as part of a successful callback, not just on the next renewal run", async () => {
+    await request(app)
+      .get("/gmail/oauth/callback?code=mock-code&state=" + encodeURIComponent(signOAuthState("watch-user")) + "")
+      .set("Cookie", authCookie("watch-user"));
+
+    expect(watchMock).toHaveBeenCalledTimes(1);
+    const connection = await GmailConnection.findOne({ userId: "watch-user" });
+    expect(connection?.historyId).toBe("mock-history-id");
+    expect(connection?.watchExpiration).toBeInstanceOf(Date);
+  });
+
+  it("still saves the token and redirects to connected even if watch registration fails", async () => {
+    watchMock.mockRejectedValueOnce(new Error("Pub/Sub topic misconfigured"));
+
+    const res = await request(app)
+      .get("/gmail/oauth/callback?code=mock-code&state=" + encodeURIComponent(signOAuthState("watch-fail-user")) + "")
+      .set("Cookie", authCookie("watch-fail-user"));
+
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toContain("/settings?gmail=connected");
+    const connection = await GmailConnection.findOne({ userId: "watch-fail-user" });
+    expect(connection?.status).toBe("connected");
+    expect(connection?.refreshTokenEncrypted).not.toBeNull();
   });
 
   it("never returns the raw refresh token in the callback response body", async () => {

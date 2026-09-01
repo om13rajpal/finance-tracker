@@ -8,7 +8,11 @@ const RENEWAL_WINDOW_MS = 24 * 60 * 60 * 1000;
 /**
  * Renews every `connected` Gmail watch expiring within the next 24 hours
  * (Gmail watches expire after ~7 days; this runs daily, so a 24h buffer
- * comfortably covers one day's worth of drift between runs).
+ * comfortably covers one day's worth of drift between runs) — plus any
+ * connection whose watch was never registered at all (`watchExpiration:
+ * null`, e.g. connect-time registration failed and was never retried).
+ * `$lte` alone does not match a null `watchExpiration`, so that case needs
+ * its own clause rather than folding into the date comparison.
  *
  * `status: "connected"` is part of the query itself, not a post-filter, so a
  * `disconnected` connection is never renewed even if its stale
@@ -22,7 +26,10 @@ const RENEWAL_WINDOW_MS = 24 * 60 * 60 * 1000;
 export async function renewExpiringWatches(): Promise<void> {
   const expiringSoon = await GmailConnection.find({
     status: "connected",
-    watchExpiration: { $lte: new Date(Date.now() + RENEWAL_WINDOW_MS) },
+    $or: [
+      { watchExpiration: null },
+      { watchExpiration: { $lte: new Date(Date.now() + RENEWAL_WINDOW_MS) } },
+    ],
   });
 
   for (const connection of expiringSoon) {
