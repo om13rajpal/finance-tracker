@@ -318,7 +318,18 @@ function findOpeningBalance(lines: string[]): number | null {
   return null;
 }
 
-export function parseHdfcStatement(pages: PDFExtractPage[]): StatementRowResult[] {
+/**
+ * The shared work behind both `parseHdfcStatement` (rows, for actually
+ * filing transactions) and `findHdfcClosingBalance` (just the final number,
+ * for offering to reconcile the account's own balance after import — see
+ * that function's doc comment). One pass over the pages either way; the two
+ * exported functions just pick which half of the result they need, so nether
+ * has to re-derive the other's information.
+ */
+function parseHdfcStatementFull(pages: PDFExtractPage[]): {
+  rows: StatementRowResult[];
+  closingBalance: number | null;
+} {
   const allPageLines = linesFromPages(pages);
   let carriedBalance = findOpeningBalance(allPageLines.flat());
 
@@ -346,5 +357,27 @@ export function parseHdfcStatement(pages: PDFExtractPage[]): StatementRowResult[
     results.push(...rows);
     carriedBalance = endingBalance;
   }
-  return results;
+  return { rows: results, closingBalance: carriedBalance };
+}
+
+export function parseHdfcStatement(pages: PDFExtractPage[]): StatementRowResult[] {
+  return parseHdfcStatementFull(pages).rows;
+}
+
+/**
+ * The statement's own final closing balance — the last transaction row's
+ * stated balance (or, if the statement has no transaction rows at all, its
+ * "Opening Balance" summary value, since nothing moved it), used to offer
+ * reconciling the linked `Account.currentBalance` after a successful import
+ * instead of leaving that as one more thing to type in by hand. `null` if
+ * this document never established a balance at all (no summary block AND no
+ * transaction rows — effectively not a real statement).
+ *
+ * Deliberately independent of whether every row in the statement parsed
+ * cleanly: this number comes straight from the statement's own printed
+ * figures, not from summing the rows this parser managed to extract, so a
+ * handful of unparseable rows elsewhere doesn't make it any less trustworthy.
+ */
+export function findHdfcClosingBalance(pages: PDFExtractPage[]): number | null {
+  return parseHdfcStatementFull(pages).closingBalance;
 }

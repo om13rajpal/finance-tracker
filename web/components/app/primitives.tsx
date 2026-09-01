@@ -665,6 +665,98 @@ export function Sparkline({
   );
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Modal · a focused single-item editor, off the flow of whatever list it opened from
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * A centred overlay panel — same accessible-dialog mechanics as the mobile
+ * nav sheet in `ProtectedLayout.tsx` (Escape closes it, focus moves onto the
+ * panel on open and back to whatever opened it on close, a click on the
+ * backdrop closes it too), generalized into a reusable primitive instead of
+ * being one-off to the nav.
+ *
+ * Deliberately not a new dependency (no Radix Dialog) — this app has exactly
+ * one existing accessible-overlay pattern already; this is that pattern with
+ * the nav's specific chrome swept off it. `triggerRef` is the element focus
+ * should return to on close (typically the button that opened this modal) —
+ * without it, a keyboard user who closes the modal is dropped back at the
+ * top of the document instead of where they were.
+ */
+export function Modal({
+  open,
+  onClose,
+  title,
+  triggerRef,
+  children,
+  className,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: React.ReactNode;
+  triggerRef?: React.RefObject<HTMLElement | null>;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const panelRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        triggerRef?.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    panelRef.current?.focus();
+    return () => document.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-50 bg-ink opacity-[.34]"
+        onClick={() => {
+          onClose();
+          triggerRef?.current?.focus();
+        }}
+      />
+      <div className="fixed inset-0 z-[51] flex items-start justify-center overflow-y-auto p-18 pt-[10vh] sm:items-center sm:pt-18">
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={typeof title === "string" ? title : undefined}
+          tabIndex={-1}
+          className={cn(
+            "w-full max-w-[440px] rounded-panel border-panel border-ink bg-bg p-22",
+            className
+          )}
+        >
+          <div className="mb-18 flex items-center justify-between gap-14">
+            <SectionLabel>{title}</SectionLabel>
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                triggerRef?.current?.focus();
+              }}
+              className="grid h-32 w-32 flex-none place-items-center rounded-pill border-panel border-ink bg-transparent text-ink transition-colors duration-hover ease-out hover:bg-ink-wash"
+            >
+              <Icon name="close" size={15} title="Close" />
+            </button>
+          </div>
+          {children}
+        </div>
+      </div>
+    </>
+  );
+}
+
 /** A right-aligned mono figure with its label above — the panel summary strip. */
 export function Readout({
   label,

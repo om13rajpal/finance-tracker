@@ -9,8 +9,14 @@ import { vi } from "vitest";
 import { ImportBatch } from "../../src/models/ImportBatch.js";
 import { PendingTransaction } from "../../src/models/PendingTransaction.js";
 import { StatementPassword } from "../../src/models/StatementPassword.js";
+import { Account } from "../../src/models/Account.js";
+import { BalanceSnapshot } from "../../src/models/BalanceSnapshot.js";
 import { encrypt } from "../../src/lib/encryption.js";
-import { processStatementUpload } from "../../src/jobs/workers/statementProcess.worker.js";
+import {
+  processStatementUpload,
+  statementProcessQueue,
+  startStatementProcessWorker,
+} from "../../src/jobs/workers/statementProcess.worker.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, "..", "fixtures");
@@ -174,5 +180,123 @@ describe("processStatementUpload (statement-process worker)", () => {
     expect(rowNumbers).toEqual(Array.from({ length: 270 }, (_, i) => i + 1));
 
     expect(fileExists(filePath)).toBe(false);
+  });
+
+  describe("account balance reconciliation", () => {
+    async function createAccount(userId: string, currentBalance: number) {
+      return Account.create({
+        userId,
+        type: "ppf",
+        institution: "HDFC Bank",
+        nickname: "PPF",
+        currentBalance,
+      });
+    }
+
+    it("reconciles the linked account's balance to the statement's own closing balance on successful completion (HDFC)", async () => {
+      const userId = "user-worker-balance-hdfc";
+      const account = await createAccount(userId, 0);
+      const batch = await createProcessingBatch(userId);
+      const filePath = await writeTempFile(fixtureBuffer("statement-hdfc.pdf"));
+
+      await processStatementUpload({
+        batchId: batch._id.toString(),
+        userId,
+        accountId: account._id.toString(),
+        parserKey: "hdfc_statement",
+        filePath,
+      });
+
+      const updatedAccount = await Account.findById(account._id);
+      expect(updatedAccount!.currentBalance).toBe(8000);
+
+      const snapshot = await BalanceSnapshot.findOne({ accountId: account._id.toString() });
+      expect(snapshot).not.toBeNull();
+      expect(snapshot!.balance).toBe(8000);
+
+      const updatedBatch = await ImportBatch.findById(batch._id);
+      expect(updatedBatch!.closingBalance).toBe(8000);
+      expect(updatedBatch!.status).toBe("completed");
+    });
+
+    it("does not touch the account balance (or record a closing balance) when the parser has no closing-balance support", async () => {
+      const userId = "user-worker-balance-generic";
+      const account = await createAccount(userId, 500);
+      const batch = await createProcessingBatch(userId);
+      const filePath = await writeTempFile(fixtureBuffer("statement-unprotected.pdf"));
+
+      await processStatementUpload({
+        batchId: batch._id.toString(),
+        userId,
+        accountId: account._id.toString(),
+        // No parserKey — falls back to the generic parser, which has no
+        // closing-balance detection at all.
+        filePath,
+      });
+
+      const updatedAccount = await Account.findById(account._id);
+      expect(updatedAccount!.currentBalance).toBe(500);
+      expect(await BalanceSnapshot.countDocuments({ accountId: account._id.toString() })).toBe(0);
+
+      const updatedBatch = await ImportBatch.findById(batch._id);
+      expect(updatedBatch!.closingBalance).toBeNull();
+    });
+  });
+
+  describe("permanently-failed job handling", () => {
+    /** Polls `fn` until it resolves truthy or `timeoutMs` elapses. */
+    async function waitFor(fn: () => Promise<boolean>, timeoutMs = 10000, intervalMs = 50): Promise<void> {
+      const deadline = Date.now() + timeoutMs;
+      for (;;) {
+        if (await fn()) return;
+        if (Date.now() >= deadline) throw new Error(`condition not met within ${timeoutMs}ms`);
+        await new Promise((resolve) => setTimeout(resolve, intervalMs));
+      }
+    }
+
+    it(
+      "marks the batch failed (and cleans up the temp file) once BullMQ exhausts every retry attempt, instead of leaving it stuck at \"processing\" forever",
+      async () => {
+        const userId = "user-worker-exhausted-retries";
+        const batch = await createProcessingBatch(userId);
+        const filePath = await writeTempFile(fixtureBuffer("statement-hdfc.pdf"));
+
+        const worker = startStatementProcessWorker();
+        try {
+          // A real, running worker consuming a real Redis queue — this
+          // behavior lives entirely in BullMQ's own retry-exhaustion
+          // signal (the Worker's "failed" event), which doesn't exist at
+          // the `processStatementUpload` layer other tests in this file
+          // call directly. `accountId` isn't a valid ObjectId, so
+          // `Account.findOneAndUpdate` throws the same CastError on every
+          // attempt — a genuine, real failure mode this fix was written
+          // for (found via a real accountId typo during manual testing),
+          // not a contrived one. Overriding `attempts`/`backoff` on this
+          // one job (rather than using `defaultJobOptions`'s 3 attempts /
+          // exponential-from-5s backoff) keeps the test fast.
+          await statementProcessQueue.add(
+            "process",
+            {
+              batchId: batch._id.toString(),
+              userId,
+              accountId: "not-a-valid-object-id",
+              parserKey: "hdfc_statement",
+              filePath,
+            },
+            { attempts: 2, backoff: { type: "fixed", delay: 50 } }
+          );
+
+          await waitFor(async () => (await ImportBatch.findById(batch._id))?.status !== "processing");
+
+          const finalBatch = await ImportBatch.findById(batch._id);
+          expect(finalBatch!.status).toBe("failed");
+          expect(finalBatch!.error).toBeTruthy();
+          expect(fileExists(filePath)).toBe(false);
+        } finally {
+          await worker.close();
+        }
+      },
+      20000
+    );
   });
 });

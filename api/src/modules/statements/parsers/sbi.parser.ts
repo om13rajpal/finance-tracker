@@ -17,7 +17,12 @@ import { isMoneyOrDashToken, parseIndianAmount, toIsoDate } from "./utils.js";
  * disambiguated with one line of lookahead (see the main loop below): a
  * non-row-start line is only ever absorbed as the CURRENT row's description
  * continuation if the line after it is not itself a row start. If it is, this
- * line is the label for that upcoming row instead.
+ * line is the label for that upcoming row instead — UNLESS that line doesn't
+ * look like a label at all (see `looksLikeLabel`), in which case it's really
+ * the current row's own trailing continuation that just happens to sit
+ * immediately before the next row starts (confirmed against real data: a row
+ * whose description is already inline, e.g. "INTEREST CREDIT", has no
+ * separate label line of its own).
  *
  * A closing summary row and disclaimer boilerplate follow the last
  * transaction. Nothing there matches the two-date row-start pattern, so the
@@ -41,6 +46,27 @@ const BOILERPLATE_RES: RegExp[] = [
 
 function isBoilerplate(line: string): boolean {
   return BOILERPLATE_RES.some((re) => re.test(line));
+}
+
+/**
+ * A genuine narration LABEL for the upcoming row ("WDL TFR", "DEP TFR",
+ * "CASH WITHDRAWAL SELF AT", "CASH DEPOSIT SELF AT 00652" — every real
+ * example seen) is a short, standalone phrase, never a comma-separated
+ * address fragment. Confirmed against a real 118-page SBI statement: a row
+ * type that carries its own description inline (e.g. "INTEREST CREDIT",
+ * already present as that row's own on-line text) never has a separate
+ * label line above it at all — so the line immediately before it is
+ * actually the PREVIOUS row's trailing continuation (typically its branch
+ * address, e.g. "MAIN BRANCH , HISAR"), which just happens to sit right
+ * before the next row starts. Mistaking that for the next row's label (the
+ * single-lookahead rule below would, without this check) loses it from the
+ * row it actually describes AND attaches unrelated text as a false `note`
+ * on the row that follows. The comma is what reliably tells the two apart
+ * in every real example seen — a label is never comma-punctuated, an
+ * address continuation line practically always is.
+ */
+function looksLikeLabel(line: string): boolean {
+  return !line.includes(",");
 }
 
 /**
@@ -81,7 +107,7 @@ export function parseSbiStatement(pages: PDFExtractPage[]): StatementRowResult[]
       continue;
     }
 
-    if (nextIsRowStart) {
+    if (nextIsRowStart && looksLikeLabel(line)) {
       // This line is the narration label for the UPCOMING row, not
       // continuation text for the current one.
       carryLabel = line;

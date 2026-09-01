@@ -3,9 +3,15 @@ import fs from "node:fs/promises";
 import { makeQueue, makeWorker } from "../queue.js";
 import { PendingTransaction } from "../../models/PendingTransaction.js";
 import { ImportBatch } from "../../models/ImportBatch.js";
+import { Account } from "../../models/Account.js";
+import { BalanceSnapshot } from "../../models/BalanceSnapshot.js";
 import { findLikelyDuplicate } from "../../modules/transactions/duplicate-detection.js";
 import { tryUnlockPdf } from "../../modules/statements/pdf-unlock.service.js";
-import { parseStatementRows } from "../../modules/statements/statement-row-parser.service.js";
+import {
+  parseStatementRows,
+  findStatementClosingBalance,
+} from "../../modules/statements/statement-row-parser.service.js";
+import { invalidateDashboardCache } from "../../modules/dashboard/dashboard.service.js";
 
 export type StatementProcessJob = {
   batchId: string;
@@ -107,6 +113,14 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
   }
 
   const rows = parseStatementRows(unlocked.pages, parserKey);
+  // The statement's OWN stated closing balance, when the parser for this
+  // bank knows how to find one — read straight off the document, not summed
+  // from whichever rows below parse cleanly, so it's used to reconcile the
+  // linked Account's balance once processing finishes (see the end of this
+  // function). `null` for a parser with no closing-balance support yet
+  // (everything except HDFC today) — nothing to reconcile with, not an
+  // error.
+  const closingBalance = findStatementClosingBalance(unlocked.pages, parserKey);
   // Pair each row with its 1-based row number up front (rather than
   // `rows.indexOf(row)` inside the loop below) so numbering a chunk stays
   // O(chunk size), not O(n) per row / O(n^2) per statement.
@@ -197,7 +211,37 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
     await new Promise((resolve) => setImmediate(resolve));
   }
 
-  await ImportBatch.findByIdAndUpdate(batchId, { status: "completed" });
+  // Reconcile the linked account's balance to what the statement itself says
+  // it should be — the whole point being that nobody has to go type this in
+  // by hand after every import. Runs exactly once per successful completion
+  // (this line is only ever reached once the chunk loop above finishes
+  // without throwing — a retry of a job that failed mid-loop simply hasn't
+  // gotten here yet), so a retried job can't double-apply it or leave two
+  // `BalanceSnapshot`s behind for one statement.
+  //
+  // Deliberately unconditional on `accountId` actually still existing:
+  // `findOneAndUpdate` scoped to `{_id: accountId, userId}` is a silent
+  // no-op if it doesn't (deleted between upload and now, say), same
+  // ownership-scoping every other route in this app already relies on —
+  // no special-casing needed here.
+  //
+  // KNOWN LIMITATION, not handled here: this always overwrites with
+  // whichever value this specific import found, with no awareness of
+  // whether an ALREADY-APPLIED later statement's closing balance would be
+  // regressed by importing an older, already-superseded one out of order.
+  // Fine for "one statement now and then," easy to get wrong for "several
+  // overlapping statements imported out of chronological order" — flagged,
+  // not solved.
+  if (closingBalance !== null) {
+    await Account.findOneAndUpdate(
+      { _id: accountId, userId },
+      { currentBalance: closingBalance, lastUpdated: new Date() }
+    );
+    await BalanceSnapshot.create({ accountId, balance: closingBalance, date: new Date() });
+    await invalidateDashboardCache(userId);
+  }
+
+  await ImportBatch.findByIdAndUpdate(batchId, { status: "completed", closingBalance });
   await cleanupTempFile(filePath);
   // Deliberately no cleanup on a thrown error above (a chunk's DB write
   // failing, `insertMany` rejecting, etc.): that error is left to propagate
@@ -206,10 +250,10 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
   // chunk that already completed before the failure stays recorded (per the
   // `$push`-not-`$set` persistence above) and is skipped, not redone, by the
   // `alreadyProcessed` resume logic above — so a successful retry ends with
-  // each row accounted for exactly once, not duplicated. Worst case (every
-  // retry attempt is exhausted), a statement's temp file outlives all of
-  // them and leaks one small file on an ephemeral container disk, which is
-  // an acceptable tradeoff at this app's scale.
+  // each row accounted for exactly once, not duplicated. If every retry
+  // attempt is exhausted, the `"failed"` listener registered in
+  // `startStatementProcessWorker` below marks the batch failed and cleans up
+  // the temp file — this function itself doesn't need to handle that case.
 }
 
 export const statementProcessQueue = makeQueue<StatementProcessJob>("statement-process");
@@ -226,7 +270,41 @@ export const statementProcessQueue = makeQueue<StatementProcessJob>("statement-p
  * background workers.
  */
 export function startStatementProcessWorker(): Worker<StatementProcessJob> {
-  return makeWorker<StatementProcessJob>("statement-process", async (job: Job<StatementProcessJob>) =>
+  const worker = makeWorker<StatementProcessJob>("statement-process", async (job: Job<StatementProcessJob>) =>
     processStatementUpload(job.data)
   );
+
+  // BullMQ's "failed" event fires after EVERY failed attempt, not just the
+  // last one — most of those are expected to retry (that's the whole point
+  // of `defaultJobOptions.attempts: 3`), so this only acts once retries are
+  // genuinely exhausted. Without this, a job that fails all 3 attempts (a
+  // real transient error that never actually clears, a bug, anything) — as
+  // opposed to `processStatementUpload`'s own two deliberate non-throwing
+  // failure paths (unreadable temp file, unlock failure), which already
+  // handle themselves — leaves its `ImportBatch` stuck at `"processing"`
+  // forever: nothing else ever marks it failed, so the person just sees
+  // "Processing your statement…" spin indefinitely with no error and no way
+  // to know anything went wrong. `{status: "processing"}` in the filter
+  // makes this a no-op on the rare race where the batch already reached a
+  // terminal state some other way.
+  worker.on("failed", async (job) => {
+    if (!job) return;
+    const attempts = job.opts.attempts ?? 1;
+    if (job.attemptsMade < attempts) return; // will still retry — not exhausted yet
+
+    try {
+      await ImportBatch.findOneAndUpdate(
+        { _id: job.data.batchId, status: "processing" },
+        {
+          status: "failed",
+          error: "Something went wrong processing this statement. Please try uploading it again.",
+        }
+      );
+      await cleanupTempFile(job.data.filePath);
+    } catch (err) {
+      console.error(`[statement-process] failed to finalize permanently-failed job for batch ${job.data.batchId}:`, err);
+    }
+  });
+
+  return worker;
 }

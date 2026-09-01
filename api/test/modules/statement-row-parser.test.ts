@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import type { PDFExtractPage, PDFExtractText } from "pdf.js-extract";
-import { parseStatementRows } from "../../src/modules/statements/statement-row-parser.service.js";
+import {
+  parseStatementRows,
+  findStatementClosingBalance,
+} from "../../src/modules/statements/statement-row-parser.service.js";
 
 /**
  * Builds a fake `PDFExtractPage` from a plain array of "physical lines", each
@@ -192,6 +195,45 @@ describe("parseStatementRows — sbi_statement", () => {
       expect(rows[0].merchant).not.toContain("Balance");
     }
   });
+
+  // Reproduces a real bug found against an actual 118-page SBI statement: a
+  // CASH DEPOSIT row's trailing branch-address continuation ("MAIN BRANCH ,
+  // HISAR") sat immediately before an INTEREST CREDIT row — which, unlike a
+  // WDL TFR / DEP TFR row, carries its description inline and has no
+  // separate label line of its own. The single-lookahead rule mistook that
+  // trailing continuation for INTEREST CREDIT's "label", losing it from the
+  // CASH DEPOSIT row it actually described and attaching it as a bogus note
+  // on the unrelated row that followed.
+  it("does not steal the PREVIOUS row's trailing continuation as a label for the next row, when the next row has no label line of its own", () => {
+    const pages = onePage([
+      ["CASH DEPOSIT SELF AT 00652"],
+      ["16/03/2022", "16/03/2022", "-", "-", "40,000.00", "43,102.00"],
+      ["MAIN", "BRANCH", ",", "HISAR"],
+      // No label line here — INTEREST CREDIT's description is already
+      // inline on its own row-start line, exactly like the real statement.
+      ["25/03/2022", "25/03/2022", "INTEREST", "CREDIT", "-", "-", "50.00", "43,152.00"],
+    ]);
+    const rows = parseStatementRows(pages, "sbi_statement");
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ date: "2022-03-16", amount: 40000, note: "CASH DEPOSIT SELF AT 00652" });
+    if (!("error" in rows[0])) expect(rows[0].merchant).toContain("MAIN BRANCH , HISAR");
+    expect(rows[1]).toMatchObject({ date: "2022-03-25", amount: 50, note: "" });
+    if (!("error" in rows[1])) expect(rows[1].merchant).toBe("INTEREST CREDIT");
+  });
+
+  it("still treats a genuine comma-free label line as the upcoming row's label, not the previous row's continuation", () => {
+    const pages = onePage([
+      ["WDL TFR"],
+      ["01/08/2026", "01/08/2026", "UPI/DR/111111111111/FIRST", "-", "10.00", "-", "990.00"],
+      ["CASH WITHDRAWAL SELF AT"],
+      ["02/08/2026", "02/08/2026", "-", "20.00", "-", "970.00"],
+      ["00652", "MAIN", "BRANCH"],
+    ]);
+    const rows = parseStatementRows(pages, "sbi_statement");
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toMatchObject({ date: "2026-08-02", amount: -20, note: "CASH WITHDRAWAL SELF AT" });
+    if (!("error" in rows[1])) expect(rows[1].merchant).toContain("00652 MAIN BRANCH");
+  });
 });
 
 describe("parseStatementRows — hdfc_statement", () => {
@@ -361,5 +403,41 @@ describe("parseStatementRows — hdfc_statement", () => {
     const rows = parseStatementRows(pages, "hdfc_statement");
     expect(rows).toHaveLength(1);
     expect("error" in rows[0]).toBe(true);
+  });
+
+  describe("findStatementClosingBalance", () => {
+    it("reads the statement's own closing balance off its last transaction row's stated balance", () => {
+      const pages = onePage([
+        HEADER_ROW,
+        ["30/07/2026", "NB", "Subscription", "-", "30/07/2026", "5,000.00", "5,000.00"],
+        ["01/08/2026", "NB", "Subscription", "-", "01/08/2026", "35,000.00", "40,000.00"],
+        ["14/08/2026", "NB", "Subscription", "-", "14/08/2026", "20,000.00", "60,000.00"],
+        ...SUMMARY_LINES("0.00", 3, "60,000.00", "60,000.00"),
+      ]);
+      expect(findStatementClosingBalance(pages, "hdfc_statement")).toBe(60000);
+    });
+
+    it("falls back to the statement's own Opening Balance when it has no transaction rows at all", () => {
+      const pages = onePage([HEADER_ROW, ...SUMMARY_LINES("12,345.00", 0, "0.00", "12,345.00")]);
+      expect(findStatementClosingBalance(pages, "hdfc_statement")).toBe(12345);
+    });
+
+    it("returns null when the document has neither transaction rows nor a summary block", () => {
+      const pages = onePage([HEADER_ROW]);
+      expect(findStatementClosingBalance(pages, "hdfc_statement")).toBeNull();
+    });
+
+    it("returns null for a parser with no closing-balance support (e.g. SBI), not an error", () => {
+      const pages = onePage([
+        ["WDL TFR"],
+        ["01/08/2026", "01/08/2026", "UPI/DR/111111111111/TESTMERCHANT", "-", "500.00", "-", "10,000.00"],
+      ]);
+      expect(findStatementClosingBalance(pages, "sbi_statement")).toBeNull();
+    });
+
+    it("returns null when no parserKey is given at all", () => {
+      const pages = onePage([["15/08/2026", "SOME", "MERCHANT", "199.00"]]);
+      expect(findStatementClosingBalance(pages)).toBeNull();
+    });
   });
 });

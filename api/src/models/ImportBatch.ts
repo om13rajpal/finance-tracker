@@ -36,6 +36,15 @@ const importBatchSchema = new Schema({
   // Set only when `status` is `"failed"` (e.g. the PDF could not be unlocked
   // with any stored password) — `null` otherwise.
   error: { type: String, default: null },
+  // The statement's own closing balance, when the bank-specific parser could
+  // find one (see `findStatementClosingBalance` — currently HDFC only,
+  // `null` for every other source/parser). When present, the
+  // statement-process worker uses it to reconcile the linked Account's
+  // `currentBalance` automatically once the import completes — see
+  // `statementProcess.worker.ts`'s doc comment for why this is safe to do
+  // unconditionally (it's read straight off the statement, not derived from
+  // whichever rows this parser managed to extract).
+  closingBalance: { type: Number, default: null },
 });
 
 export const ImportBatch = model("ImportBatch", importBatchSchema);

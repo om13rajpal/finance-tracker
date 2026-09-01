@@ -44,6 +44,7 @@ import {
   Amount,
   EmptyState,
   Helper,
+  Modal,
   Notice,
   PageHeader,
   Panel,
@@ -378,6 +379,15 @@ function TransactionRow({
   const [editing, setEditing] = useState(false);
   const [choice, setChoice] = useState(transaction.categoryId ?? "");
   const [makeRule, setMakeRule] = useState(false);
+  // Prefilled with the transaction's own merchant text, but EDITABLE — a rule
+  // built from a parser-produced merchant string verbatim (an order id, a
+  // reference number, anything instance-specific baked into the text) only
+  // ever matches that one transaction again, since matching is a plain
+  // substring check with no fuzziness. Narrowing this to just the merchant
+  // name (e.g. "Swiggy" out of "Swiggy Order #48291 Ref/ABC123") is what
+  // makes the rule actually apply to the NEXT one, which is the whole point.
+  const [matchValue, setMatchValue] = useState(transaction.merchant ?? "");
+  const categorizeButtonRef = useRef<HTMLButtonElement>(null);
 
   const entry = transaction.categoryId ? index.get(transaction.categoryId) : undefined;
   // NO DIRECTION FALLBACK HERE, deliberately.
@@ -394,16 +404,19 @@ function TransactionRow({
   const spec = resolveChip(transaction.categoryId, index);
   const filedByParser = transaction.source === "email_parsed";
 
+  const trimmedMatchValue = matchValue.trim();
+
   const update = useMutation({
     mutationFn: () =>
       apiFetch(`/transactions/${transaction._id}`, {
         method: "PATCH",
         // `createRule` and `matchValue` are only honoured together with a
         // categoryId; sending them as false/empty otherwise would be noise the
-        // server has to ignore.
+        // server has to ignore. `matchValue` is whatever the person edited it
+        // down to above — never the raw, un-narrowed `transaction.merchant`.
         body: JSON.stringify(
-          makeRule && transaction.merchant
-            ? { categoryId: choice, createRule: true, matchValue: transaction.merchant }
+          makeRule && trimmedMatchValue
+            ? { categoryId: choice, createRule: true, matchValue: trimmedMatchValue }
             : { categoryId: choice }
         ),
       }),
@@ -454,19 +467,22 @@ function TransactionRow({
                   thing a right-aligned money column is for. The category is
                   what you are changing, so the category is what you click. */}
               <button
+                ref={categorizeButtonRef}
                 type="button"
                 onClick={() => {
                   setChoice(transaction.categoryId ?? "");
-                  setEditing((v) => !v);
+                  setMatchValue(transaction.merchant ?? "");
+                  setMakeRule(false);
+                  setEditing(true);
                 }}
-                aria-expanded={editing}
+                aria-haspopup="dialog"
                 className={cn(
                   "rounded-xs bg-transparent p-0 font-num text-micro uppercase tracking-micro",
                   "underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink",
                   categoryName ? "text-dim" : "text-ink"
                 )}
               >
-                {editing ? "Cancel" : (categoryName ?? "Categorise")}
+                {categoryName ?? "Categorise"}
               </button>
             </>
           }
@@ -474,8 +490,13 @@ function TransactionRow({
         <Amount>{formatSignedInr(transaction.amount)}</Amount>
       </div>
 
-      {editing ? (
-        <div className="mb-14 ml-[52px] flex flex-col gap-12 rounded-panel border-panel border-ink p-18">
+      <Modal
+        open={editing}
+        onClose={() => setEditing(false)}
+        triggerRef={categorizeButtonRef}
+        title={`§ Categorise ${title}`}
+      >
+        <div className="flex flex-col gap-12">
           <Field id={`tx-cat-${transaction._id}`} label="Category">
             <Select
               id={`tx-cat-${transaction._id}`}
@@ -493,17 +514,37 @@ function TransactionRow({
           </Field>
           <Checkbox
             id={`tx-rule-${transaction._id}`}
-            label={`Always file ${transaction.merchant || "this merchant"} here`}
+            label="Always file here"
             helper={
               transaction.merchant
-                ? "Creates a rule, so the next one is categorised before you see it."
+                ? "Creates a rule, so the next matching transaction is categorised before you see it."
                 : "Only available on a row that has a merchant to match on."
             }
             checked={makeRule}
             disabled={!transaction.merchant}
             onChange={(e) => setMakeRule(e.target.checked)}
           />
-          <div className="flex flex-wrap items-center justify-between gap-12">
+          {makeRule ? (
+            <Field
+              id={`tx-rule-match-${transaction._id}`}
+              label="Match transactions whose merchant contains"
+              helper={
+                // Reflecting the exact case-insensitive substring rule the
+                // server applies (`categorization.engine.ts`), not vague
+                // reassurance — this text is what decides whether the
+                // rule turns out broad enough to actually catch anything.
+                "Case-insensitive, anywhere in the merchant text. Narrower than the full line above catches more future transactions — a whole parsed line rarely repeats verbatim, just the merchant name usually does."
+              }
+              className="ml-[34px]"
+            >
+              <Input
+                id={`tx-rule-match-${transaction._id}`}
+                value={matchValue}
+                onChange={(e) => setMatchValue(e.target.value)}
+              />
+            </Field>
+          ) : null}
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-12">
             <button
               type="button"
               onClick={() => {
@@ -517,14 +558,14 @@ function TransactionRow({
             <Button
               size="sm"
               busy={update.isPending}
-              disabled={!choice}
+              disabled={!choice || (makeRule && !trimmedMatchValue)}
               onClick={() => update.mutate()}
             >
               Save
             </Button>
           </div>
         </div>
-      ) : null}
+      </Modal>
     </div>
   );
 }
