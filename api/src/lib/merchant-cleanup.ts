@@ -33,6 +33,8 @@
  * that's otherwise empty) — cleanup here is lossy by design.
  */
 
+import { cleanMerchantLabelWithLlm } from "./merchant-llm-cleanup.js";
+
 const KNOWN_MERCHANTS: { pattern: RegExp; label: string }[] = [
   { pattern: /NETFLIX/, label: "Netflix" },
   { pattern: /SPOTIFY/, label: "Spotify" },
@@ -183,37 +185,44 @@ function genericFallback(raw: string): string {
   return titleCase(text);
 }
 
-export function cleanMerchantLabel(raw: string): string {
+/**
+ * Same three-tier logic as `cleanMerchantLabel`, but also reports which tier
+ * produced the result — tier 3 (generic fallback) is the only case worth
+ * spending an LLM call on upgrading, since tiers 1 and 2 are already
+ * high-confidence. Kept internal; `cleanMerchantLabel` and
+ * `cleanMerchantLabelSmart` are the two public entry points.
+ */
+function cleanMerchantLabelWithTier(raw: string): { label: string; tier: 1 | 2 | 3 } {
   const trimmed = (raw ?? "").trim();
-  if (!trimmed) return "";
+  if (!trimmed) return { label: "", tier: 3 };
 
   const upper = trimmed.toUpperCase();
 
   // Tier 1: known merchants/billers, matched anywhere in the text.
   for (const { pattern, label } of KNOWN_MERCHANTS) {
-    if (pattern.test(upper)) return label;
+    if (pattern.test(upper)) return { label, tier: 1 };
   }
 
   // Tier 2: structural transaction-type patterns.
-  if (/^INTEREST\s+CREDIT/.test(upper)) return "Interest Credit";
-  if (/^INTEREST\s+PAID/.test(upper) || /BANK\s+INTEREST\s+PAID/.test(upper)) return "Interest Paid";
+  if (/^INTEREST\s+CREDIT/.test(upper)) return { label: "Interest Credit", tier: 2 };
+  if (/^INTEREST\s+PAID/.test(upper) || /BANK\s+INTEREST\s+PAID/.test(upper)) return { label: "Interest Paid", tier: 2 };
 
-  if (/^CHQ\s*DEP/.test(upper)) return "Cheque Deposit";
+  if (/^CHQ\s*DEP/.test(upper)) return { label: "Cheque Deposit", tier: 2 };
 
   const atmMatch = trimmed.match(/^AT[WM]-[\dX]+-\w+-([A-Za-z ]+)$/i);
-  if (atmMatch) return `ATM Withdrawal · ${titleCase(atmMatch[1].trim())}`;
-  if (/^AT[WM][- ]/.test(upper)) return "ATM Withdrawal";
+  if (atmMatch) return { label: `ATM Withdrawal · ${titleCase(atmMatch[1].trim())}`, tier: 2 };
+  if (/^AT[WM][- ]/.test(upper)) return { label: "ATM Withdrawal", tier: 2 };
 
   if (/CASH\s*WDL/.test(upper)) {
-    if (/COMM/.test(upper)) return "ATM Cash Withdrawal Commission";
-    if (/SERV/.test(upper)) return "ATM Cash Withdrawal Service Charge";
-    return "ATM Cash Withdrawal";
+    if (/COMM/.test(upper)) return { label: "ATM Cash Withdrawal Commission", tier: 2 };
+    if (/SERV/.test(upper)) return { label: "ATM Cash Withdrawal Service Charge", tier: 2 };
+    return { label: "ATM Cash Withdrawal", tier: 2 };
   }
 
-  if (/DEBIT\s*CARD\s*ISSUANCE\s*FEE/.test(upper)) return "Debit Card Issuance Fee";
-  if (/DEBIT\s*CARD\s*ANNUAL\s*FEE|DEBIT\s*CARD\s*A\/?C\s*FEE/.test(upper)) return "Debit Card Annual Fee";
-  if (/SMS\s*ALERT\s*CHARGES?/.test(upper)) return "SMS Alert Charges";
-  if (/(AMB|MIN(?:IMUM)?\s*BAL(?:ANCE)?)\s*CHARGES?/.test(upper)) return "Minimum Balance Charges";
+  if (/DEBIT\s*CARD\s*ISSUANCE\s*FEE/.test(upper)) return { label: "Debit Card Issuance Fee", tier: 2 };
+  if (/DEBIT\s*CARD\s*ANNUAL\s*FEE|DEBIT\s*CARD\s*A\/?C\s*FEE/.test(upper)) return { label: "Debit Card Annual Fee", tier: 2 };
+  if (/SMS\s*ALERT\s*CHARGES?/.test(upper)) return { label: "SMS Alert Charges", tier: 2 };
+  if (/(AMB|MIN(?:IMUM)?\s*BAL(?:ANCE)?)\s*CHARGES?/.test(upper)) return { label: "Minimum Balance Charges", tier: 2 };
 
   if (/^NEFT/.test(upper) || /^IMPS/.test(upper) || /^RTGS/.test(upper)) {
     const kind = /^NEFT/.test(upper) ? "NEFT" : /^IMPS/.test(upper) ? "IMPS" : "RTGS";
@@ -222,14 +231,35 @@ export function cleanMerchantLabel(raw: string): string {
     // CORP" -> "NEFT · Acme Corp").
     const parts = trimmed.split("-").map((p) => p.trim());
     const trailingName = parts.slice(1).find((p) => p && !looksLikeReferenceOrMasked(p) && !IFSC_LIKE_RE.test(p.toUpperCase()));
-    return trailingName ? `${kind} · ${titleCase(trailingName)}` : `${kind} Transfer`;
+    return trailingName ? { label: `${kind} · ${titleCase(trailingName)}`, tier: 2 } : { label: `${kind} Transfer`, tier: 2 };
   }
 
   if (upper.includes("UPI")) {
     const payee = extractUpiPayee(trimmed);
-    if (payee) return titleCase(payee);
+    if (payee) return { label: titleCase(payee), tier: 2 };
   }
 
   // Tier 3: generic noise-stripped fallback.
-  return genericFallback(trimmed);
+  return { label: genericFallback(trimmed), tier: 3 };
+}
+
+export function cleanMerchantLabel(raw: string): string {
+  return cleanMerchantLabelWithTier(raw).label;
+}
+
+/**
+ * Same output as `cleanMerchantLabel` for tiers 1-2 (already high
+ * confidence, never worth an LLM call). For tier 3 - the noise-stripped
+ * fallback that's the actual source of the "UPI/DRs, VKICs, against"-style
+ * unreadable names - tries the GLM-backed cache/LLM upgrade in
+ * `merchant-llm-cleanup.ts` first, falling back to the same tier-3 label if
+ * that's unavailable or fails. Import pipelines should prefer this over the
+ * sync version; it's async only because of that upgrade path.
+ */
+export async function cleanMerchantLabelSmart(raw: string): Promise<string> {
+  const { label, tier } = cleanMerchantLabelWithTier(raw);
+  const trimmed = (raw ?? "").trim();
+  if (tier !== 3 || !trimmed) return label;
+
+  return cleanMerchantLabelWithLlm(trimmed, label);
 }

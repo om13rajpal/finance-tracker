@@ -1,5 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { cleanMerchantLabel } from "../../src/lib/merchant-cleanup.js";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { cleanMerchantLabel, cleanMerchantLabelSmart } from "../../src/lib/merchant-cleanup.js";
+import { cleanMerchantLabelWithLlm } from "../../src/lib/merchant-llm-cleanup.js";
+
+vi.mock("../../src/lib/merchant-llm-cleanup.js", () => ({
+  cleanMerchantLabelWithLlm: vi.fn(),
+}));
 
 // These narration shapes mirror real HDFC/SBI statement text observed while
 // validating this app against real (redacted here) bank exports — reference
@@ -126,5 +131,47 @@ describe("cleanMerchantLabel", () => {
       const longText = "SOME VERY LONG UNRECOGNIZED MERCHANT NARRATION TEXT THAT GOES ON AND ON AND ON FOR A WHILE";
       expect(cleanMerchantLabel(longText).length).toBeLessThanOrEqual(40);
     });
+  });
+});
+
+// `cleanMerchantLabelSmart` only ever spends an LLM call on tier-3 (generic
+// fallback) results — tiers 1/2 are already high confidence and must reach
+// the exact same answer as the sync `cleanMerchantLabel`, with zero calls
+// into the LLM/cache module, regardless of whether an API key is configured.
+describe("cleanMerchantLabelSmart", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns the tier-1 known-merchant label directly, without touching the LLM module at all", async () => {
+    const result = await cleanMerchantLabelSmart(
+      "UPI/DR/103523751353/NETFLIX/HDFC/netflix.bd/Execu 0097691162095 AT 00652 MAIN BRANCH , HISAR"
+    );
+
+    expect(result).toBe("Netflix");
+    expect(cleanMerchantLabelWithLlm).not.toHaveBeenCalled();
+  });
+
+  it("returns the tier-2 structural label directly, without touching the LLM module at all", async () => {
+    const result = await cleanMerchantLabelSmart("INTEREST CREDIT");
+
+    expect(result).toBe("Interest Credit");
+    expect(cleanMerchantLabelWithLlm).not.toHaveBeenCalled();
+  });
+
+  it("hands tier-3 (generic fallback) narration to the LLM module with the heuristic label as the fallback", async () => {
+    vi.mocked(cleanMerchantLabelWithLlm).mockResolvedValue("Xyz Specialty Goods Trading Co");
+
+    const result = await cleanMerchantLabelSmart("XYZ SPECIALTY GOODS TRADING CO");
+
+    expect(result).toBe("Xyz Specialty Goods Trading Co");
+    expect(cleanMerchantLabelWithLlm).toHaveBeenCalledWith("XYZ SPECIALTY GOODS TRADING CO", "Xyz Specialty Goods Trading Co");
+  });
+
+  it("returns an empty string for empty input, without touching the LLM module", async () => {
+    const result = await cleanMerchantLabelSmart("");
+
+    expect(result).toBe("");
+    expect(cleanMerchantLabelWithLlm).not.toHaveBeenCalled();
   });
 });

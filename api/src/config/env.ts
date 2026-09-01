@@ -15,6 +15,12 @@ const schema = z.object({
   WEB_ORIGIN: z.string(),
   GMAIL_PUBSUB_TOPIC: z.string(),
   GMAIL_WEBHOOK_SECRET: z.string(),
+  // Optional: Zhipu AI's free GLM-4-Flash API (https://open.bigmodel.cn), used
+  // to clean up merchant names the regex/dictionary tiers in
+  // `lib/merchant-cleanup.ts` couldn't confidently identify. Unset -> that
+  // feature silently no-ops and falls back to the existing heuristic, same
+  // as every other optional-integration env var in this codebase.
+  GLM_API_KEY: z.string().optional(),
 });
 
 export const env = schema.parse(process.env);

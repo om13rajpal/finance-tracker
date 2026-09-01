@@ -8,7 +8,7 @@ import { applyCategorizationRules } from "../../categorization/categorization.en
 import { parseGenericBankCsv } from "./parsers/genericBank.parser.js";
 import { invalidateDashboardCache } from "../../dashboard/dashboard.service.js";
 import { applyBalanceDelta } from "../../accounts/balance.service.js";
-import { cleanMerchantLabel } from "../../../lib/merchant-cleanup.js";
+import { cleanMerchantLabelSmart } from "../../../lib/merchant-cleanup.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 export const csvImportRouter = Router();
@@ -47,7 +47,7 @@ csvImportRouter.post("/import", upload.single("file"), async (req, res, next) =>
       // the raw text, so a rule created from what the person actually sees
       // (via the Categorize popup, pre-filled from this same field) keeps
       // matching consistently on future imports too.
-      const cleanedMerchant = cleanMerchantLabel(row.merchant) || row.merchant;
+      const cleanedMerchant = (await cleanMerchantLabelSmart(row.merchant)) || row.merchant;
       const noteWithRaw = row.note || row.merchant;
       const categoryId = await applyCategorizationRules(userId, { merchant: cleanedMerchant, note: noteWithRaw });
       const transaction = await Transaction.create({

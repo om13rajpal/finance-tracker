@@ -13,7 +13,7 @@ import {
 } from "../../modules/statements/statement-row-parser.service.js";
 import { invalidateDashboardCache } from "../../modules/dashboard/dashboard.service.js";
 import { reconcileBalance } from "../../modules/accounts/balance.service.js";
-import { cleanMerchantLabel } from "../../lib/merchant-cleanup.js";
+import { cleanMerchantLabelSmart } from "../../lib/merchant-cleanup.js";
 
 export type StatementProcessJob = {
   batchId: string;
@@ -314,7 +314,7 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
       // empty (true for every bank-specific parser today), so nothing is lost,
       // it's just not what's shown by default. A parser that DOES populate its
       // own `note` (carrying real information, not narration) keeps it as-is.
-      const cleanedMerchant = cleanMerchantLabel(row.merchant);
+      const cleanedMerchant = await cleanMerchantLabelSmart(row.merchant);
       docsToInsert.push({
         row: rowNumber,
         doc: {
