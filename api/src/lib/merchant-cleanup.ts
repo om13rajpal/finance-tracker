@@ -251,7 +251,7 @@ export function cleanMerchantLabel(raw: string): string {
  * Same output as `cleanMerchantLabel` for tiers 1-2 (already high
  * confidence, never worth an LLM call). For tier 3 - the noise-stripped
  * fallback that's the actual source of the "UPI/DRs, VKICs, against"-style
- * unreadable names - tries the GLM-backed cache/LLM upgrade in
+ * unreadable names - tries the Gemini-backed cache/LLM upgrade in
  * `merchant-llm-cleanup.ts` first, falling back to the same tier-3 label if
  * that's unavailable or fails. Import pipelines should prefer this over the
  * sync version; it's async only because of that upgrade path.

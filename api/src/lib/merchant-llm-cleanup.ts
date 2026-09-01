@@ -3,7 +3,7 @@ import { MerchantCleanupCache } from "../models/MerchantCleanupCache.js";
 
 /**
  * Upgrades tier-3 (generic-fallback) results from `cleanMerchantLabel` using
- * Zhipu AI's free GLM-4-Flash model, with a persistent cache so a given
+ * Google's free Gemini 2.5 Flash model, with a persistent cache so a given
  * narration SHAPE only ever gets sent to the LLM once. Never throws — a
  * missing key, a network failure, a timeout, or a nonsense response all fall
  * back to the heuristic label the caller already computed. This is a
@@ -11,8 +11,8 @@ import { MerchantCleanupCache } from "../models/MerchantCleanupCache.js";
  * depends on to succeed.
  */
 
-const GLM_ENDPOINT = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
-const GLM_MODEL = "glm-4-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
+const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 const REQUEST_TIMEOUT_MS = 8000;
 const MAX_LABEL_LENGTH = 60;
 
@@ -43,38 +43,39 @@ export function normalizeForCacheKey(raw: string): string {
   return /[A-Z]/.test(key) ? key : "";
 }
 
-async function callGlm(raw: string): Promise<string | null> {
+async function callGemini(raw: string): Promise<string | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   try {
-    const res = await fetch(GLM_ENDPOINT, {
+    const res = await fetch(GEMINI_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${env.GLM_API_KEY}`,
+        "x-goog-api-key": env.GEMINI_API_KEY as string,
       },
       body: JSON.stringify({
-        model: GLM_MODEL,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You clean up raw Indian bank statement narration lines into a short, human-readable merchant or payee name. " +
-              "Reply with ONLY the name, nothing else - no punctuation wrapper, no explanation. " +
-              "If you genuinely cannot identify who the money went to or came from, reply with exactly: UNKNOWN.",
-          },
-          { role: "user", content: raw.slice(0, 300) },
-        ],
-        temperature: 0,
-        max_tokens: 20,
+        systemInstruction: {
+          parts: [
+            {
+              text:
+                "You clean up raw Indian bank statement narration lines into a short, human-readable merchant or payee name. " +
+                "Reply with ONLY the name, nothing else - no punctuation wrapper, no explanation. " +
+                "If you genuinely cannot identify who the money went to or came from, reply with exactly: UNKNOWN.",
+            },
+          ],
+        },
+        contents: [{ role: "user", parts: [{ text: raw.slice(0, 300) }] }],
+        generationConfig: { temperature: 0, maxOutputTokens: 20 },
       }),
       signal: controller.signal,
     });
 
     if (!res.ok) return null;
-    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const content = data.choices?.[0]?.message?.content?.trim();
+    const data = (await res.json()) as {
+      candidates?: { content?: { parts?: { text?: string }[] } }[];
+    };
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!content || content.length > MAX_LABEL_LENGTH) return null;
     if (/^UNKNOWN$/i.test(content)) return null;
     return content.replace(/^["']|["']$/g, "").trim() || null;
@@ -88,7 +89,7 @@ async function callGlm(raw: string): Promise<string | null> {
 }
 
 export async function cleanMerchantLabelWithLlm(raw: string, fallbackLabel: string): Promise<string> {
-  if (!env.GLM_API_KEY) return fallbackLabel;
+  if (!env.GEMINI_API_KEY) return fallbackLabel;
 
   const rawKey = normalizeForCacheKey(raw);
   if (!rawKey) return fallbackLabel;
@@ -96,7 +97,7 @@ export async function cleanMerchantLabelWithLlm(raw: string, fallbackLabel: stri
   const cached = await MerchantCleanupCache.findOne({ rawKey }).lean();
   if (cached) return cached.cleanName;
 
-  const llmName = await callGlm(raw);
+  const llmName = await callGemini(raw);
   if (!llmName) return fallbackLabel;
 
   // Concurrent chunk-processing rows can race to cache the same shape - an

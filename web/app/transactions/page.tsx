@@ -458,6 +458,28 @@ function TransactionRow({
   const title = transaction.merchant || transaction.note || "Untitled";
   const categoryName = entry ? categoryRowName(entry, index) : null;
 
+  // `note` carries the original raw bank narration whenever `merchant` was
+  // cleaned up from it (see `cleanMerchantLabel`'s doc comment) — never
+  // discarded, just not what's shown by default. When the two differ,
+  // there's something worth surfacing on demand: a native `title` tooltip
+  // for hover, and a tap-to-toast fallback for touch, where hover doesn't
+  // exist. Both point at the exact same raw text; neither replaces the
+  // clean name as this row's primary label.
+  const rawNarration =
+    transaction.note && transaction.merchant && transaction.note !== transaction.merchant ? transaction.note : null;
+  const nameNode = rawNarration ? (
+    <button
+      type="button"
+      title={rawNarration}
+      onClick={() => showToast(rawNarration)}
+      className="block w-full truncate bg-transparent p-0 text-left text-body-s text-inherit underline decoration-dim decoration-dotted underline-offset-4"
+    >
+      {title}
+    </button>
+  ) : (
+    title
+  );
+
   return (
     <div className="border-b border-rule last:border-b-0">
       <div className="grid grid-cols-row-tether items-center py-10">
@@ -467,7 +489,7 @@ function TransactionRow({
         </span>
         <Chip spec={spec} labelled />
         <RowName
-          name={title}
+          name={nameNode}
           sub={
             <>
               {formatDate(transaction.date)}

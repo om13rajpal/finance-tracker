@@ -4,7 +4,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 // time (see config/env.ts), so the only reliable way to test both the
 // "key configured" and "key missing" branches is to mock the module itself
 // rather than mutate process.env, which env.ts has already read by now.
-vi.mock("../../src/config/env.js", () => ({ env: { GLM_API_KEY: "test-glm-key" } }));
+vi.mock("../../src/config/env.js", () => ({ env: { GEMINI_API_KEY: "test-gemini-key" } }));
 
 import { MerchantCleanupCache } from "../../src/models/MerchantCleanupCache.js";
 import { normalizeForCacheKey, cleanMerchantLabelWithLlm } from "../../src/lib/merchant-llm-cleanup.js";
@@ -13,8 +13,8 @@ function jsonResponse(status: number, body: unknown) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
 }
 
-function glmReply(content: string) {
-  return jsonResponse(200, { choices: [{ message: { content } }] });
+function geminiReply(text: string) {
+  return jsonResponse(200, { candidates: [{ content: { parts: [{ text }] } }] });
 }
 
 describe("normalizeForCacheKey", () => {
@@ -51,20 +51,21 @@ describe("cleanMerchantLabelWithLlm", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("calls the GLM API and returns its cleaned name on a cache miss", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(glmReply("Acme Traders"));
+  it("calls the Gemini API and returns its cleaned name on a cache miss", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(geminiReply("Acme Traders"));
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await cleanMerchantLabelWithLlm("XYZ SPECIALTY RANDOM SHOP TEXT", "Xyz Specialty Random Shop Text");
 
     expect(result).toBe("Acme Traders");
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [, init] = fetchMock.mock.calls[0];
-    expect(init.headers.Authorization).toBe("Bearer test-glm-key");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("gemini-2.5-flash:generateContent");
+    expect(init.headers["x-goog-api-key"]).toBe("test-gemini-key");
   });
 
   it("caches the LLM result so a second call with the same narration shape never hits fetch again", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(glmReply("Acme Traders"));
+    const fetchMock = vi.fn().mockResolvedValue(geminiReply("Acme Traders"));
     vi.stubGlobal("fetch", fetchMock);
 
     await cleanMerchantLabelWithLlm("P0000011-653601178007-ACME UPI-XXXXXXX7543-SBIN0000652", "fallback-a");
@@ -75,7 +76,7 @@ describe("cleanMerchantLabelWithLlm", () => {
   });
 
   it("falls back to the heuristic label when the API returns UNKNOWN", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(glmReply("UNKNOWN")));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(geminiReply("UNKNOWN")));
 
     const result = await cleanMerchantLabelWithLlm("SOME TOTALLY OPAQUE NARRATION LINE", "Some Totally Opaque Narration Line");
 
@@ -98,7 +99,7 @@ describe("cleanMerchantLabelWithLlm", () => {
     );
   });
 
-  it("falls back to the heuristic label when the response body is malformed JSON-shape (no choices)", async () => {
+  it("falls back to the heuristic label when the response body is malformed JSON-shape (no candidates)", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, { unexpected: true })));
 
     await expect(cleanMerchantLabelWithLlm("MALFORMED RESPONSE CASE", "Malformed Response Case")).resolves.toBe(
