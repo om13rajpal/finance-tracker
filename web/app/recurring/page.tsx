@@ -1,59 +1,72 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { apiFetch } from "@/lib/api-client";
+import type {
+  Account,
+  CategoryNode,
+  Frequency,
+  RecurringItem,
+  RecurringStatus,
+  RecurringType,
+} from "@/lib/api-types";
+import { flattenCategories, indexCategories, resolveChip, type CategoryIndex } from "@/lib/buckets";
+import {
+  formatDayMonthShort,
+  formatInr,
+  formatSignedInr,
+  relativeDays,
+  todayInputValue,
+} from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Chip, ChipSkeleton } from "@/components/app/chip";
+import {
+  Checkbox,
+  Field,
+  FieldGrid,
+  FormActions,
+  MoneyInput,
+  DateInput,
+  Segmented,
+  Select,
+} from "@/components/app/form";
+import {
+  Amount,
+  EmptyState,
+  Notice,
+  PageHeader,
+  Panel,
+  PanelFooter,
+  PanelHeader,
+  Readout,
+  RowName,
+  Skeleton,
+} from "@/components/app/primitives";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
 import { useToast } from "@/components/ui/Toast";
 
-type RecurringType = "expense" | "income";
-type Frequency = "monthly" | "weekly" | "yearly" | "custom";
-type RecurringStatus = "active" | "paused" | "cancelled";
-
-interface RecurringItem {
-  _id: string;
-  name: string;
-  type: RecurringType;
-  amount: number;
-  frequency: Frequency;
-  nextDueDate: string;
-  accountId: string;
-  categoryId: string;
-  autoCreate: boolean;
-  status: RecurringStatus;
-}
-
-interface Account {
-  _id: string;
-  institution: string;
-  nickname: string;
-}
-
-type CategoryType = "expense" | "income";
-type Bucket = "fixed_costs" | "investments" | "savings" | "guilt_free";
-
-interface CategoryNode {
-  _id: string;
-  name: string;
-  type: CategoryType;
-  bucket: Bucket;
-  children: CategoryNode[];
-}
-
-function flattenForSelect(nodes: CategoryNode[], depth = 0): { node: CategoryNode; depth: number }[] {
-  return nodes.flatMap((n) => [{ node: n, depth }, ...flattenForSelect(n.children, depth + 1)]);
-}
-
-function formatInr(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+/**
+ * Sorted · Recurring
+ *
+ * What happens to the money whether or not you look. Rent, SIPs, salary,
+ * subscriptions — the items that produce the dashboard's Upcoming rail and,
+ * more importantly, the `planned` half of Guilt-Free Money.
+ *
+ * WHY THE COMMITMENT FIGURE IS "NEXT 30 DAYS" AND NOT "PER MONTH". Frequencies
+ * here are monthly, weekly, yearly or custom. Normalising a yearly item into
+ * "per month" invents a number nobody is ever charged, and a custom frequency
+ * cannot be normalised at all. `GET /recurring/upcoming?days=30` is a real
+ * window the server already computes, so that is what is shown.
+ *
+ * STATUS IS A SHAPE, NOT A COLOUR. Active, paused and cancelled are told apart
+ * by which actions a row offers and by an ink label — not by a green/amber/grey
+ * badge set, which would put three more colours into a product whose entire
+ * colour system is four buckets.
+ */
 
 const FREQUENCY_LABELS: Record<Frequency, string> = {
   monthly: "Monthly",
@@ -62,305 +75,449 @@ const FREQUENCY_LABELS: Record<Frequency, string> = {
   custom: "Custom",
 };
 
+const STATUS_ORDER: RecurringStatus[] = ["active", "paused", "cancelled"];
 const STATUS_LABELS: Record<RecurringStatus, string> = {
   active: "Active",
   paused: "Paused",
   cancelled: "Cancelled",
 };
 
-function statusBadgeClassName(status: RecurringStatus): string {
-  if (status === "active") return "bg-green-100 text-green-800";
-  if (status === "paused") return "bg-yellow-100 text-yellow-800";
-  return "bg-gray-200 text-gray-600";
-}
-
 export default function RecurringPage() {
-  const queryClient = useQueryClient();
-  const { showToast } = useToast();
-
-  const {
-    data: items,
-    isLoading,
-    isError,
-  } = useQuery({
+  const items = useQuery({
     queryKey: ["recurring"],
     queryFn: () => apiFetch<RecurringItem[]>("/recurring"),
   });
-
-  const { data: accounts } = useQuery({
+  const upcoming = useQuery({
+    queryKey: ["recurring-upcoming", 30],
+    queryFn: () => apiFetch<RecurringItem[]>("/recurring/upcoming?days=30"),
+  });
+  const accounts = useQuery({
     queryKey: ["accounts"],
     queryFn: () => apiFetch<Account[]>("/accounts"),
   });
-
-  const { data: categoryTree } = useQuery({
+  const categories = useQuery({
     queryKey: ["categories"],
     queryFn: () => apiFetch<CategoryNode[]>("/categories"),
   });
-  const flatCategories = flattenForSelect(categoryTree ?? []);
 
-  const [form, setForm] = useState({
+  const index = useMemo(() => indexCategories(categories.data), [categories.data]);
+  const accountName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const a of accounts.data ?? []) map.set(a._id, a.nickname);
+    return map;
+  }, [accounts.data]);
+
+  const list = useMemo(() => items.data ?? [], [items.data]);
+  const grouped = useMemo(() => {
+    const map = new Map<RecurringStatus, RecurringItem[]>();
+    for (const item of list) {
+      const bucket = map.get(item.status) ?? [];
+      bucket.push(item);
+      map.set(item.status, bucket);
+    }
+    for (const rows of map.values()) {
+      rows.sort((a, b) => new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime());
+    }
+    return map;
+  }, [list]);
+
+  const due = upcoming.data ?? [];
+  const dueOut = due
+    .filter((i) => i.type === "expense")
+    .reduce((sum, i) => sum + Math.abs(i.amount), 0);
+  const dueIn = due.filter((i) => i.type === "income").reduce((sum, i) => sum + Math.abs(i.amount), 0);
+
+  return (
+    <ProtectedLayout>
+      <PageHeader
+        title="Recurring"
+        meta={list.length > 0 ? `${grouped.get("active")?.length ?? 0} active` : undefined}
+      />
+
+      <div className="grid items-start gap-22 xl:grid-cols-[7fr_5fr]">
+        <div className="flex min-w-0 flex-col gap-22">
+          {!items.isLoading && !items.isError && list.length > 0 ? (
+            <Panel>
+              <PanelHeader
+                title="§ The next 30 days"
+                meta={upcoming.isSuccess ? `${due.length} due` : undefined}
+              />
+              {/* A dash, not a zero. `?? []` would report "nothing going out"
+                  when the real answer is that the window could not be read —
+                  and those are opposite facts. */}
+              <div className="grid gap-22 sm:grid-cols-3">
+                <Readout
+                  label="Going out"
+                  value={!upcoming.isSuccess ? "—" : dueOut > 0 ? `−${formatInr(dueOut)}` : formatInr(0)}
+                />
+                <Readout
+                  label="Coming in"
+                  value={!upcoming.isSuccess ? "—" : dueIn > 0 ? `+${formatInr(dueIn)}` : formatInr(0)}
+                />
+                <Readout label="Net" value={upcoming.isSuccess ? dueIn - dueOut : "—"} />
+              </div>
+              <PanelFooter>
+                Active items only. Paused and cancelled ones are not counted.
+              </PanelFooter>
+            </Panel>
+          ) : null}
+
+          {items.isLoading ? (
+            <Panel>
+              <PanelHeader title="§ Active" />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="grid grid-cols-row items-center gap-14 border-b border-rule py-14 last:border-b-0"
+                >
+                  <ChipSkeleton />
+                  <Skeleton className="h-[15px] w-[170px] rounded-sm" />
+                  <Skeleton className="h-[15px] w-[90px] rounded-sm" />
+                </div>
+              ))}
+            </Panel>
+          ) : items.isError ? (
+            <Notice
+              title="Could not load your recurring items."
+              body="Please try again shortly. Nothing has been lost."
+            />
+          ) : list.length === 0 ? (
+            <Panel>
+              <EmptyState
+                title="Nothing recurring yet."
+                body="Rent, SIPs, salary, subscriptions — anything that happens on a schedule. Adding them is what makes Guilt-Free Money mean something, because it is what the plan is subtracted from."
+              />
+            </Panel>
+          ) : (
+            STATUS_ORDER.filter((status) => (grouped.get(status) ?? []).length > 0).map((status) => (
+              <Panel key={status}>
+                <PanelHeader
+                  title={`§ ${STATUS_LABELS[status]}`}
+                  meta={`${grouped.get(status)!.length}`}
+                />
+                {grouped.get(status)!.map((item) => (
+                  <RecurringRow
+                    key={item._id}
+                    item={item}
+                    index={index}
+                    accountName={accountName}
+                  />
+                ))}
+                {status === "cancelled" ? (
+                  <PanelFooter>Kept for the record. They never fire again.</PanelFooter>
+                ) : null}
+              </Panel>
+            ))
+          )}
+        </div>
+
+        <div className="xl:sticky xl:top-32">
+          <AddRecurringPanel
+            accounts={accounts.data ?? []}
+            categories={flattenCategories(categories.data)}
+          />
+        </div>
+      </div>
+    </ProtectedLayout>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// One item
+// ═══════════════════════════════════════════════════════════════════════════
+
+function RecurringRow({
+  item,
+  index,
+  accountName,
+}: {
+  item: RecurringItem;
+  index: CategoryIndex;
+  accountName: Map<string, string>;
+}) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  const setStatus = useMutation({
+    mutationFn: (status: RecurringStatus) =>
+      apiFetch<RecurringItem>(`/recurring/${item._id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      }),
+    onSuccess: (_data, status) => {
+      queryClient.invalidateQueries({ queryKey: ["recurring"] });
+      queryClient.invalidateQueries({ queryKey: ["recurring-upcoming"] });
+      // A recurring item feeds `planned` in Guilt-Free Money directly, so
+      // pausing one changes the dashboard's headline figure.
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      showToast(
+        status === "paused" ? "Paused" : status === "active" ? "Resumed" : "Cancelled",
+        "success"
+      );
+    },
+    onError: () => showToast("Could not update that item", "error"),
+  });
+
+  const spec = resolveChip(item.categoryId, index, {
+    direction: item.type === "income" ? "income" : "expense",
+  });
+  const signed = item.type === "income" ? Math.abs(item.amount) : -Math.abs(item.amount);
+  const inactive = item.status !== "active";
+
+  return (
+    <div
+      className={cn(
+        "flex flex-wrap items-center gap-14 border-b border-rule py-12 last:border-b-0",
+        // Cancelled rows are dimmed as a WHOLE, so nothing inside them has to be
+        // recoloured — and the figures stay tabular and legible rather than
+        // being greyed into illegibility one element at a time.
+        item.status === "cancelled" && "opacity-[.6]"
+      )}
+    >
+      <div className="grid min-w-[240px] flex-1 grid-cols-row items-center gap-14">
+        <Chip spec={spec} labelled />
+        <RowName
+          name={item.name}
+          sub={[
+            FREQUENCY_LABELS[item.frequency],
+            inactive
+              ? null
+              : `${formatDayMonthShort(item.nextDueDate)} · ${relativeDays(item.nextDueDate)}`,
+            accountName.get(item.accountId),
+            item.autoCreate ? "auto-files" : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+        />
+        <Amount>{formatSignedInr(signed)}</Amount>
+      </div>
+
+      <div className="flex flex-none items-center gap-14">
+        {item.status === "active" ? (
+          <button
+            type="button"
+            onClick={() => setStatus.mutate("paused")}
+            disabled={setStatus.isPending}
+            className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink disabled:opacity-[.55]"
+          >
+            Pause
+          </button>
+        ) : null}
+        {item.status === "paused" ? (
+          <Button size="sm" variant="ghost" busy={setStatus.isPending} onClick={() => setStatus.mutate("active")}>
+            Resume
+          </Button>
+        ) : null}
+        {item.status !== "cancelled" ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm(`Cancel "${item.name}"? This cannot be undone.`)) {
+                setStatus.mutate("cancelled");
+              }
+            }}
+            disabled={setStatus.isPending}
+            /* --alert is reserved for a real failure and for a named budget
+               overage. Ten rows each carrying a red "Cancel" would have put
+               more of that colour on this screen than exists in the rest of the
+               product combined, for an action that is guarded by a confirm
+               dialog anyway. It goes red on hover, at the moment it is about to
+               be used. */
+            className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-alert disabled:opacity-[.55]"
+          >
+            Cancel
+          </button>
+        ) : (
+          <span className="font-num text-micro uppercase tracking-micro text-dim">Cancelled</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Add
+// ═══════════════════════════════════════════════════════════════════════════
+
+function AddRecurringPanel({
+  accounts,
+  categories,
+}: {
+  accounts: Account[];
+  categories: { node: CategoryNode; depth: number }[];
+}) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const empty = {
     name: "",
     type: "expense" as RecurringType,
     amount: "",
     frequency: "monthly" as Frequency,
-    nextDueDate: new Date().toISOString().slice(0, 10),
+    nextDueDate: todayInputValue(),
     accountId: "",
     categoryId: "",
     autoCreate: false,
-  });
+  };
+  const [form, setForm] = useState(empty);
 
-  // Invalidating ["dashboard"] here (in addition to ["recurring"]) matters because
-  // RecurringTransaction feeds computeGuiltFreeMoney's "planned" figure directly
-  // (api/src/modules/dashboard/guilt-free.service.ts) - without it, the client-side
-  // cached dashboard query would keep showing a stale "planned" value even after the
-  // server-side Redis cache was cleared by the corresponding backend fix.
-  const createMutation = useMutation({
+  const create = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
       apiFetch<RecurringItem>("/recurring", { method: "POST", body: JSON.stringify(payload) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["recurring"] });
+      queryClient.invalidateQueries({ queryKey: ["recurring-upcoming"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      setForm({
-        name: "",
-        type: "expense",
-        amount: "",
-        frequency: "monthly",
-        nextDueDate: new Date().toISOString().slice(0, 10),
-        accountId: "",
-        categoryId: "",
-        autoCreate: false,
-      });
-      showToast("Recurring item created", "success");
+      setForm(empty);
+      showToast("Recurring item added", "success");
     },
-    onError: () => showToast("Failed to create recurring item", "error"),
+    onError: () => showToast("Could not add that item", "error"),
   });
-
-  function submitCreate() {
-    if (!form.name.trim()) {
-      showToast("Enter a name");
-      return;
-    }
-    const amount = Number(form.amount);
-    if (form.amount.trim() === "" || Number.isNaN(amount) || amount <= 0) {
-      showToast("Enter a valid amount");
-      return;
-    }
-    if (!form.nextDueDate) {
-      showToast("Choose a next due date");
-      return;
-    }
-    if (!form.accountId) {
-      showToast("Choose an account");
-      return;
-    }
-    if (!form.categoryId) {
-      showToast("Choose a category");
-      return;
-    }
-    createMutation.mutate({
-      name: form.name,
-      type: form.type,
-      amount,
-      frequency: form.frequency,
-      nextDueDate: form.nextDueDate,
-      accountId: form.accountId,
-      categoryId: form.categoryId,
-      autoCreate: form.autoCreate,
-    });
-  }
-
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: RecurringStatus }) =>
-      apiFetch<RecurringItem>(`/recurring/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status }),
-      }),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["recurring"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      const label =
-        variables.status === "paused"
-          ? "Recurring item paused"
-          : variables.status === "active"
-            ? "Recurring item resumed"
-            : "Recurring item cancelled";
-      showToast(label, "success");
-    },
-    onError: () => showToast("Failed to update recurring item", "error"),
-  });
-
-  function submitCancel(item: RecurringItem) {
-    if (!window.confirm(`Cancel "${item.name}"? This cannot be undone.`)) return;
-    statusMutation.mutate({ id: item._id, status: "cancelled" });
-  }
 
   return (
-    <ProtectedLayout>
-      <h1 className="mb-6 text-2xl font-semibold">Recurring</h1>
+    <Panel>
+      <PanelHeader title="§ Add a recurring item" />
+      <form
+        noValidate
+        className="flex flex-col gap-14"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!form.name.trim()) {
+            showToast("Give it a name");
+            return;
+          }
+          const amount = Number(form.amount);
+          if (form.amount.trim() === "" || Number.isNaN(amount) || amount <= 0) {
+            showToast("Enter an amount above zero");
+            return;
+          }
+          if (!form.nextDueDate) {
+            showToast("Choose when it is next due");
+            return;
+          }
+          if (!form.accountId) {
+            showToast("Choose an account");
+            return;
+          }
+          if (!form.categoryId) {
+            showToast("Choose a category");
+            return;
+          }
+          create.mutate({
+            name: form.name.trim(),
+            type: form.type,
+            amount,
+            frequency: form.frequency,
+            nextDueDate: form.nextDueDate,
+            accountId: form.accountId,
+            categoryId: form.categoryId,
+            autoCreate: form.autoCreate,
+          });
+        }}
+      >
+        <Field id="rec-name" label="Name">
+          <Input
+            id="rec-name"
+            placeholder="Home rent"
+            value={form.name}
+            onChange={(e) => setForm({ ...form, name: e.target.value })}
+          />
+        </Field>
 
-      <Card className="mb-6">
-        <p className="mb-3 font-medium">Add Recurring Item</p>
-        <div className="flex flex-col gap-3">
-          <label htmlFor="rec-name" className="text-sm">
-            Name
-            <Input
-              id="rec-name"
-              className="mt-1 w-full"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-            />
-          </label>
-          <label htmlFor="rec-type" className="text-sm">
-            Type
-            <select
-              id="rec-type"
-              className="mt-1 w-full rounded border px-3 py-2"
-              value={form.type}
-              onChange={(e) => setForm({ ...form, type: e.target.value as RecurringType })}
-            >
-              <option value="expense">Expense</option>
-              <option value="income">Income</option>
-            </select>
-          </label>
-          <label htmlFor="rec-amount" className="text-sm">
-            Amount
-            <Input
+        <div className="flex flex-col gap-8">
+          <span className="font-sans text-body-s font-medium text-ink">Direction</span>
+          <Segmented
+            name="rec-type"
+            ariaLabel="Direction"
+            value={form.type}
+            onChange={(type) => setForm({ ...form, type })}
+            options={[
+              { value: "expense", label: "Money out" },
+              { value: "income", label: "Money in" },
+            ]}
+          />
+        </div>
+
+        <FieldGrid>
+          <Field id="rec-amount" label="Amount" hint="Positive">
+            <MoneyInput
               id="rec-amount"
-              className="mt-1 w-full"
-              type="number"
+              placeholder="28000"
               value={form.amount}
               onChange={(e) => setForm({ ...form, amount: e.target.value })}
             />
-          </label>
-          <label htmlFor="rec-frequency" className="text-sm">
-            Frequency
-            <select
+          </Field>
+          <Field id="rec-frequency" label="Frequency">
+            <Select
               id="rec-frequency"
-              className="mt-1 w-full rounded border px-3 py-2"
               value={form.frequency}
               onChange={(e) => setForm({ ...form, frequency: e.target.value as Frequency })}
             >
-              <option value="monthly">Monthly</option>
-              <option value="weekly">Weekly</option>
-              <option value="yearly">Yearly</option>
-              <option value="custom">Custom</option>
-            </select>
-          </label>
-          <label htmlFor="rec-next-due" className="text-sm">
-            Next Due Date
-            <Input
-              id="rec-next-due"
-              className="mt-1 w-full"
-              type="date"
-              value={form.nextDueDate}
-              onChange={(e) => setForm({ ...form, nextDueDate: e.target.value })}
-            />
-          </label>
-          <label htmlFor="rec-account" className="text-sm">
-            Account
-            <select
-              id="rec-account"
-              className="mt-1 w-full rounded border px-3 py-2"
-              value={form.accountId}
-              onChange={(e) => setForm({ ...form, accountId: e.target.value })}
-            >
-              <option value="">Select an account</option>
-              {(accounts ?? []).map((a) => (
-                <option key={a._id} value={a._id}>
-                  {a.institution} · {a.nickname}
+              {(Object.keys(FREQUENCY_LABELS) as Frequency[]).map((f) => (
+                <option key={f} value={f}>
+                  {FREQUENCY_LABELS[f]}
                 </option>
               ))}
-            </select>
-          </label>
-          <label htmlFor="rec-category" className="text-sm">
-            Category
-            <select
-              id="rec-category"
-              className="mt-1 w-full rounded border px-3 py-2"
-              value={form.categoryId}
-              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-            >
-              <option value="">Select a category</option>
-              {flatCategories.map(({ node, depth }) => (
-                <option key={node._id} value={node._id}>
-                  {"  ".repeat(depth)}
-                  {node.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label htmlFor="rec-autocreate" className="flex items-center gap-2 text-sm">
-            <input
-              id="rec-autocreate"
-              type="checkbox"
-              checked={form.autoCreate}
-              onChange={(e) => setForm({ ...form, autoCreate: e.target.checked })}
-            />
-            Auto-create transaction when due
-          </label>
-          <Button onClick={submitCreate} disabled={createMutation.isPending}>
+            </Select>
+          </Field>
+        </FieldGrid>
+
+        <Field id="rec-next-due" label="Next due">
+          <DateInput
+            id="rec-next-due"
+            value={form.nextDueDate}
+            onChange={(e) => setForm({ ...form, nextDueDate: e.target.value })}
+          />
+        </Field>
+
+        <Field id="rec-account" label="Account">
+          <Select
+            id="rec-account"
+            value={form.accountId}
+            onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+          >
+            <option value="">Select an account</option>
+            {accounts.map((a) => (
+              <option key={a._id} value={a._id}>
+                {a.institution} · {a.nickname}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Field
+          id="rec-category"
+          label="Category"
+          helper="Its bucket is what decides whether this counts against your guilt-free money."
+        >
+          <Select
+            id="rec-category"
+            value={form.categoryId}
+            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+          >
+            <option value="">Select a category</option>
+            {categories.map(({ node, depth }) => (
+              <option key={node._id} value={node._id}>
+                {"— ".repeat(depth)}
+                {node.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Checkbox
+          id="rec-autocreate"
+          label="File the transaction automatically"
+          helper="When it falls due, the transaction is created for you and the next date moves on by one cycle."
+          checked={form.autoCreate}
+          onChange={(e) => setForm({ ...form, autoCreate: e.target.checked })}
+        />
+
+        <FormActions>
+          <Button type="submit" busy={create.isPending}>
             Add
           </Button>
-        </div>
-      </Card>
-
-      {isLoading ? (
-        <p className="text-sm text-gray-500">Loading...</p>
-      ) : isError ? (
-        <p className="text-sm text-red-600">Could not load recurring items. Please try again shortly.</p>
-      ) : (items ?? []).length === 0 ? (
-        <p className="text-sm text-gray-500">No recurring items yet.</p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {(items ?? []).map((item) => (
-            <Card key={item._id}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {formatInr(item.amount)} · {FREQUENCY_LABELS[item.frequency]} · next{" "}
-                    {new Date(item.nextDueDate).toLocaleDateString()} ·{" "}
-                    {item.autoCreate ? "Auto-create on" : "Auto-create off"}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`rounded px-2 py-1 text-xs font-medium ${statusBadgeClassName(item.status)}`}
-                  >
-                    {STATUS_LABELS[item.status]}
-                  </span>
-                  {item.status === "active" && (
-                    <Button
-                      className="bg-gray-500"
-                      onClick={() => statusMutation.mutate({ id: item._id, status: "paused" })}
-                      disabled={statusMutation.isPending}
-                    >
-                      Pause
-                    </Button>
-                  )}
-                  {item.status === "paused" && (
-                    <Button
-                      onClick={() => statusMutation.mutate({ id: item._id, status: "active" })}
-                      disabled={statusMutation.isPending}
-                    >
-                      Resume
-                    </Button>
-                  )}
-                  {item.status !== "cancelled" && (
-                    <Button
-                      className="bg-red-600"
-                      onClick={() => submitCancel(item)}
-                      disabled={statusMutation.isPending}
-                    >
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      )}
-    </ProtectedLayout>
+        </FormActions>
+      </form>
+    </Panel>
   );
 }

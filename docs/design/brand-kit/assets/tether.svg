@@ -1,0 +1,20 @@
+<!-- @moodforge
+schema: 1.0
+round: 4
+phase: brand-kit
+worker: moodforge-brand-architect
+theme: sorted
+version: v1
+created_at: 2026-08-30T00:00:00Z
+sha256: bb4d389dc6959510ff9843cbf2832329d0fb211177a12eed0babaad41900fb8a
+artifact_role: asset-tether
+summary: The tether — a 16x12 dotted lead-in reusing the login constellation connector stroke (1.6px ink, dash 4 6, round caps). Marks any row the Gmail bank-alert parser filed by itself. One meaning, one mark.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="12" viewBox="0 0 16 12"
+     role="img" aria-label="Filed automatically from a bank email">
+  <!-- Identical stroke to #hero-links in assets/hero/constellation.svg.
+       That identity is the whole idea: the connector you meet at the door
+       turns out to be the machinery. Do not restyle one without the other. -->
+  <path d="M1 6h14" fill="none" stroke="#1A1A1A" stroke-width="1.6"
+        stroke-dasharray="4 6" stroke-linecap="round"/>
+</svg>

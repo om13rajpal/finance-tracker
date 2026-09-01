@@ -1,0 +1,21 @@
+<!-- @moodforge
+schema: 1.0
+round: 12
+phase: brand-kit
+worker: moodforge-queen
+theme: sorted
+version: v1
+created_at: 2026-08-31T03:00:00Z
+sha256: 905ce1e3a8763070ecaeb54ec9b095b0dbabe99225d8af957e27a460079160de
+artifact_role: asset-bucket
+summary: Sorted bucket asset — savings #5483D3. 30px circle, 1.5px ink border, flat fill, a stacked vault/cylinder: money set aside and stacking up. Ink on fill 4.61:1, textSafe.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" role="img" aria-label="Savings">
+  <circle cx="15" cy="15" r="14.25" fill="#5483D3" stroke="#1A1A1A" stroke-width="1.5"/>
+  <g transform="translate(6.5 6.5) scale(0.708)" fill="none" stroke="#1A1A1A" stroke-width="2"
+     stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="12" cy="6.6" rx="7.2" ry="2.8"/>
+    <path d="M4.8 6.6v10.8c0 1.55 3.22 2.8 7.2 2.8s7.2-1.25 7.2-2.8V6.6"/>
+    <path d="M4.8 12c0 1.55 3.22 2.8 7.2 2.8s7.2-1.25 7.2-2.8"/>
+  </g>
+</svg>

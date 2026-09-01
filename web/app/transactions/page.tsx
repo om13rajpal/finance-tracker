@@ -1,184 +1,733 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
-  InfiniteData,
   useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
+
 } from "@tanstack/react-query";
-import { apiFetch, ApiError, API_BASE } from "@/lib/api-client";
+
+import { API_BASE, ApiError, apiFetch } from "@/lib/api-client";
+import type {
+  Account,
+  CategoryNode,
+  ImportBatchResult,
+  PendingTransaction,
+  Transaction,
+  TransactionsPage as TransactionsPageData,
+} from "@/lib/api-types";
+import {
+  categoryRowName,
+  flattenCategories,
+  indexCategories,
+  resolveChip,
+  type CategoryIndex,
+} from "@/lib/buckets";
+import { formatDate, formatSignedInr, todayInputValue } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Chip, ChipSkeleton } from "@/components/app/chip";
+import { Icon, Tether } from "@/components/app/icons";
+import {
+  Checkbox,
+  Field,
+  FieldGrid,
+  FormActions,
+  MoneyInput,
+  DateInput,
+  Select,
+} from "@/components/app/form";
+import {
+  Amount,
+  EmptyState,
+  Helper,
+  Notice,
+  PageHeader,
+  Panel,
+  PanelFooter,
+  PanelHeader,
+  RowName,
+  SectionLabel,
+  Skeleton,
+} from "@/components/app/primitives";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
 import { useToast } from "@/components/ui/Toast";
 
-interface Transaction {
-  _id: string;
+/**
+ * Sorted · Transactions
+ *
+ * The list vocabulary at scale, and the true home of THE TETHER: a row the
+ * Gmail parser filed by itself carries the dotted lead-in in its own 22px
+ * gutter. An untethered row leaves that gutter EMPTY rather than shifting left,
+ * so the chip column never wavers as the eye runs down a hundred rows.
+ *
+ * CHIPS NEVER GUESS, and this is the screen where that rule earns its keep.
+ * `Transaction.categoryId` is nullable and an uncategorised transaction is the
+ * parser's NORMAL output, not a failure — so those rows get a dashed hollow
+ * chip and their category slot becomes a "Categorise" action. An actionable
+ * gap, never --alert.
+ */
+
+const PAGE_SIZE = 25;
+
+interface Filters {
   accountId: string;
-  categoryId: string | null;
-  amount: number;
-  date: string;
-  note?: string;
-  merchant?: string;
+  categoryId: string;
+  dateFrom: string;
+  dateTo: string;
 }
 
-interface PendingTransaction {
-  _id: string;
-  accountId: string | null;
-  categoryId: string | null;
-  amount: number;
-  date: string;
-  note?: string;
-  merchant?: string;
-  source: string;
-}
+const NO_FILTERS: Filters = { accountId: "", categoryId: "", dateFrom: "", dateTo: "" };
 
-interface Account {
-  _id: string;
-  nickname: string;
-}
-
-interface CategoryNode {
-  _id: string;
-  name: string;
-  children: CategoryNode[];
-}
-
-interface TransactionsPage {
-  items: Transaction[];
-  nextCursor: string | null;
-}
-
-interface ImportBatchResult {
-  rowResults: { row: number; status: "success" | "failed"; reason?: string }[];
-}
-
-function flattenCategories(nodes: CategoryNode[]): CategoryNode[] {
-  return nodes.flatMap((n) => [n, ...flattenCategories(n.children)]);
-}
-
-function formatInr(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+function buildQuery(filters: Filters, cursor?: string): string {
+  const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
+  if (filters.accountId) params.set("accountId", filters.accountId);
+  if (filters.categoryId) params.set("categoryId", filters.categoryId);
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  // dateTo is compared with `$lte` against a Date, so a bare `2026-08-31`
+  // parses as midnight UTC and silently excludes everything that happened that
+  // day. Push it to the end of the day the person actually meant.
+  if (filters.dateTo) params.set("dateTo", `${filters.dateTo}T23:59:59.999Z`);
+  if (cursor) params.set("cursor", cursor);
+  return params.toString();
 }
 
 export default function TransactionsPage() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
-  const { data: accounts } = useQuery({
+  const accounts = useQuery({
     queryKey: ["accounts"],
     queryFn: () => apiFetch<Account[]>("/accounts"),
   });
-  const { data: categoryTree } = useQuery({
+  const categories = useQuery({
     queryKey: ["categories"],
     queryFn: () => apiFetch<CategoryNode[]>("/categories"),
   });
-  const categories = flattenCategories(categoryTree ?? []);
-
-  const { data: pending } = useQuery({
+  const pending = useQuery({
     queryKey: ["pending-transactions"],
     queryFn: () => apiFetch<PendingTransaction[]>("/pending-transactions"),
   });
 
-  const {
-    data: transactionsData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading: isTransactionsLoading,
-  } = useInfiniteQuery({
-    queryKey: ["transactions"],
+  const index = useMemo(() => indexCategories(categories.data), [categories.data]);
+  const flatCategories = useMemo(() => flattenCategories(categories.data), [categories.data]);
+  const accountName = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const a of accounts.data ?? []) map.set(a._id, a.nickname);
+    return map;
+  }, [accounts.data]);
+
+  const [filters, setFilters] = useState<Filters>(NO_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const filtersActive = activeFilterCount > 0;
+
+  const history = useInfiniteQuery({
+    queryKey: ["transactions", filters],
     queryFn: ({ pageParam }) =>
-      apiFetch<TransactionsPage>(
-        pageParam ? `/transactions?cursor=${encodeURIComponent(pageParam)}` : "/transactions"
-      ),
+      apiFetch<TransactionsPageData>(`/transactions?${buildQuery(filters, pageParam)}`),
     initialPageParam: undefined as string | undefined,
-    // The API returns `nextCursor: null` on the last page. TanStack Query's
-    // `hasNextPage` is `getNextPageParam(...) !== undefined`, so a returned
-    // `null` would be treated as "there IS a next page (with param null)"
-    // and `fetchNextPage` would re-request the first page forever. Coercing
-    // `null` to `undefined` here is what makes `hasNextPage` correctly go
-    // false once the API signals there's nothing left.
-    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    // The API returns `nextCursor: null` on the last page. TanStack treats
+    // `undefined` as "no more pages" but a returned `null` as a real page param,
+    // which re-requests page one forever. Coercing here is what makes
+    // `hasNextPage` correctly go false.
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
   });
 
-  const transactions = transactionsData?.pages.flatMap((p) => p.items) ?? [];
+  const rows = history.data?.pages.flatMap((p) => p.items) ?? [];
 
-  const [form, setForm] = useState({
-    accountId: "",
-    categoryId: "",
-    amount: "",
-    date: new Date().toISOString().slice(0, 10),
-    note: "",
-    merchant: "",
-  });
-
-  const [csvAccountId, setCsvAccountId] = useState("");
-  const [csvFileName, setCsvFileName] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
-
-  const createMutation = useMutation({
-    mutationFn: (payload: Record<string, unknown>) =>
-      apiFetch<Transaction>("/transactions", { method: "POST", body: JSON.stringify(payload) }),
-    onMutate: async (payload) => {
-      await queryClient.cancelQueries({ queryKey: ["transactions"] });
-      const previous = queryClient.getQueryData<InfiniteData<TransactionsPage>>(["transactions"]);
-
-      const optimisticTx: Transaction = {
-        _id: `temp-${Date.now()}`,
-        accountId: payload.accountId as string,
-        categoryId: (payload.categoryId as string) || null,
-        amount: payload.amount as number,
-        date: payload.date as string,
-        note: payload.note as string,
-        merchant: payload.merchant as string,
-      };
-
-      queryClient.setQueryData<InfiniteData<TransactionsPage>>(["transactions"], (old) => {
-        if (!old) {
-          return { pages: [{ items: [optimisticTx], nextCursor: null }], pageParams: [undefined] };
+  return (
+    <ProtectedLayout>
+      <PageHeader
+        title="Transactions"
+        meta={
+          rows.length > 0
+            ? `${rows.length} loaded${history.hasNextPage ? " · more available" : ""}`
+            : undefined
         }
-        const [firstPage, ...restPages] = old.pages;
-        return {
-          ...old,
-          pages: [{ ...firstPage, items: [optimisticTx, ...firstPage.items] }, ...restPages],
-        };
-      });
+      />
 
-      return { previous };
-    },
-    onError: (err, _payload, context) => {
-      queryClient.setQueryData(["transactions"], context?.previous);
-      // POST /transactions returns 409 when Task 11's cross-source duplicate
-      // detection (findLikelyDuplicate) matches an existing transaction on the
-      // same account/amount/date. That's a distinct, expected outcome from a
-      // genuine failure (e.g. the API being unreachable) and deserves its own
-      // message so the user isn't left thinking something broke.
-      if (err instanceof ApiError && err.status === 409) {
-        showToast(
-          "This looks like a duplicate of an existing transaction, so it wasn't added.",
-          "error"
-        );
-        return;
-      }
-      showToast("Failed to add transaction", "error");
-    },
+      <div className="grid items-start gap-22 xl:grid-cols-[7fr_5fr]">
+        <div className="flex min-w-0 flex-col gap-22">
+          {(pending.data?.length ?? 0) > 0 ? (
+            <PendingPanel
+              items={pending.data ?? []}
+              accounts={accounts.data ?? []}
+              index={index}
+            />
+          ) : null}
+
+          <Panel>
+            {/* The filter bar is COLLAPSED by default. Open, it is four fields
+                and 180px of chrome standing between the person and the list
+                they came here to read — and on the overwhelming majority of
+                visits every one of those fields is empty. It announces itself
+                when it is doing something. */}
+            <div className="mb-14 flex items-baseline justify-between gap-14">
+              <SectionLabel>§ History</SectionLabel>
+              <button
+                type="button"
+                onClick={() => setFiltersOpen((v) => !v)}
+                aria-expanded={filtersOpen}
+                aria-controls="tx-filters"
+                className="flex items-center gap-8 rounded-xs bg-transparent p-0 font-num text-label uppercase text-dim transition-colors duration-hover ease-out hover:text-ink"
+              >
+                <Icon name="filter" size={13} />
+                {filtersActive ? `Filtered · ${activeFilterCount}` : "Filter"}
+              </button>
+            </div>
+
+            {filtersOpen || filtersActive ? (
+              <FilterBar
+                id="tx-filters"
+                filters={filters}
+                onChange={setFilters}
+                accounts={accounts.data ?? []}
+                categories={flatCategories}
+              />
+            ) : null}
+
+            {history.isLoading ? (
+              <div className="mt-14">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="grid grid-cols-row-tether items-center border-b border-rule py-10 last:border-b-0"
+                  >
+                    <span />
+                    <ChipSkeleton />
+                    <Skeleton className="h-[15px] w-[180px] rounded-sm" />
+                    <Skeleton className="h-[15px] w-[90px] rounded-sm" />
+                  </div>
+                ))}
+              </div>
+            ) : history.isError ? (
+              <Notice
+                title="Could not load transactions."
+                body="Please try again shortly. Nothing has been lost."
+                className="mt-14"
+              />
+            ) : rows.length === 0 ? (
+              <EmptyState
+                title={filtersActive ? "Nothing matches those filters." : "No transactions yet."}
+                body={
+                  filtersActive
+                    ? "Widen the date range, or clear the filters to see everything again."
+                    : "Add one on the right, import a statement, or connect Gmail and let the parser file them for you."
+                }
+                action={
+                  filtersActive ? (
+                    <Button size="sm" variant="ghost" onClick={() => setFilters(NO_FILTERS)}>
+                      Clear filters
+                    </Button>
+                  ) : undefined
+                }
+              />
+            ) : (
+              <div className="mt-14">
+                {rows.map((t) => (
+                  <TransactionRow
+                    key={t._id}
+                    transaction={t}
+                    index={index}
+                    accountName={accountName}
+                    categories={flatCategories}
+                  />
+                ))}
+              </div>
+            )}
+
+            {history.hasNextPage ? (
+              <div className="mt-18 flex justify-center">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  busy={history.isFetchingNextPage}
+                  onClick={() => history.fetchNextPage()}
+                >
+                  {history.isFetchingNextPage ? "Loading…" : "Load more"}
+                </Button>
+              </div>
+            ) : rows.length > 0 ? (
+              <PanelFooter>
+                <Tether />
+                Filed automatically from a bank email
+              </PanelFooter>
+            ) : null}
+          </Panel>
+        </div>
+
+        <div className="flex min-w-0 flex-col gap-22 xl:sticky xl:top-32">
+          <AddTransactionPanel
+            accounts={accounts.data ?? []}
+            categories={flatCategories}
+            onDone={() => {
+              queryClient.invalidateQueries({ queryKey: ["transactions"] });
+              queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+            }}
+            showToast={showToast}
+          />
+          <ImportPanel accounts={accounts.data ?? []} showToast={showToast} />
+        </div>
+      </div>
+    </ProtectedLayout>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Filters
+// ═══════════════════════════════════════════════════════════════════════════
+
+function FilterBar({
+  id,
+  filters,
+  onChange,
+  accounts,
+  categories,
+}: {
+  id: string;
+  filters: Filters;
+  onChange: (f: Filters) => void;
+  accounts: Account[];
+  categories: { node: CategoryNode; depth: number }[];
+}) {
+  const active = Object.values(filters).some(Boolean);
+  return (
+    <div id={id} className="mb-4 flex flex-col gap-12 border-b border-rule pb-18">
+      <div className="grid gap-12 sm:grid-cols-2">
+        <Field id="filter-account" label="Account">
+          <Select
+            id="filter-account"
+            value={filters.accountId}
+            onChange={(e) => onChange({ ...filters, accountId: e.target.value })}
+          >
+            <option value="">All accounts</option>
+            {accounts.map((a) => (
+              <option key={a._id} value={a._id}>
+                {a.nickname}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field id="filter-category" label="Category">
+          <Select
+            id="filter-category"
+            value={filters.categoryId}
+            onChange={(e) => onChange({ ...filters, categoryId: e.target.value })}
+          >
+            <option value="">All categories</option>
+            {categories.map(({ node, depth }) => (
+              <option key={node._id} value={node._id}>
+                {"— ".repeat(depth)}
+                {node.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field id="filter-from" label="From">
+          <DateInput
+            id="filter-from"
+            value={filters.dateFrom}
+            max={filters.dateTo || undefined}
+            onChange={(e) => onChange({ ...filters, dateFrom: e.target.value })}
+          />
+        </Field>
+        <Field id="filter-to" label="To">
+          <DateInput
+            id="filter-to"
+            value={filters.dateTo}
+            min={filters.dateFrom || undefined}
+            onChange={(e) => onChange({ ...filters, dateTo: e.target.value })}
+          />
+        </Field>
+      </div>
+      {active ? (
+        <button
+          type="button"
+          onClick={() => onChange(NO_FILTERS)}
+          className="self-start rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink"
+        >
+          Clear filters
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// One row
+// ═══════════════════════════════════════════════════════════════════════════
+
+function TransactionRow({
+  transaction,
+  index,
+  accountName,
+  categories,
+}: {
+  transaction: Transaction;
+  index: CategoryIndex;
+  accountName: Map<string, string>;
+  categories: { node: CategoryNode; depth: number }[];
+}) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [choice, setChoice] = useState(transaction.categoryId ?? "");
+  const [makeRule, setMakeRule] = useState(false);
+
+  const entry = transaction.categoryId ? index.get(transaction.categoryId) : undefined;
+  // NO DIRECTION FALLBACK HERE, deliberately.
+  //
+  // A `Transaction` with a null categoryId is UNCATEGORISED, and that is the
+  // state the dashed hollow chip exists for — an actionable gap the parser
+  // produces every day. Falling back to a direction arrow made those rows look
+  // exactly like a resolved row and quietly removed the only signal that
+  // something needs filing. Direction is already carried by the sign on the
+  // amount, three columns to the right.
+  //
+  // The fallback is right for a RecurringItem, which always has a category and
+  // also has its own `type` field to fall back to; it is wrong here.
+  const spec = resolveChip(transaction.categoryId, index);
+  const filedByParser = transaction.source === "email_parsed";
+
+  const update = useMutation({
+    mutationFn: () =>
+      apiFetch(`/transactions/${transaction._id}`, {
+        method: "PATCH",
+        // `createRule` and `matchValue` are only honoured together with a
+        // categoryId; sending them as false/empty otherwise would be noise the
+        // server has to ignore.
+        body: JSON.stringify(
+          makeRule && transaction.merchant
+            ? { categoryId: choice, createRule: true, matchValue: transaction.merchant }
+            : { categoryId: choice }
+        ),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      if (makeRule) queryClient.invalidateQueries({ queryKey: ["categorization-rules"] });
+      setEditing(false);
+      showToast("Category updated", "success");
+    },
+    onError: () => showToast("Could not update the category", "error"),
+  });
+
+  const remove = useMutation({
+    mutationFn: () => apiFetch<void>(`/transactions/${transaction._id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      showToast("Transaction deleted", "success");
+    },
+    onError: () => showToast("Could not delete that transaction", "error"),
+  });
+
+  const title = transaction.merchant || transaction.note || "Untitled";
+  const categoryName = entry ? categoryRowName(entry, index) : null;
+
+  return (
+    <div className="border-b border-rule last:border-b-0">
+      <div className="grid grid-cols-row-tether items-center py-10">
+        {/* The 22px provenance gutter. Empty on a row you typed yourself. */}
+        <span className="flex justify-start">
+          {filedByParser ? <Tether label="Filed automatically from a bank email" /> : null}
+        </span>
+        <Chip spec={spec} labelled />
+        <RowName
+          name={title}
+          sub={
+            <>
+              {formatDate(transaction.date)}
+              {accountName.get(transaction.accountId)
+                ? ` · ${accountName.get(transaction.accountId)}`
+                : ""}
+              {" · "}
+              {/* THE CATEGORY SLOT IS THE ACTION.
+                  Not a trailing "Change" link after the amount — that put a
+                  variable-width control in the amount column and every figure
+                  in the ledger stopped ending at the same x, which is the one
+                  thing a right-aligned money column is for. The category is
+                  what you are changing, so the category is what you click. */}
+              <button
+                type="button"
+                onClick={() => {
+                  setChoice(transaction.categoryId ?? "");
+                  setEditing((v) => !v);
+                }}
+                aria-expanded={editing}
+                className={cn(
+                  "rounded-xs bg-transparent p-0 font-num text-micro uppercase tracking-micro",
+                  "underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink",
+                  categoryName ? "text-dim" : "text-ink"
+                )}
+              >
+                {editing ? "Cancel" : (categoryName ?? "Categorise")}
+              </button>
+            </>
+          }
+        />
+        <Amount>{formatSignedInr(transaction.amount)}</Amount>
+      </div>
+
+      {editing ? (
+        <div className="mb-14 ml-[52px] flex flex-col gap-12 rounded-panel border-panel border-ink p-18">
+          <Field id={`tx-cat-${transaction._id}`} label="Category">
+            <Select
+              id={`tx-cat-${transaction._id}`}
+              value={choice}
+              onChange={(e) => setChoice(e.target.value)}
+            >
+              <option value="">Select a category</option>
+              {categories.map(({ node, depth }) => (
+                <option key={node._id} value={node._id}>
+                  {"— ".repeat(depth)}
+                  {node.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Checkbox
+            id={`tx-rule-${transaction._id}`}
+            label={`Always file ${transaction.merchant || "this merchant"} here`}
+            helper={
+              transaction.merchant
+                ? "Creates a rule, so the next one is categorised before you see it."
+                : "Only available on a row that has a merchant to match on."
+            }
+            checked={makeRule}
+            disabled={!transaction.merchant}
+            onChange={(e) => setMakeRule(e.target.checked)}
+          />
+          <div className="flex flex-wrap items-center justify-between gap-12">
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm(`Delete "${title}"? This cannot be undone.`)) remove.mutate();
+              }}
+              disabled={remove.isPending}
+              className="rounded-xs bg-transparent p-0 font-sans text-caption text-alert underline underline-offset-[3px] disabled:opacity-[.55]"
+            >
+              Delete this transaction
+            </button>
+            <Button
+              size="sm"
+              busy={update.isPending}
+              disabled={!choice}
+              onClick={() => update.mutate()}
+            >
+              Save
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// The parser's queue
+// ═══════════════════════════════════════════════════════════════════════════
+
+function PendingPanel({
+  items,
+  accounts,
+  index,
+}: {
+  items: PendingTransaction[];
+  accounts: Account[];
+  index: CategoryIndex;
+}) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [accountChoice, setAccountChoice] = useState<Record<string, string>>({});
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["pending-transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+  };
+
+  const confirm = useMutation({
+    mutationFn: ({ id, accountId, force }: { id: string; accountId?: string; force?: boolean }) =>
+      apiFetch(`/pending-transactions/${id}/confirm`, {
+        method: "POST",
+        body: JSON.stringify({ ...(accountId ? { accountId } : {}), ...(force ? { force: true } : {}) }),
+      }),
+    onSuccess: () => {
+      invalidate();
+      showToast("Filed", "success");
+    },
+    onError: (err) => {
+      // 409 is the cross-source duplicate guard, not a failure — the parser has
+      // very likely re-read an email for something already imported by CSV.
+      if (err instanceof ApiError && err.status === 409) {
+        showToast("That looks like a duplicate of one you already have, so it was not added.");
+        return;
+      }
+      showToast("Could not file that one", "error");
     },
   });
 
-  function submitManualEntry() {
+  const reject = useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<void>(`/pending-transactions/${id}/reject`, { method: "POST" }),
+    onSuccess: () => {
+      invalidate();
+      showToast("Discarded", "success");
+    },
+    onError: () => showToast("Could not discard that one", "error"),
+  });
+
+  return (
+    <Panel>
+      <PanelHeader title="§ From your inbox" meta={`${items.length} waiting`} />
+      <Helper className="-mt-8 mb-14 max-w-[56ch]">
+        Read out of your bank email and held here until you say so. Nothing below has touched your
+        balances yet.
+      </Helper>
+
+      {items.map((item) => {
+        const needsAccount = !item.accountId;
+        const chosen = accountChoice[item._id] ?? "";
+        // Same rule as the history rows: a pending transaction with no
+        // category is uncategorised, not "an expense".
+        const spec = resolveChip(item.categoryId, index);
+        return (
+          <div key={item._id} className="border-b border-rule py-14 last:border-b-0 last:pb-0">
+            {/* Actions sit on the ROW, level with the amount. Put on their own
+                line they doubled the height of every card in a queue whose
+                whole job is to be cleared quickly. The account picker is the
+                one thing that earns a second line, and only on the rows that
+                actually need one. */}
+            <div className="flex flex-wrap items-center gap-14">
+              <div className="grid min-w-[260px] flex-1 grid-cols-row-tether items-center">
+                <Tether label="Filed automatically from a bank email" />
+                <Chip spec={spec} labelled />
+                <RowName
+                  name={item.merchant || item.note || "Untitled"}
+                  sub={`${formatDate(item.date)}${item.note && item.merchant ? ` · ${item.note}` : ""}`}
+                />
+                <Amount>{formatSignedInr(item.amount)}</Amount>
+              </div>
+              <div className="flex flex-none items-center gap-14">
+                <button
+                  type="button"
+                  onClick={() => reject.mutate(item._id)}
+                  disabled={reject.isPending}
+                  className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink disabled:opacity-[.55]"
+                >
+                  Discard
+                </button>
+                <Button
+                  size="sm"
+                  busy={confirm.isPending}
+                  disabled={needsAccount && !chosen}
+                  onClick={() =>
+                    confirm.mutate({
+                      id: item._id,
+                      accountId: needsAccount ? chosen : undefined,
+                    })
+                  }
+                >
+                  File it
+                </Button>
+              </div>
+            </div>
+
+            {needsAccount ? (
+              <div className="mt-12 pl-[52px]">
+                <Field
+                  id={`pending-account-${item._id}`}
+                  label="Account"
+                  helper="The email did not say which account this came from, so it needs one before it can be filed."
+                  className="max-w-[380px]"
+                >
+                  <Select
+                    id={`pending-account-${item._id}`}
+                    value={chosen}
+                    onChange={(e) =>
+                      setAccountChoice((prev) => ({ ...prev, [item._id]: e.target.value }))
+                    }
+                  >
+                    <option value="">Select an account</option>
+                    {accounts.map((a) => (
+                      <option key={a._id} value={a._id}>
+                        {a.institution} · {a.nickname}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </Panel>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Add
+// ═══════════════════════════════════════════════════════════════════════════
+
+function AddTransactionPanel({
+  accounts,
+  categories,
+  onDone,
+  showToast,
+}: {
+  accounts: Account[];
+  categories: { node: CategoryNode; depth: number }[];
+  onDone: () => void;
+  showToast: (message: string, variant?: "error" | "success") => void;
+}) {
+  const empty = {
+    accountId: "",
+    categoryId: "",
+    amount: "",
+    date: todayInputValue(),
+    merchant: "",
+    note: "",
+  };
+  const [form, setForm] = useState(empty);
+  /**
+   * The server's duplicate guard answers 409 with `{note:"possible_duplicate"}`
+   * and will accept the same body again with `force: true`. Holding that body
+   * here is what turns a dead end into a question — "add it anyway?" — instead
+   * of a toast the person can only read and re-type around.
+   */
+  const [duplicate, setDuplicate] = useState<Record<string, unknown> | null>(null);
+  const duplicateRef = useRef<HTMLDivElement>(null);
+
+  const create = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiFetch<Transaction>("/transactions", { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      setForm((f) => ({ ...empty, accountId: f.accountId, date: f.date }));
+      setDuplicate(null);
+      onDone();
+      showToast("Transaction added", "success");
+    },
+    onError: (err, payload) => {
+      if (err instanceof ApiError && err.status === 409) {
+        setDuplicate(payload);
+        // Move focus to the question, because it is the only thing on screen
+        // that changed and it is asking something.
+        window.setTimeout(() => duplicateRef.current?.focus(), 0);
+        return;
+      }
+      showToast("Could not add that transaction", "error");
+    },
+  });
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
     if (!form.accountId) {
-      showToast("Select an account before adding a transaction");
+      showToast("Choose an account first");
       return;
     }
     const amount = Number(form.amount);
@@ -186,425 +735,262 @@ export default function TransactionsPage() {
       showToast("Enter a valid amount");
       return;
     }
-    createMutation.mutate({
+    create.mutate({
       accountId: form.accountId,
-      categoryId: form.categoryId || undefined,
+      ...(form.categoryId ? { categoryId: form.categoryId } : {}),
       amount,
       date: form.date,
-      note: form.note,
-      merchant: form.merchant,
+      ...(form.merchant ? { merchant: form.merchant } : {}),
+      ...(form.note ? { note: form.note } : {}),
     });
-    setForm((f) => ({ ...f, amount: "", note: "", merchant: "" }));
-  }
-
-  const [pendingAccountChoice, setPendingAccountChoice] = useState<Record<string, string>>({});
-
-  const confirmMutation = useMutation({
-    mutationFn: ({ id, accountId }: { id: string; accountId?: string }) =>
-      apiFetch(`/pending-transactions/${id}/confirm`, {
-        method: "POST",
-        body: JSON.stringify(accountId ? { accountId } : {}),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pending-transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      showToast("Transaction confirmed", "success");
-    },
-    onError: () => showToast("Failed to confirm transaction", "error"),
-  });
-
-  const rejectMutation = useMutation({
-    mutationFn: (id: string) => apiFetch(`/pending-transactions/${id}/reject`, { method: "POST" }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["pending-transactions"] });
-      showToast("Transaction rejected", "success");
-    },
-    onError: () => showToast("Failed to reject transaction", "error"),
-  });
-
-  // Inline per-row category editing in the confirmed-transactions list below.
-  // `editingCategoryTxId` tracks which row currently has its picker open;
-  // `categoryEditChoice`/`createRuleChoice` hold the in-progress selections
-  // keyed by transaction id, mirroring the pending-review section's
-  // `pendingAccountChoice` pattern above.
-  const [editingCategoryTxId, setEditingCategoryTxId] = useState<string | null>(null);
-  const [categoryEditChoice, setCategoryEditChoice] = useState<Record<string, string>>({});
-  const [createRuleChoice, setCreateRuleChoice] = useState<Record<string, boolean>>({});
-
-  const updateCategoryMutation = useMutation({
-    mutationFn: ({
-      id,
-      categoryId,
-      createRule,
-      matchValue,
-    }: {
-      id: string;
-      categoryId: string;
-      createRule: boolean;
-      matchValue?: string;
-    }) =>
-      apiFetch(`/transactions/${id}`, {
-        method: "PATCH",
-        // PATCH /transactions/:id (transactions.routes.ts) only creates a
-        // categorization rule when `createRule` and `matchValue` are both
-        // present alongside `categoryId` — so when the "always categorize
-        // like this" checkbox is unchecked, omit those fields entirely
-        // rather than sending them as false/empty.
-        body: JSON.stringify(
-          createRule && matchValue ? { categoryId, createRule: true, matchValue } : { categoryId }
-        ),
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      showToast("Category updated", "success");
-      setEditingCategoryTxId(null);
-    },
-    onError: () => showToast("Failed to update category", "error"),
-  });
-
-  function submitCategoryEdit(t: Transaction) {
-    const categoryId = categoryEditChoice[t._id];
-    if (!categoryId) {
-      showToast("Select a category");
-      return;
-    }
-    const wantsRule = createRuleChoice[t._id] ?? false;
-    updateCategoryMutation.mutate({
-      id: t._id,
-      categoryId,
-      createRule: wantsRule,
-      matchValue: wantsRule ? t.merchant : undefined,
-    });
-  }
-
-  const [importResult, setImportResult] = useState<ImportBatchResult | null>(null);
-
-  async function handleCsvUpload(file: File) {
-    if (!csvAccountId) {
-      showToast("Select an account before importing a statement");
-      return;
-    }
-    setIsImporting(true);
-    setImportResult(null);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("accountId", csvAccountId);
-      // Uses `fetch` directly rather than `apiFetch`: apiFetch always sets
-      // `Content-Type: application/json`, which would break this multipart
-      // upload (the browser needs to set its own multipart boundary).
-      const res = await fetch(`${API_BASE}/transactions/import`, {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error ?? `Import failed: ${res.status}`);
-      }
-      const batch: ImportBatchResult = await res.json();
-      setImportResult(batch);
-      queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-    } catch (e) {
-      showToast((e as Error).message || "Failed to import CSV", "error");
-    } finally {
-      setIsImporting(false);
-    }
   }
 
   return (
-    <ProtectedLayout>
-      <h1 className="mb-6 text-2xl font-semibold">Transactions</h1>
-
-      <Card className="mb-6">
-        <p className="mb-3 font-medium">Add Transaction</p>
-        <div className="flex flex-col gap-3">
-          <label htmlFor="tx-account" className="text-sm">
-            Account
-            <select
-              id="tx-account"
-              className="mt-1 w-full rounded border px-3 py-2"
-              value={form.accountId}
-              onChange={(e) => setForm({ ...form, accountId: e.target.value })}
-            >
-              <option value="">Select account</option>
-              {(accounts ?? []).map((a) => (
-                <option key={a._id} value={a._id}>
-                  {a.nickname}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label htmlFor="tx-category" className="text-sm">
-            Category
-            <select
-              id="tx-category"
-              className="mt-1 w-full rounded border px-3 py-2"
-              value={form.categoryId}
-              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
-            >
-              <option value="">Auto-categorize</option>
-              {categories.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label htmlFor="tx-amount" className="text-sm">
-            Amount (negative for expense)
-            <Input
-              id="tx-amount"
-              className="mt-1 w-full"
-              type="number"
-              value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
-            />
-          </label>
-          <label htmlFor="tx-date" className="text-sm">
-            Date
-            <Input
-              id="tx-date"
-              className="mt-1 w-full"
-              type="date"
-              value={form.date}
-              onChange={(e) => setForm({ ...form, date: e.target.value })}
-            />
-          </label>
-          <label htmlFor="tx-merchant" className="text-sm">
-            Merchant
-            <Input
-              id="tx-merchant"
-              className="mt-1 w-full"
-              value={form.merchant}
-              onChange={(e) => setForm({ ...form, merchant: e.target.value })}
-            />
-          </label>
-          <label htmlFor="tx-note" className="text-sm">
-            Note
-            <Input
-              id="tx-note"
-              className="mt-1 w-full"
-              value={form.note}
-              onChange={(e) => setForm({ ...form, note: e.target.value })}
-            />
-          </label>
-          <Button onClick={submitManualEntry} disabled={createMutation.isPending}>
-            Add
-          </Button>
-        </div>
-      </Card>
-
-      <Card className="mb-6">
-        <p className="mb-3 font-medium">Import CSV Statement</p>
-        <label htmlFor="csv-account" className="text-sm">
-          Import Account
-          <select
-            id="csv-account"
-            className="mt-1 mb-3 w-full rounded border px-3 py-2"
-            value={csvAccountId}
-            onChange={(e) => setCsvAccountId(e.target.value)}
+    <Panel>
+      <PanelHeader title="§ Add a transaction" />
+      <form noValidate onSubmit={submit} className="flex flex-col gap-14">
+        <Field id="tx-account" label="Account">
+          <Select
+            id="tx-account"
+            value={form.accountId}
+            onChange={(e) => setForm({ ...form, accountId: e.target.value })}
           >
             <option value="">Select account</option>
-            {(accounts ?? []).map((a) => (
+            {accounts.map((a) => (
               <option key={a._id} value={a._id}>
                 {a.nickname}
               </option>
             ))}
-          </select>
-        </label>
-        <label htmlFor="csv-file" className="text-sm">
-          Statement file (CSV)
-          <input
-            id="csv-file"
-            className="mt-1 block"
-            type="file"
-            accept=".csv"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                setCsvFileName(file.name);
-                handleCsvUpload(file);
-              }
-              e.target.value = "";
-            }}
-          />
-        </label>
-        {isImporting && <p className="mt-2 text-sm text-gray-500">Importing {csvFileName}...</p>}
-        {importResult && (
-          <p className="mt-2 text-sm text-gray-600">
-            {importResult.rowResults.filter((r) => r.status === "success").length} imported,{" "}
-            {importResult.rowResults.filter((r) => r.status === "failed").length} failed
-          </p>
-        )}
-      </Card>
+          </Select>
+        </Field>
 
-      {(pending ?? []).length > 0 && (
-        <Card className="mb-6">
-          <p className="mb-3 font-medium">Pending Review</p>
-          <ul className="flex flex-col gap-2">
-            {(pending ?? []).map((p) => {
-              // Task 22's Gmail-parsed pending transactions may have no
-              // accountId yet — the API's confirm route 400s without one, so
-              // the reviewer must pick an account here before confirming.
-              const needsAccount = !p.accountId;
-              const chosenAccountId = pendingAccountChoice[p._id] ?? "";
-              return (
-                <li
-                  key={p._id}
-                  className="flex flex-col gap-2 border-b pb-2 text-sm last:border-b-0"
-                >
-                  <div className="flex items-center justify-between">
-                    <span>
-                      {p.merchant || p.note || "—"} — {formatInr(Math.abs(p.amount))} on{" "}
-                      {new Date(p.date).toLocaleDateString()}
-                    </span>
-                    <span className="flex gap-2">
-                      <Button
-                        onClick={() =>
-                          confirmMutation.mutate({
-                            id: p._id,
-                            accountId: needsAccount ? chosenAccountId : undefined,
-                          })
-                        }
-                        disabled={(needsAccount && !chosenAccountId) || confirmMutation.isPending}
-                      >
-                        Confirm
-                      </Button>
-                      <Button className="bg-gray-400" onClick={() => rejectMutation.mutate(p._id)}>
-                        Reject
-                      </Button>
-                    </span>
-                  </div>
-                  {needsAccount && (
-                    <label htmlFor={`pending-account-${p._id}`} className="text-xs text-gray-500">
-                      Account (required to confirm)
-                      <select
-                        id={`pending-account-${p._id}`}
-                        className="mt-1 w-full rounded border px-2 py-1"
-                        value={chosenAccountId}
-                        onChange={(e) =>
-                          setPendingAccountChoice((prev) => ({ ...prev, [p._id]: e.target.value }))
-                        }
-                      >
-                        <option value="">Select account</option>
-                        {(accounts ?? []).map((a) => (
-                          <option key={a._id} value={a._id}>
-                            {a.nickname}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-      )}
-
-      <Card>
-        <p className="mb-3 font-medium">History</p>
-        {isTransactionsLoading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
-        ) : transactions.length === 0 ? (
-          <p className="text-sm text-gray-500">No transactions yet.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {transactions.map((t) => {
-              const categoryName = categories.find((c) => c._id === t.categoryId)?.name;
-              const isEditing = editingCategoryTxId === t._id;
-              const chosenCategoryId = categoryEditChoice[t._id] ?? t.categoryId ?? "";
-              const wantsRule = createRuleChoice[t._id] ?? false;
-              return (
-                <li
-                  key={t._id}
-                  className="flex flex-col gap-2 border-b pb-2 text-sm last:border-b-0"
-                >
-                  <div className="flex items-center justify-between">
-                    <span>
-                      {t.merchant || t.note || "—"} on {new Date(t.date).toLocaleDateString()} —{" "}
-                      {categoryName ?? "Uncategorized"}
-                    </span>
-                    <span className="flex items-center gap-2">
-                      {formatInr(t.amount)}
-                      <Button
-                        className="bg-gray-200 text-black"
-                        onClick={() => {
-                          setEditingCategoryTxId(isEditing ? null : t._id);
-                          if (!isEditing) {
-                            setCategoryEditChoice((prev) => ({
-                              ...prev,
-                              [t._id]: prev[t._id] ?? t.categoryId ?? "",
-                            }));
-                          }
-                        }}
-                      >
-                        {isEditing ? "Cancel" : "Edit category"}
-                      </Button>
-                    </span>
-                  </div>
-                  {isEditing && (
-                    <div className="flex flex-col gap-2 text-xs text-gray-500">
-                      <label htmlFor={`tx-category-edit-${t._id}`}>
-                        Category
-                        <select
-                          id={`tx-category-edit-${t._id}`}
-                          className="mt-1 w-full rounded border px-2 py-1"
-                          value={chosenCategoryId}
-                          onChange={(e) =>
-                            setCategoryEditChoice((prev) => ({ ...prev, [t._id]: e.target.value }))
-                          }
-                        >
-                          <option value="">Select category</option>
-                          {categories.map((c) => (
-                            <option key={c._id} value={c._id}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label
-                        htmlFor={`tx-create-rule-${t._id}`}
-                        className="flex items-center gap-2"
-                      >
-                        <input
-                          id={`tx-create-rule-${t._id}`}
-                          type="checkbox"
-                          checked={wantsRule}
-                          disabled={!t.merchant}
-                          onChange={(e) =>
-                            setCreateRuleChoice((prev) => ({ ...prev, [t._id]: e.target.checked }))
-                          }
-                        />
-                        Always categorize {t.merchant || "this merchant"} like this
-                      </label>
-                      <Button
-                        onClick={() => submitCategoryEdit(t)}
-                        disabled={updateCategoryMutation.isPending || !chosenCategoryId}
-                      >
-                        Save
-                      </Button>
-                    </div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        )}
-        {hasNextPage && (
-          <Button
-            className="mt-4 bg-gray-200 text-black"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
+        <Field
+          id="tx-category"
+          label="Category"
+          helper="Leave it on auto and your rules will decide — or leave it uncategorised and file it later."
+        >
+          <Select
+            id="tx-category"
+            value={form.categoryId}
+            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
           >
-            {isFetchingNextPage ? "Loading..." : "Load more"}
+            <option value="">Auto-categorise</option>
+            {categories.map(({ node, depth }) => (
+              <option key={node._id} value={node._id}>
+                {"— ".repeat(depth)}
+                {node.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <FieldGrid>
+          <Field id="tx-amount" label="Amount" hint="− for spend">
+            <MoneyInput
+              id="tx-amount"
+              placeholder="-500"
+              value={form.amount}
+              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+            />
+          </Field>
+          <Field id="tx-date" label="Date">
+            <DateInput
+              id="tx-date"
+              value={form.date}
+              onChange={(e) => setForm({ ...form, date: e.target.value })}
+            />
+          </Field>
+        </FieldGrid>
+
+        <FieldGrid>
+          <Field id="tx-merchant" label="Merchant">
+            <Input
+              id="tx-merchant"
+              placeholder="Swiggy Instamart"
+              value={form.merchant}
+              onChange={(e) => setForm({ ...form, merchant: e.target.value })}
+            />
+          </Field>
+          <Field id="tx-note" label="Note">
+            <Input
+              id="tx-note"
+              value={form.note}
+              onChange={(e) => setForm({ ...form, note: e.target.value })}
+            />
+          </Field>
+        </FieldGrid>
+
+        {duplicate ? (
+          <Notice
+            ref={duplicateRef}
+            tone="quiet"
+            title="This looks like one you already have."
+            body="Same account, same amount, within two days. Nothing was added."
+            action={
+              <div className="flex flex-wrap items-center gap-12">
+                <Button
+                  size="sm"
+                  busy={create.isPending}
+                  onClick={() => create.mutate({ ...duplicate, force: true })}
+                >
+                  Add it anyway
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setDuplicate(null)}
+                  className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] hover:text-ink"
+                >
+                  Never mind
+                </button>
+              </div>
+            }
+          />
+        ) : null}
+
+        <FormActions>
+          <Button type="submit" busy={create.isPending}>
+            Add transaction
           </Button>
-        )}
-      </Card>
-    </ProtectedLayout>
+        </FormActions>
+      </form>
+    </Panel>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CSV import
+// ═══════════════════════════════════════════════════════════════════════════
+
+function ImportPanel({
+  accounts,
+  showToast,
+}: {
+  accounts: Account[];
+  showToast: (message: string, variant?: "error" | "success") => void;
+}) {
+  const queryClient = useQueryClient();
+  const [accountId, setAccountId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<ImportBatchResult | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function upload(file: File) {
+    if (!accountId) {
+      showToast("Choose the account this statement belongs to first");
+      return;
+    }
+    setBusy(true);
+    setResult(null);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      body.append("accountId", accountId);
+      // Deliberately `fetch`, not `apiFetch`: apiFetch always sets a JSON
+      // content type, and a multipart upload needs the browser to set its own
+      // boundary.
+      const res = await fetch(`${API_BASE}/transactions/import`, {
+        method: "POST",
+        credentials: "include",
+        body,
+      });
+      if (!res.ok) {
+        const payload = await res.json().catch(() => ({}));
+        throw new Error(payload.error ?? `Import failed: ${res.status}`);
+      }
+      setResult(await res.json());
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    } catch (e) {
+      showToast((e as Error).message || "Could not import that file", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const failures = result?.rowResults.filter((r) => r.status === "failed") ?? [];
+  const imported = result ? result.rowResults.length - failures.length : 0;
+
+  return (
+    <Panel>
+      <PanelHeader title="§ Import a statement" />
+      <div className="flex flex-col gap-14">
+        <Field
+          id="csv-account"
+          label="Import into"
+          helper="Every row in the file is filed against this one account."
+        >
+          <Select
+            id="csv-account"
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+          >
+            <option value="">Select account</option>
+            {accounts.map((a) => (
+              <option key={a._id} value={a._id}>
+                {a.nickname}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        {/* The column list below is HELPER TEXT, not a <label>.
+            As a label it became the file input's accessible name, so the
+            control announced itself as "Date, Debit, Credit Amount,
+            Description" — and any lookup for a field called "Amount" matched
+            a file picker. The input carries its own name instead. */}
+        <input
+          ref={fileRef}
+          id="csv-file"
+          type="file"
+          accept=".csv"
+          aria-label="Statement file"
+          className="sr-only"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) upload(file);
+            // Reset, so choosing the same file twice still fires a change.
+            e.target.value = "";
+          }}
+        />
+        <div className="flex flex-wrap items-center gap-12">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            busy={busy}
+            onClick={() => fileRef.current?.click()}
+          >
+            <Icon name="upload" size={15} />
+            {busy ? "Reading…" : "Choose a CSV"}
+          </Button>
+          <span className="font-sans text-caption text-dim-2">
+            Date, Debit, Credit Amount, Description
+          </span>
+        </div>
+
+        {result ? (
+          <div className="rounded-panel border-panel border-ink p-18">
+            <SectionLabel>§ Import result</SectionLabel>
+            <p className="m-0 mt-8 text-body-s">
+              {imported} imported, {failures.length} skipped.
+            </p>
+            {failures.length > 0 ? (
+              <ul className="m-0 mt-12 flex list-none flex-col gap-8 p-0">
+                {failures.slice(0, 6).map((f) => (
+                  <li key={f.row} className="font-num text-micro uppercase tracking-micro text-dim">
+                    Row {f.row} · {f.reason ?? "rejected"}
+                  </li>
+                ))}
+                {failures.length > 6 ? (
+                  <li className="font-num text-micro uppercase tracking-micro text-dim">
+                    and {failures.length - 6} more
+                  </li>
+                ) : null}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </Panel>
   );
 }

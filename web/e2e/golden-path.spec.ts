@@ -146,5 +146,10 @@ test("golden path: login, add account, add category, add transaction, see net wo
   await expect(page.getByText("Test Cafe")).toBeVisible();
 
   await page.goto("/dashboard");
-  await expect(page.getByText(/₹10,000|₹10000/)).toBeVisible();
+  // Scoped to the Net Worth figure itself. The panel now also prints what net
+  // worth is made of ("in accounts", "in holdings", "owed on cards"), so with a
+  // single ₹10,000 bank account the same string legitimately appears twice on
+  // the screen and an unscoped getByText trips strict mode. The assertion this
+  // step is actually making is about the total.
+  await expect(page.locator("#net-worth-figure")).toHaveText(/₹10,000|₹10000/);
 });

@@ -1,88 +1,102 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiFetch } from "@/lib/api-client";
+
+import { API_BASE, apiFetch } from "@/lib/api-client";
+import type {
+  CategorizationRule,
+  CategoryNode,
+  GmailStatus,
+  MatchField,
+  MatchType,
+} from "@/lib/api-types";
+import { flattenCategories, indexCategories, resolveChip } from "@/lib/buckets";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
+import { Chip } from "@/components/app/chip";
+import { Icon, Tether } from "@/components/app/icons";
+import { Field, FieldGrid, FormActions, Select } from "@/components/app/form";
+import {
+  EmptyState,
+  Helper,
+  Notice,
+  PageHeader,
+  Panel,
+  PanelFooter,
+  PanelHeader,
+  RowName,
+  SectionLabel,
+  Skeleton,
+} from "@/components/app/primitives";
+import { Button } from "@/components/shadcn/button";
+import { Input } from "@/components/shadcn/input";
 import { useToast } from "@/components/ui/Toast";
 
-type MatchField = "merchant" | "note";
-type MatchType = "contains" | "exact";
+/**
+ * Sorted · Settings
+ *
+ * Two things worth their own screen, and one download.
+ *
+ * THE GMAIL CONNECTION IS THE POINT. It is what produces the tether — the
+ * dotted mark on every row the parser filed by itself — so this panel is where
+ * that mark is explained, drawn at the size it appears elsewhere, next to the
+ * switch that turns it on.
+ *
+ * RULES ARE STATED AS A SENTENCE. "Merchant contains Swiggy → Eating out" reads
+ * as the thing it does. And the row shows the CHIP of the category it files
+ * into, because that is the outcome you are actually configuring.
+ */
 
-interface CategorizationRule {
-  _id: string;
-  matchField: MatchField;
-  matchType: MatchType;
-  matchValue: string;
-  categoryId: string;
-  priority: number;
-}
-
-type CategoryType = "expense" | "income";
-type Bucket = "fixed_costs" | "investments" | "savings" | "guilt_free";
-
-interface CategoryNode {
-  _id: string;
-  name: string;
-  type: CategoryType;
-  bucket: Bucket;
-  children: CategoryNode[];
-}
-
-function flattenForSelect(nodes: CategoryNode[], depth = 0): { node: CategoryNode; depth: number }[] {
-  return nodes.flatMap((n) => [{ node: n, depth }, ...flattenForSelect(n.children, depth + 1)]);
-}
-
-const MATCH_FIELD_LABELS: Record<MatchField, string> = {
-  merchant: "Merchant",
-  note: "Note",
-};
-
-const MATCH_TYPE_LABELS: Record<MatchType, string> = {
-  contains: "contains",
-  exact: "is exactly",
-};
+const MATCH_FIELD_LABELS: Record<MatchField, string> = { merchant: "Merchant", note: "Note" };
+const MATCH_TYPE_LABELS: Record<MatchType, string> = { contains: "contains", exact: "is exactly" };
 
 export default function SettingsPage() {
+  return (
+    <ProtectedLayout>
+      <PageHeader title="Settings" />
+
+      <div className="grid items-start gap-22 xl:grid-cols-[7fr_5fr]">
+        <div className="flex min-w-0 flex-col gap-22">
+          <RulesPanel />
+        </div>
+        <div className="flex min-w-0 flex-col gap-22">
+          <GmailPanel />
+          <ExportPanel />
+        </div>
+      </div>
+    </ProtectedLayout>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Categorisation rules
+// ═══════════════════════════════════════════════════════════════════════════
+
+function RulesPanel() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
 
-  const {
-    data: rules,
-    isLoading: rulesLoading,
-    isError: rulesError,
-  } = useQuery({
+  const rules = useQuery({
     queryKey: ["categorization-rules"],
     queryFn: () => apiFetch<CategorizationRule[]>("/categorization-rules"),
   });
-
-  const { data: categoryTree } = useQuery({
+  const categories = useQuery({
     queryKey: ["categories"],
     queryFn: () => apiFetch<CategoryNode[]>("/categories"),
   });
-  const flatCategories = flattenForSelect(categoryTree ?? []);
-  const categoryNameById = new Map(flatCategories.map(({ node }) => [node._id, node.name]));
 
-  const {
-    data: gmailStatus,
-    isLoading: gmailLoading,
-    isError: gmailError,
-  } = useQuery({
-    queryKey: ["gmail-status"],
-    queryFn: () => apiFetch<{ connected: boolean }>("/gmail/status"),
-  });
+  const index = useMemo(() => indexCategories(categories.data), [categories.data]);
+  const flat = useMemo(() => flattenCategories(categories.data), [categories.data]);
 
-  const [ruleForm, setRuleForm] = useState({
+  const [form, setForm] = useState({
     matchField: "merchant" as MatchField,
     matchType: "contains" as MatchType,
     matchValue: "",
     categoryId: "",
   });
 
-  const createRuleMutation = useMutation({
+  const create = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
       apiFetch<CategorizationRule>("/categorization-rules", {
         method: "POST",
@@ -90,184 +104,320 @@ export default function SettingsPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categorization-rules"] });
-      setRuleForm({ matchField: "merchant", matchType: "contains", matchValue: "", categoryId: "" });
-      showToast("Categorization rule created", "success");
+      setForm({ matchField: "merchant", matchType: "contains", matchValue: "", categoryId: "" });
+      showToast("Rule added", "success");
     },
-    onError: () => showToast("Failed to create categorization rule", "error"),
+    onError: () => showToast("Could not add that rule", "error"),
   });
 
-  function submitCreateRule() {
-    if (!ruleForm.matchValue.trim()) {
-      showToast("Enter a value to match on");
-      return;
-    }
-    if (!ruleForm.categoryId) {
-      showToast("Choose a category");
-      return;
-    }
-    createRuleMutation.mutate({
-      matchField: ruleForm.matchField,
-      matchType: ruleForm.matchType,
-      matchValue: ruleForm.matchValue,
-      categoryId: ruleForm.categoryId,
-    });
-  }
-
-  const deleteRuleMutation = useMutation({
-    mutationFn: (id: string) => apiFetch<void>(`/categorization-rules/${id}`, { method: "DELETE" }),
+  const remove = useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<void>(`/categorization-rules/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["categorization-rules"] });
-      showToast("Categorization rule deleted", "success");
+      showToast("Rule deleted", "success");
     },
-    onError: () => showToast("Failed to delete categorization rule", "error"),
+    onError: () => showToast("Could not delete that rule", "error"),
   });
 
-  function submitDeleteRule(rule: CategorizationRule) {
-    if (!window.confirm(`Delete this rule ("${rule.matchValue}")? This cannot be undone.`)) return;
-    deleteRuleMutation.mutate(rule._id);
-  }
+  const rows = rules.data ?? [];
 
-  const disconnectMutation = useMutation({
+  return (
+    <Panel>
+      <PanelHeader
+        title="§ Filing rules"
+        meta={rows.length > 0 ? `${rows.length} · first match wins` : undefined}
+      />
+      <Helper className="-mt-8 mb-18 max-w-[60ch]">
+        Applied to anything that arrives without a category — a manual entry left on auto, a
+        statement row, an email the parser read. Rules run in priority order and the first one that
+        matches wins.
+      </Helper>
+
+      {rules.isLoading ? (
+        <div className="flex flex-col gap-12">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-[22px] w-full rounded-sm opacity-40" />
+          ))}
+        </div>
+      ) : rules.isError ? (
+        <Notice
+          title="Could not load your filing rules."
+          body="Please try again shortly. Nothing has been lost."
+        />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title="No rules yet."
+          body="The fastest way to make one is from a transaction: change its category and tick “always file this merchant here”."
+        />
+      ) : (
+        <div>
+          {rows.map((rule) => {
+            const entry = index.get(rule.categoryId);
+            const spec = resolveChip(rule.categoryId, index);
+            return (
+              <div
+                key={rule._id}
+                className="grid grid-cols-row items-center gap-14 border-b border-rule py-12 last:border-b-0"
+              >
+                <Chip spec={spec} labelled />
+                <RowName
+                  name={
+                    <>
+                      {MATCH_FIELD_LABELS[rule.matchField]}{" "}
+                      <span className="text-dim-2">{MATCH_TYPE_LABELS[rule.matchType]}</span>{" "}
+                      <span className="font-medium">{rule.matchValue}</span>
+                    </>
+                  }
+                  sub={`Files into ${entry?.node.name ?? "a category that no longer exists"} · priority ${rule.priority}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`Delete the rule for “${rule.matchValue}”?`)) {
+                      remove.mutate(rule._id);
+                    }
+                  }}
+                  disabled={remove.isPending}
+                  className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-alert disabled:opacity-[.55]"
+                >
+                  Delete
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <form
+        noValidate
+        className="mt-18 flex flex-col gap-14 border-t border-rule pt-18"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!form.matchValue.trim()) {
+            showToast("Enter the text to match on");
+            return;
+          }
+          if (!form.categoryId) {
+            showToast("Choose the category to file into");
+            return;
+          }
+          create.mutate({
+            matchField: form.matchField,
+            matchType: form.matchType,
+            matchValue: form.matchValue.trim(),
+            categoryId: form.categoryId,
+          });
+        }}
+      >
+        <SectionLabel>§ Add a rule</SectionLabel>
+        <FieldGrid>
+          <Field id="rule-field" label="Look at">
+            <Select
+              id="rule-field"
+              value={form.matchField}
+              onChange={(e) => setForm({ ...form, matchField: e.target.value as MatchField })}
+            >
+              <option value="merchant">Merchant</option>
+              <option value="note">Note</option>
+            </Select>
+          </Field>
+          <Field id="rule-type" label="Match">
+            <Select
+              id="rule-type"
+              value={form.matchType}
+              onChange={(e) => setForm({ ...form, matchType: e.target.value as MatchType })}
+            >
+              <option value="contains">Contains</option>
+              <option value="exact">Is exactly</option>
+            </Select>
+          </Field>
+        </FieldGrid>
+        <Field
+          id="rule-match"
+          label="Text"
+          helper="Case does not matter — Swiggy and SWIGGY match the same rows."
+        >
+          <Input
+            id="rule-match"
+            placeholder="Swiggy"
+            value={form.matchValue}
+            onChange={(e) => setForm({ ...form, matchValue: e.target.value })}
+          />
+        </Field>
+        <Field id="rule-category" label="File into">
+          <Select
+            id="rule-category"
+            value={form.categoryId}
+            onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+          >
+            <option value="">Select a category</option>
+            {flat.map(({ node, depth }) => (
+              <option key={node._id} value={node._id}>
+                {"— ".repeat(depth)}
+                {node.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <FormActions className="mt-0 border-t-0 pt-0">
+          <Button type="submit" busy={create.isPending}>
+            Add Rule
+          </Button>
+        </FormActions>
+      </form>
+    </Panel>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Gmail
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * The OAuth callback redirects to /settings?gmail=connected, and acknowledging
+ * that is the difference between "did that work?" and a confirmed round trip.
+ *
+ * IT LIVES IN ITS OWN COMPONENT BEHIND <Suspense> ON PURPOSE. `useSearchParams`
+ * opts the whole route out of static prerendering, and Next 14 fails the BUILD
+ * outright ("should be wrapped in a suspense boundary") rather than warning —
+ * so calling it at the top of the page took the entire /settings route down.
+ * Scoped here, only this one line de-opts.
+ */
+function ConnectedAcknowledgement() {
+  const search = useSearchParams();
+  if (search?.get("gmail") !== "connected") return null;
+  return (
+    <div className="mb-14 flex items-center gap-8 font-num text-label uppercase tracking-label text-ink">
+      <Icon name="check" size={13} />
+      Just connected
+    </div>
+  );
+}
+
+function GmailPanel() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  const status = useQuery({
+    queryKey: ["gmail-status"],
+    queryFn: () => apiFetch<GmailStatus>("/gmail/status"),
+  });
+
+  const disconnect = useMutation({
     mutationFn: () => apiFetch<void>("/gmail/disconnect", { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gmail-status"] });
       showToast("Gmail disconnected", "success");
     },
-    onError: () => showToast("Failed to disconnect Gmail", "error"),
+    onError: () => showToast("Could not disconnect Gmail", "error"),
   });
 
-  function submitDisconnectGmail() {
-    if (!window.confirm("Disconnect Gmail? Auto-ingestion of email transactions will stop.")) return;
-    disconnectMutation.mutate();
-  }
+  const connected = status.data?.connected ?? false;
 
   return (
-    <ProtectedLayout>
-      <h1 className="mb-6 text-2xl font-semibold">Settings</h1>
+    <Panel>
+      <PanelHeader title="§ Your inbox" />
 
-      <Card className="mb-6">
-        <p className="mb-3 font-medium">Categorization Rules</p>
-        <div className="mb-4 flex flex-col gap-3">
-          <label htmlFor="rule-field" className="text-sm">
-            Field
-            <select
-              id="rule-field"
-              className="mt-1 w-full rounded border px-3 py-2"
-              value={ruleForm.matchField}
-              onChange={(e) => setRuleForm({ ...ruleForm, matchField: e.target.value as MatchField })}
-            >
-              <option value="merchant">Merchant</option>
-              <option value="note">Note</option>
-            </select>
-          </label>
-          <label htmlFor="rule-type" className="text-sm">
-            Match Type
-            <select
-              id="rule-type"
-              className="mt-1 w-full rounded border px-3 py-2"
-              value={ruleForm.matchType}
-              onChange={(e) => setRuleForm({ ...ruleForm, matchType: e.target.value as MatchType })}
-            >
-              <option value="contains">Contains</option>
-              <option value="exact">Is exactly</option>
-            </select>
-          </label>
-          <label htmlFor="rule-match" className="text-sm">
-            Value
-            <Input
-              id="rule-match"
-              className="mt-1 w-full"
-              placeholder="e.g. Starbucks"
-              value={ruleForm.matchValue}
-              onChange={(e) => setRuleForm({ ...ruleForm, matchValue: e.target.value })}
-            />
-          </label>
-          <label htmlFor="rule-category" className="text-sm">
-            Category
-            <select
-              id="rule-category"
-              className="mt-1 w-full rounded border px-3 py-2"
-              value={ruleForm.categoryId}
-              onChange={(e) => setRuleForm({ ...ruleForm, categoryId: e.target.value })}
-            >
-              <option value="">Select a category</option>
-              {flatCategories.map(({ node, depth }) => (
-                <option key={node._id} value={node._id}>
-                  {"  ".repeat(depth)}
-                  {node.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <Button onClick={submitCreateRule} disabled={createRuleMutation.isPending}>
-            Add Rule
-          </Button>
+      {/* The tether, drawn at the size it appears on a row, next to the switch
+          that creates it. This is the one place the mark gets explained. */}
+      <div className="mb-18 rounded-panel border-panel border-ink p-18">
+        <SectionLabel className="mb-12">§ What it looks like</SectionLabel>
+        <div className="grid w-full grid-cols-row-tether items-center">
+          <Tether />
+          <Chip spec={{ kind: "bucket", bucket: "fixed_costs" }} />
+          <span className="truncate pr-14 text-body-s">Airtel Fiber</span>
+          <span className="money whitespace-nowrap text-body-s">−₹1,499</span>
         </div>
+      </div>
+      <Helper className="-mt-8 mb-18 max-w-[52ch]">
+        Connect Gmail and Sorted reads your bank alert emails, pulls out the amount and the
+        merchant, and holds each one for you to confirm. Rows it filed carry that dotted mark for
+        good, so you always know which numbers you typed and which ones it did.
+      </Helper>
 
-        {rulesLoading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
-        ) : rulesError ? (
-          <p className="text-sm text-red-600">Could not load categorization rules. Please try again shortly.</p>
-        ) : (rules ?? []).length === 0 ? (
-          <p className="text-sm text-gray-500">No categorization rules yet.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {(rules ?? []).map((r) => (
-              <li key={r._id} className="flex items-center justify-between text-sm">
-                <span>
-                  {MATCH_FIELD_LABELS[r.matchField]} {MATCH_TYPE_LABELS[r.matchType]} &quot;{r.matchValue}&quot; &rarr;{" "}
-                  {categoryNameById.get(r.categoryId) ?? r.categoryId}
-                </span>
-                <Button
-                  className="bg-red-600"
-                  onClick={() => submitDeleteRule(r)}
-                  disabled={deleteRuleMutation.isPending}
-                >
-                  Delete
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      {status.isLoading ? (
+        <Skeleton className="h-[22px] w-[180px] rounded-sm opacity-40" />
+      ) : status.isError ? (
+        <Notice
+          title="Could not check the connection."
+          body="Please try again shortly."
+        />
+      ) : (
+        <>
+          {connected ? (
+            <Suspense fallback={null}>
+              <ConnectedAcknowledgement />
+            </Suspense>
+          ) : null}
 
-      <Card className="mb-6">
-        <p className="mb-3 font-medium">Gmail Auto-Ingestion</p>
-        {gmailLoading ? (
-          <p className="text-sm text-gray-500">Loading...</p>
-        ) : gmailError ? (
-          <p className="text-sm text-red-600">Could not load Gmail connection status. Please try again shortly.</p>
-        ) : (
-          <>
-            <p className="mb-3 text-sm text-gray-500">
-              Status: {gmailStatus?.connected ? "Connected" : "Not connected"}
-            </p>
-            {gmailStatus?.connected ? (
+          <div className="flex flex-wrap items-center justify-between gap-14">
+            <span className="flex items-center gap-10">
+              <span
+                aria-hidden
+                className="grid h-22 w-22 place-items-center rounded-pill border-panel border-ink text-ink"
+              >
+                <Icon name={connected ? "check" : "mail"} size={12} />
+              </span>
+              <span className="text-body-s">{connected ? "Connected" : "Not connected"}</span>
+            </span>
+
+            {connected ? (
               <Button
-                className="bg-red-600"
-                onClick={submitDisconnectGmail}
-                disabled={disconnectMutation.isPending}
+                variant="ghost"
+                size="sm"
+                busy={disconnect.isPending}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      "Disconnect Gmail? Nothing already filed is removed, but no new emails will be read."
+                    )
+                  ) {
+                    disconnect.mutate();
+                  }
+                }}
               >
                 Disconnect
               </Button>
             ) : (
-              <a href="/api/gmail/connect">
-                <Button>Connect Gmail</Button>
-              </a>
+              /* A real navigation, not a fetch: /gmail/connect answers with a
+                 302 to Google's consent screen, which the browser has to follow
+                 itself. An XHR would silently follow it and fail on CORS. */
+              <Button asChild size="sm">
+                <a href={`${API_BASE}/gmail/connect`}>Connect Gmail</a>
+              </Button>
             )}
-          </>
-        )}
-      </Card>
+          </div>
+          <PanelFooter>
+            Read-only access. Sorted never sends, deletes or replies to anything.
+          </PanelFooter>
+        </>
+      )}
+    </Panel>
+  );
+}
 
-      <Card>
-        <p className="mb-3 font-medium">Data Export</p>
-        <p className="mb-3 text-sm text-gray-500">
-          Download all of your data (accounts, transactions, holdings, goals, and recurring items) as JSON.
-        </p>
-        <a href="/api/export">
-          <Button>Download my data (JSON)</Button>
+// ═══════════════════════════════════════════════════════════════════════════
+// Export
+// ═══════════════════════════════════════════════════════════════════════════
+
+function ExportPanel() {
+  return (
+    <Panel>
+      <PanelHeader title="§ Your data" />
+      <Helper className="-mt-8 mb-18 max-w-[52ch]">
+        Everything in one JSON file: accounts, transactions, holding lots, goals and recurring
+        items. It is yours, and it leaves in a format something else can read.
+      </Helper>
+      <Button asChild variant="ghost" size="sm" className="self-start">
+        <a href={`${API_BASE}/export`} download>
+          <Icon name="download" size={15} />
+          Download everything
         </a>
-      </Card>
-    </ProtectedLayout>
+      </Button>
+      <PanelFooter>
+        Categories, filing rules and tax entries are not in the file yet
+      </PanelFooter>
+    </Panel>
   );
 }
