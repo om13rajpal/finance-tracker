@@ -21,3 +21,7 @@ gh auth switch -u omrajpal13274   # before pushing to the fork
 ```
 
 Switch to whichever account matches the remote you're about to push to.
+
+## Infrastructure
+
+- **Redis (BullMQ queues)**: `finance-tracker-redis`, a Render-managed Key Value instance (`red-dabesv710e5c73fq8cmg`), internal URL `redis://red-dabesv710e5c73fq8cmg:6379`. Migrated off Upstash on 2026-09-01 after Upstash's free-tier 500k-request quota was exhausted and started rejecting every command, which broke all BullMQ job processing app-wide (Gmail watch renewal, statement processing, price refresh, etc.) until the migration. The internal URL only resolves from inside Render's private network (e.g. from the API service), not from a local machine.

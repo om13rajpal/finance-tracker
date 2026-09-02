@@ -317,6 +317,12 @@ function GmailPanel() {
     onError: () => showToast("Could not disconnect Gmail", "error"),
   });
 
+  const resync = useMutation({
+    mutationFn: () => apiFetch<{ ok: true }>("/gmail/resync", { method: "POST" }),
+    onSuccess: () => showToast("Gmail resynced: watching for new emails again", "success"),
+    onError: () => showToast("Resync failed. Try disconnecting and reconnecting Gmail.", "error"),
+  });
+
   const connected = status.data?.connected ?? false;
 
   return (
@@ -367,22 +373,32 @@ function GmailPanel() {
             </span>
 
             {connected ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                busy={disconnect.isPending}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      "Disconnect Gmail? Nothing already filed is removed, but no new emails will be read."
-                    )
-                  ) {
-                    disconnect.mutate();
-                  }
-                }}
-              >
-                Disconnect
-              </Button>
+              <span className="flex items-center gap-8">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  busy={resync.isPending}
+                  onClick={() => resync.mutate()}
+                >
+                  Resync
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  busy={disconnect.isPending}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Disconnect Gmail? Nothing already filed is removed, but no new emails will be read."
+                      )
+                    ) {
+                      disconnect.mutate();
+                    }
+                  }}
+                >
+                  Disconnect
+                </Button>
+              </span>
             ) : (
               /* A real navigation, not a fetch: /gmail/connect answers with a
                  302 to Google's consent screen, which the browser has to follow

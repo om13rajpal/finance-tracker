@@ -181,6 +181,59 @@ describe("gmail oauth flow", () => {
   });
 });
 
+describe("gmail resync", () => {
+  it("requires authentication", async () => {
+    const res = await request(app).post("/gmail/resync");
+    expect(res.status).toBe(401);
+  });
+
+  it("400s when there is no connection at all", async () => {
+    const res = await request(app).post("/gmail/resync").set("Cookie", authCookie("resync-never-connected"));
+    expect(res.status).toBe(400);
+  });
+
+  it("400s when the connection is disconnected", async () => {
+    await request(app)
+      .get("/gmail/oauth/callback?code=mock-code&state=" + encodeURIComponent(signOAuthState("resync-disconnected")))
+      .set("Cookie", authCookie("resync-disconnected"));
+    await request(app).delete("/gmail/disconnect").set("Cookie", authCookie("resync-disconnected"));
+
+    const res = await request(app).post("/gmail/resync").set("Cookie", authCookie("resync-disconnected"));
+    expect(res.status).toBe(400);
+  });
+
+  it("re-registers the watch using the already-stored refresh token, no new OAuth consent involved", async () => {
+    await request(app)
+      .get("/gmail/oauth/callback?code=mock-code&state=" + encodeURIComponent(signOAuthState("resync-user")))
+      .set("Cookie", authCookie("resync-user"));
+    watchMock.mockClear();
+
+    const before = await GmailConnection.findOne({ userId: "resync-user" });
+
+    const res = await request(app).post("/gmail/resync").set("Cookie", authCookie("resync-user"));
+    expect(res.status).toBe(200);
+    expect(watchMock).toHaveBeenCalledTimes(1);
+
+    const after = await GmailConnection.findOne({ userId: "resync-user" });
+    expect(after?.status).toBe("connected");
+    expect(after?.watchExpiration?.getTime()).toBeGreaterThanOrEqual(before!.watchExpiration!.getTime());
+  });
+
+  it("422s and reports the connection as needing a real reconnect when the stored token is revoked", async () => {
+    await request(app)
+      .get("/gmail/oauth/callback?code=mock-code&state=" + encodeURIComponent(signOAuthState("resync-revoked")))
+      .set("Cookie", authCookie("resync-revoked"));
+
+    watchMock.mockRejectedValueOnce({ response: { status: 401, data: { error: "invalid_grant" } } });
+
+    const res = await request(app).post("/gmail/resync").set("Cookie", authCookie("resync-revoked"));
+    expect(res.status).toBe(422);
+
+    const connection = await GmailConnection.findOne({ userId: "resync-revoked" });
+    expect(connection?.status).toBe("disconnected");
+  });
+});
+
 describe("gmail connection status", () => {
   it("requires authentication", async () => {
     const res = await request(app).get("/gmail/status");

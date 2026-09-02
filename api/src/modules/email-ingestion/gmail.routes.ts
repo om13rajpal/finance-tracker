@@ -77,3 +77,31 @@ gmailRouter.delete("/disconnect", requireAuth, async (req, res, next) => {
     next(err);
   }
 });
+
+/**
+ * Forces a fresh push-notification watch right now, using the already-stored
+ * refresh token: no new OAuth consent needed. Exists because the daily
+ * renewal job only runs once every 24h, so a stale/expired watch (e.g. from
+ * a period where the renewal job itself couldn't run) can otherwise sit
+ * broken for up to a day before anyone notices, with no way to fix it short
+ * of disconnecting and reconnecting through Google's consent screen.
+ */
+gmailRouter.post("/resync", requireAuth, async (req, res, next) => {
+  try {
+    const userId = (req as any).userId;
+    const connection = await GmailConnection.findOne({ userId });
+    if (!connection || connection.status !== "connected") {
+      return res.status(400).json({ error: "Gmail is not connected" });
+    }
+
+    await registerWatch(userId);
+
+    const updated = await GmailConnection.findOne({ userId });
+    if (updated?.status !== "connected") {
+      return res.status(422).json({ error: "Resync failed: the stored Gmail token was rejected. Reconnect Gmail." });
+    }
+    res.status(200).json({ ok: true, watchExpiration: updated.watchExpiration });
+  } catch (err) {
+    next(err);
+  }
+});
