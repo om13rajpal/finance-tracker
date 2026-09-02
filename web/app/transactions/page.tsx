@@ -244,14 +244,15 @@ export default function TransactionsPage() {
                 }
               />
             ) : (
-              <div className="mt-14">
-                {rows.map((t) => (
+              <div className="reveal-in mt-14" data-stagger>
+                {rows.map((t, i) => (
                   <TransactionRow
                     key={t._id}
                     transaction={t}
                     index={index}
                     accountName={accountName}
                     categories={flatCategories}
+                    staggerIndex={i}
                   />
                 ))}
               </div>
@@ -383,11 +384,17 @@ function TransactionRow({
   index,
   accountName,
   categories,
+  staggerIndex,
 }: {
   transaction: Transaction;
   index: CategoryIndex;
   accountName: Map<string, string>;
   categories: { node: CategoryNode; depth: number }[];
+  /** Row-entrance stagger delay, in list position. Omitted where a row
+   * renders outside a `data-stagger` list (there is none today, but the prop
+   * stays optional rather than required so a future standalone usage doesn't
+   * have to invent a fake index). */
+  staggerIndex?: number;
 }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -492,7 +499,10 @@ function TransactionRow({
   );
 
   return (
-    <div className="border-b border-rule last:border-b-0">
+    <div
+      className={cn("border-b border-rule last:border-b-0", staggerIndex !== undefined && "row-stagger")}
+      style={staggerIndex !== undefined ? { ["--i" as string]: staggerIndex } : undefined}
+    >
       <div className="grid grid-cols-row-tether items-center py-10">
         {/* The 22px provenance gutter. Empty on a row you typed yourself. */}
         <span className="flex justify-start">
@@ -794,6 +804,15 @@ function PendingPanel({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const selectedItems = items.filter((item) => selected.has(item._id));
   const allSelected = items.length > 0 && selectedItems.length === items.length;
+  // Rendered count, independent of `selected`: a queue that's grown past a
+  // couple hundred rows (a real, hit-in-production shape, not a hypothetical)
+  // used to render every single one at once, turning this panel into most of
+  // the scroll on the page. "Select all" and every bulk action still operate
+  // on the full `items` array regardless of how many rows are actually
+  // painted, so collapsing the view never limits what a bulk action reaches.
+  const PAGE_SIZE = 25;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const visibleItems = items.slice(0, visibleCount);
   // What the LAST bulk-file left unresolved, and why: surfaced as a banner
   // that stays put until dismissed or acted on, not a toast that's gone in a
   // few seconds. Skipped rows already stay selected (see `bulkConfirm` below)
@@ -956,7 +975,14 @@ function PendingPanel({
 
   return (
     <Panel>
-      <PanelHeader title="§ From your inbox" meta={`${items.length} waiting`} />
+      <PanelHeader
+        title="§ From your inbox"
+        meta={
+          visibleCount < items.length
+            ? `${visibleItems.length} of ${items.length} waiting`
+            : `${items.length} waiting`
+        }
+      />
       <Helper className="-mt-8 mb-14 max-w-[56ch]">
         Read out of your bank email and held here until you say so. Nothing below has touched your
         balances yet.
@@ -1017,14 +1043,19 @@ function PendingPanel({
         />
       ) : null}
 
-      {items.map((item) => {
+      <div data-stagger>
+      {visibleItems.map((item, i) => {
         const needsAccount = !item.accountId;
         const chosen = accountChoice[item._id] ?? "";
         // Same rule as the history rows: a pending transaction with no
         // category is uncategorised, not "an expense".
         const spec = resolveChip(item.categoryId, index);
         return (
-          <div key={item._id} className="border-b border-rule py-14 last:border-b-0 last:pb-0">
+          <div
+            key={item._id}
+            className="row-stagger border-b border-rule py-14 last:border-b-0 last:pb-0"
+            style={{ ["--i" as string]: i }}
+          >
             {/* Actions sit on the ROW, level with the amount. Put on their own
                 line they doubled the height of every card in a queue whose
                 whole job is to be cleared quickly. The account picker is the
@@ -1122,6 +1153,15 @@ function PendingPanel({
           </div>
         );
       })}
+      </div>
+
+      {visibleCount < items.length ? (
+        <div className="mt-18 flex justify-center">
+          <Button size="sm" variant="ghost" onClick={() => setVisibleCount((v) => v + PAGE_SIZE)}>
+            Show more ({items.length - visibleCount} left)
+          </Button>
+        </div>
+      ) : null}
     </Panel>
   );
 }

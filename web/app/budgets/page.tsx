@@ -162,6 +162,7 @@ export default function BudgetsPage() {
                           percent={(spent / limit) * 100}
                           fill={meta.fill}
                           over={over}
+                          live
                           label={`${meta.label}: ${formatInr(spent)} of ${formatInr(limit)} planned${
                             over ? `, over by ${formatInr(spent - limit)}` : ""
                           }`}
@@ -178,7 +179,7 @@ export default function BudgetsPage() {
           </Panel>
 
           {/* ── the tree ─────────────────────────────────────────────── */}
-          <Panel>
+          <Panel className="reveal-in" data-stagger>
             <PanelHeader
               title="§ Categories"
               meta={categories.isSuccess ? `${flattenCategories(tree).length} total` : undefined}
@@ -203,16 +204,25 @@ export default function BudgetsPage() {
                 body="Add one on the right. Name it whatever you like: the bucket you put it in is what gives it a colour."
               />
             ) : (
-              tree.map((node) => (
-                <CategoryRow
-                  key={node._id}
-                  node={node}
-                  depth={0}
-                  inheritedBucket={null}
-                  row={spendByCategory.get(node._id)}
-                  tree={tree}
-                />
-              ))
+              // A single running counter, threaded through CategoryRow's own
+              // recursive calls for its children (see that prop's doc
+              // comment): the tree nests arbitrarily, so a per-`.map()`
+              // index alone can't produce one continuous stagger order
+              // across parents and children.
+              (() => {
+                const counter = { current: 0 };
+                return tree.map((node) => (
+                  <CategoryRow
+                    key={node._id}
+                    node={node}
+                    depth={0}
+                    inheritedBucket={null}
+                    row={spendByCategory.get(node._id)}
+                    tree={tree}
+                    staggerCounter={counter}
+                  />
+                ));
+              })()
             )}
             {dashboard.isError && !categories.isError ? (
               <PanelFooter>
@@ -254,6 +264,7 @@ function CategoryRow({
   row,
   isFirstChild = false,
   tree,
+  staggerCounter,
 }: {
   node: CategoryNode;
   depth: number;
@@ -261,10 +272,16 @@ function CategoryRow({
   row?: BudgetVsSpendRow;
   isFirstChild?: boolean;
   tree: CategoryNode[];
+  /** One counter shared across the whole tree (see the top-level `.map()`
+   * that creates it): incremented once per row, in render order, so nested
+   * children continue the SAME stagger sequence their ancestors are already
+   * mid-way through, instead of each restarting from 0. */
+  staggerCounter: { current: number };
 }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const bucket = isBucket(node.bucket) ? node.bucket : inheritedBucket;
+  const myStaggerIndex = staggerCounter.current++;
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
     name: node.name,
@@ -341,7 +358,7 @@ function CategoryRow({
       <>
         <form
           noValidate
-          className="flex flex-col gap-14 border-b border-rule py-14 last:border-b-0"
+          className="reveal-in flex flex-col gap-14 border-b border-rule py-14 last:border-b-0"
           style={{ paddingLeft: depth * 22 }}
           onSubmit={(e) => {
             e.preventDefault();
@@ -434,6 +451,7 @@ function CategoryRow({
             inheritedBucket={bucket}
             isFirstChild={i === 0}
             tree={tree}
+            staggerCounter={staggerCounter}
           />
         ))}
       </>
@@ -443,8 +461,8 @@ function CategoryRow({
   return (
     <>
       <div
-        className="grid grid-cols-row items-center gap-x-14 gap-y-8 border-b border-rule py-12 last:border-b-0"
-        style={{ paddingLeft: depth * 22 }}
+        className="row-stagger grid grid-cols-row items-center gap-x-14 gap-y-8 border-b border-rule py-12 last:border-b-0"
+        style={{ paddingLeft: depth * 22, ["--i" as string]: myStaggerIndex }}
       >
         {/* An INCOME category has a bucket in the API, but a bucket means
             "where spending goes"; for money arriving it is a field with no
@@ -538,6 +556,7 @@ function CategoryRow({
             percent={(row.spent / row.budgetLimit) * 100}
             fill={bucket ? BUCKET_META[bucket].fill : "bg-dim"}
             over={over}
+            live
             label={`${node.name}: ${formatInr(row.spent)} spent of a ${formatInr(
               row.budgetLimit
             )} limit${over ? `, over by ${formatInr(row.spent - row.budgetLimit)}` : ""}`}
@@ -563,6 +582,7 @@ function CategoryRow({
           inheritedBucket={bucket}
           isFirstChild={i === 0}
           tree={tree}
+          staggerCounter={staggerCounter}
         />
       ))}
     </>

@@ -205,17 +205,18 @@ export default function RecurringPage() {
             </Panel>
           ) : (
             STATUS_ORDER.filter((status) => (grouped.get(status) ?? []).length > 0).map((status) => (
-              <Panel key={status}>
+              <Panel key={status} className="reveal-in" data-stagger>
                 <PanelHeader
                   title={`§ ${STATUS_LABELS[status]}`}
                   meta={`${grouped.get(status)!.length}`}
                 />
-                {grouped.get(status)!.map((item) => (
+                {grouped.get(status)!.map((item, i) => (
                   <RecurringRow
                     key={item._id}
                     item={item}
                     index={index}
                     accountName={accountName}
+                    staggerIndex={i}
                   />
                 ))}
                 {status === "cancelled" ? (
@@ -245,10 +246,12 @@ function RecurringRow({
   item,
   index,
   accountName,
+  staggerIndex,
 }: {
   item: RecurringItem;
   index: CategoryIndex;
   accountName: Map<string, string>;
+  staggerIndex?: number;
 }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -284,11 +287,16 @@ function RecurringRow({
     <div
       className={cn(
         "flex flex-wrap items-center gap-14 border-b border-rule py-12 last:border-b-0",
+        staggerIndex !== undefined && "row-stagger",
         // Cancelled rows are dimmed as a WHOLE, so nothing inside them has to be
         // recoloured, and the figures stay tabular and legible rather than
-        // being greyed into illegibility one element at a time.
+        // being greyed into illegibility one element at a time. Transitioned,
+        // not a hard cut: pausing/cancelling happens while looking right at
+        // this row.
+        "transition-opacity duration-hover ease-out motion-reduce:transition-none",
         item.status === "cancelled" && "opacity-[.6]"
       )}
+      style={staggerIndex !== undefined ? { ["--i" as string]: staggerIndex } : undefined}
     >
       <div className="grid min-w-[240px] flex-1 grid-cols-row items-center gap-14">
         <Chip spec={spec} labelled logoUrl={logoUrl} />
@@ -398,7 +406,7 @@ function RecurringSuggestionsPanel({
   if (visible.length === 0) return null;
 
   return (
-    <Panel>
+    <Panel className="reveal-in">
       <PanelHeader title="§ Suggested" meta={`${visible.length}`} />
       {visible.map((s) => {
         const categoryId = s.categoryId ?? chosenCategory[s.key] ?? "";

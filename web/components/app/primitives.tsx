@@ -733,7 +733,7 @@ export function Modal({
           aria-label={typeof title === "string" ? title : undefined}
           tabIndex={-1}
           className={cn(
-            "w-full max-w-[440px] rounded-panel border-panel border-ink bg-bg p-22",
+            "reveal-in w-full max-w-[440px] rounded-panel border-panel border-ink bg-bg p-22",
             className
           )}
         >

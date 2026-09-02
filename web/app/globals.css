@@ -422,8 +422,20 @@
     animation-delay: calc(var(--i, 0) * 24ms);
   }
 
+  /* A single element mounting where a person just caused it to: an inline
+     edit form opening, a collapsed section expanding, a live preview
+     appearing as they type. Same opacity-only fade as `row-in`, just
+     without the per-row stagger delay — there's only one thing appearing,
+     not a list of them. Also what a loading-skeleton→real-content swap
+     uses: the newly-mounted content block gets this once, not per row
+     (the rows inside it get their own `row-stagger` instead). */
+  .reveal-in {
+    animation: row-in 190ms var(--ease-out) both;
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    [data-stagger] > .row-stagger {
+    [data-stagger] > .row-stagger,
+    .reveal-in {
       animation: none;
     }
   }

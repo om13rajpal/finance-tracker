@@ -139,26 +139,31 @@ export default function AccountsPage() {
                and three footnotes around a total of five rows: the chrome
                outweighed the ledger. This reads as one list that happens to be
                grouped, which is what it is. */
-            <Panel>
+            <Panel className="reveal-in" data-stagger>
               <PanelHeader title="§ Accounts" />
-              {TYPE_ORDER.filter((type) => (grouped.get(type) ?? []).length > 0).map(
-                (type, groupIndex) => {
-                  const meta = TYPE_META[type];
-                  const rows = grouped.get(type) ?? [];
-                  const subtotal = rows.reduce(
-                    (sum, a) =>
-                      sum + (type === "credit_card" ? -Math.abs(a.currentBalance) : a.currentBalance),
-                    0
-                  );
-                  return (
-                    <section key={type} className={cn(groupIndex > 0 && "mt-22")}>
-                      <div className="flex items-baseline justify-between gap-14 border-b border-ink pb-8">
-                        <SectionLabel>§ {meta.label}</SectionLabel>
-                        <span className="money text-body-s">{formatInr(subtotal)}</span>
-                      </div>
-                      {rows.map((account) => (
-                        <AccountRow key={account._id} account={account} icon={meta.icon} />
-                      ))}
+              {(() => {
+                let staggerIndex = -1;
+                return TYPE_ORDER.filter((type) => (grouped.get(type) ?? []).length > 0).map(
+                  (type, groupIndex) => {
+                    const meta = TYPE_META[type];
+                    const rows = grouped.get(type) ?? [];
+                    const subtotal = rows.reduce(
+                      (sum, a) =>
+                        sum + (type === "credit_card" ? -Math.abs(a.currentBalance) : a.currentBalance),
+                      0
+                    );
+                    return (
+                      <section key={type} className={cn(groupIndex > 0 && "mt-22")}>
+                        <div className="flex items-baseline justify-between gap-14 border-b border-ink pb-8">
+                          <SectionLabel>§ {meta.label}</SectionLabel>
+                          <span className="money text-body-s">{formatInr(subtotal)}</span>
+                        </div>
+                        {rows.map((account) => {
+                          staggerIndex++;
+                          return (
+                            <AccountRow key={account._id} account={account} icon={meta.icon} staggerIndex={staggerIndex} />
+                          );
+                        })}
                       {/* Only the card group gets a note. "Counts towards net
                           worth in full" under Bank, PPF and Cash is three lines
                           saying the obvious thing three times; the one that is
@@ -170,8 +175,9 @@ export default function AccountsPage() {
                       ) : null}
                     </section>
                   );
-                }
-              )}
+                  }
+                );
+              })()}
             </Panel>
           )}
         </div>
@@ -188,7 +194,15 @@ export default function AccountsPage() {
 // One account
 // ═══════════════════════════════════════════════════════════════════════════
 
-function AccountRow({ account, icon }: { account: Account; icon: IconName }) {
+function AccountRow({
+  account,
+  icon,
+  staggerIndex,
+}: {
+  account: Account;
+  icon: IconName;
+  staggerIndex?: number;
+}) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [open, setOpen] = useState(false);
@@ -240,7 +254,10 @@ function AccountRow({ account, icon }: { account: Account; icon: IconName }) {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   return (
-    <div className="border-b border-rule last:border-b-0">
+    <div
+      className={cn("border-b border-rule last:border-b-0", staggerIndex !== undefined && "row-stagger")}
+      style={staggerIndex !== undefined ? { ["--i" as string]: staggerIndex } : undefined}
+    >
       <div className="grid grid-cols-row items-center gap-14 py-14">
         <span className="grid h-chip w-chip place-items-center rounded-pill border-panel border-ink text-ink">
           <Icon name={icon} size={17} />
@@ -273,7 +290,7 @@ function AccountRow({ account, icon }: { account: Account; icon: IconName }) {
       </div>
 
       {open ? (
-        <div className="mb-14 flex flex-col gap-18 rounded-panel border-panel border-ink p-18">
+        <div className="reveal-in mb-14 flex flex-col gap-18 rounded-panel border-panel border-ink p-18">
           <form
             noValidate
             className="flex flex-wrap items-end gap-12"

@@ -490,6 +490,7 @@ function BudgetRow({
           percent={pct}
           fill={bucketFill(bucket)}
           over={over}
+          live
           label={`${row.name}: ${formatInr(row.spent)} spent of a ${formatInr(
             row.budgetLimit
           )} limit${over ? `, over by ${formatInr(overBy)}` : ""}`}

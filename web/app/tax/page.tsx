@@ -480,6 +480,7 @@ function Deductions({ fy }: { fy: string }) {
             percent={(total / SECTION_80C_REFERENCE_LIMIT) * 100}
             over={total > SECTION_80C_REFERENCE_LIMIT}
             fill="bg-bucket-invest"
+            live
             label={`${formatInr(total)} of deductions on file against a ${formatInr(
               SECTION_80C_REFERENCE_LIMIT
             )} section 80C reference limit`}

@@ -109,7 +109,11 @@ export default function GoalsPage() {
                 body="Name the thing you are saving for and how much it costs. A goal with a name gets funded; a vague intention to save does not."
               />
             ) : (
-              list.map((goal) => <GoalRow key={goal._id} goal={goal} />)
+              <div className="reveal-in" data-stagger>
+                {list.map((goal, i) => (
+                  <GoalRow key={goal._id} goal={goal} staggerIndex={i} />
+                ))}
+              </div>
             )}
           </Panel>
         </div>
@@ -126,7 +130,7 @@ export default function GoalsPage() {
 // One goal
 // ═══════════════════════════════════════════════════════════════════════════
 
-function GoalRow({ goal }: { goal: Goal }) {
+function GoalRow({ goal, staggerIndex }: { goal: Goal; staggerIndex?: number }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [draft, setDraft] = useState("");
@@ -161,7 +165,10 @@ function GoalRow({ goal }: { goal: Goal }) {
   });
 
   return (
-    <div className="border-b border-rule py-14 last:border-b-0 last:pb-0">
+    <div
+      className={cn("border-b border-rule py-14 last:border-b-0 last:pb-0", staggerIndex !== undefined && "row-stagger")}
+      style={staggerIndex !== undefined ? { ["--i" as string]: staggerIndex } : undefined}
+    >
       <div className="grid grid-cols-row items-center gap-x-14 gap-y-10">
         <Chip spec={{ kind: "bucket", bucket: "savings" }} labelled />
         <span className="flex min-w-0 flex-wrap items-baseline gap-10">
@@ -186,6 +193,7 @@ function GoalRow({ goal }: { goal: Goal }) {
           className="col-start-2 col-end-4"
           percent={percent}
           fill={BUCKET_META.savings.fill}
+          live
           label={`${goal.name}: ${formatInr(goal.currentAmount)} of ${formatInr(
             goal.targetAmount
           )}, ${Math.round(percent)} percent`}
@@ -227,7 +235,7 @@ function GoalRow({ goal }: { goal: Goal }) {
           ) : (
           <form
             noValidate
-            className="flex items-center gap-12"
+            className="reveal-in flex items-center gap-12"
             onSubmit={(e) => {
               e.preventDefault();
               const value = Number(draft);
