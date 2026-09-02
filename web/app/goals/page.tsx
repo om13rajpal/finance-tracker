@@ -23,6 +23,7 @@ import {
   Panel,
   PanelFooter,
   PanelHeader,
+  PinnedColumn,
   Readout,
   Skeleton,
 } from "@/components/app/primitives";
@@ -118,9 +119,9 @@ export default function GoalsPage() {
           </Panel>
         </div>
 
-        <div className="xl:sticky xl:top-32">
+        <PinnedColumn>
           <AddGoalPanel />
-        </div>
+        </PinnedColumn>
       </div>
     </ProtectedLayout>
   );
@@ -233,44 +234,47 @@ function GoalRow({ goal, staggerIndex }: { goal: Goal; staggerIndex?: number }) 
               </button>
             </div>
           ) : (
-          <form
-            noValidate
-            className="reveal-in flex items-center gap-12"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const value = Number(draft);
-              if (draft.trim() === "" || Number.isNaN(value) || value < 0) {
-                showToast("Enter an amount of zero or more");
-                return;
-              }
-              update.mutate(value);
-            }}
-          >
-            <label htmlFor={`goal-progress-${goal._id}`} className="sr-only">
-              Update progress for {goal.name}
-            </label>
-            <MoneyInput
-              id={`goal-progress-${goal._id}`}
-              placeholder="New total saved"
-              autoFocus
-              className="w-[170px] px-14 py-8 text-body-s"
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-            />
-            <Button type="submit" size="sm" busy={update.isPending}>
-              Save
-            </Button>
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(false);
-                setDraft("");
+          <div className="reveal-in flex flex-col gap-6">
+            <form
+              noValidate
+              className="flex items-center gap-12"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const value = Number(draft);
+                if (draft.trim() === "" || Number.isNaN(value) || value < 0) {
+                  showToast("Enter an amount of zero or more");
+                  return;
+                }
+                update.mutate(value);
               }}
-              className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink"
             >
-              Cancel
-            </button>
-          </form>
+              <label htmlFor={`goal-progress-${goal._id}`} className="sr-only">
+                Update progress for {goal.name}
+              </label>
+              <MoneyInput
+                id={`goal-progress-${goal._id}`}
+                placeholder="New total saved"
+                autoFocus
+                className="w-[170px] px-14 py-8 text-body-s"
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+              />
+              <Button type="submit" size="sm" busy={update.isPending}>
+                Save
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false);
+                  setDraft("");
+                }}
+                className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink"
+              >
+                Cancel
+              </button>
+            </form>
+            <Helper>This replaces the total saved so far, it does not add to it.</Helper>
+          </div>
           )}
         </div>
       </div>

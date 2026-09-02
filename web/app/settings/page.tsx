@@ -30,6 +30,7 @@ import {
   Panel,
   PanelFooter,
   PanelHeader,
+  PinnedColumn,
   RowName,
   SectionLabel,
   Skeleton,
@@ -65,12 +66,12 @@ export default function SettingsPage() {
         <div className="flex min-w-0 flex-col gap-22">
           <RulesPanel />
         </div>
-        <div className="flex min-w-0 flex-col gap-22">
+        <PinnedColumn className="flex min-w-0 flex-col gap-22">
           <GmailPanel />
           <TrustedSendersPanel />
           <StatementPasswordsPanel />
           <ExportPanel />
-        </div>
+        </PinnedColumn>
       </div>
     </ProtectedLayout>
   );
@@ -202,6 +203,35 @@ function RulesPanel() {
 
   const rows = rules.data ?? [];
 
+  // Renumbers every rule's priority to its new list position (10, 20, 30…)
+  // rather than swapping just the two moved rules' values: rules commonly
+  // share the same default priority (100), so a two-way swap between equal
+  // values would PATCH successfully but leave the sort order unchanged.
+  // Rewriting the whole sequence guarantees the move actually takes effect.
+  const reorder = useMutation({
+    mutationFn: async (orderedRules: CategorizationRule[]) => {
+      await Promise.all(
+        orderedRules.map((r, i) =>
+          apiFetch<CategorizationRule>(`/categorization-rules/${r._id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ priority: (i + 1) * 10 }),
+          })
+        )
+      );
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["categorization-rules"] }),
+    onError: () => showToast("Could not reorder rules", "error"),
+  });
+
+  function moveRule(fromIndex: number, direction: -1 | 1) {
+    const toIndex = fromIndex + direction;
+    if (toIndex < 0 || toIndex >= rows.length) return;
+    const next = [...rows];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    reorder.mutate(next);
+  }
+
   return (
     <Panel>
       <PanelHeader
@@ -239,6 +269,8 @@ function RulesPanel() {
               index={index}
               flat={flat}
               onDelete={() => remove.mutate(rule._id)}
+              onMoveUp={i > 0 ? () => moveRule(i, -1) : undefined}
+              onMoveDown={i < rows.length - 1 ? () => moveRule(i, 1) : undefined}
               staggerIndex={i}
             />
           ))}
@@ -409,12 +441,16 @@ function RuleRow({
   index,
   flat,
   onDelete,
+  onMoveUp,
+  onMoveDown,
   staggerIndex,
 }: {
   rule: CategorizationRule;
   index: ReturnType<typeof indexCategories>;
   flat: ReturnType<typeof flattenCategories>;
   onDelete: () => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   staggerIndex?: number;
 }) {
   const queryClient = useQueryClient();
@@ -465,6 +501,26 @@ function RuleRow({
           sub={`Files into ${entry?.node.name ?? "a category that no longer exists"} · priority ${rule.priority}`}
         />
         <span className="flex flex-none items-center gap-12">
+          <span className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label="Move rule up, higher priority"
+              disabled={!onMoveUp}
+              onClick={onMoveUp}
+              className="rounded-xs bg-transparent p-2 text-dim-2 transition-colors duration-hover ease-out hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-dim-2"
+            >
+              <Icon name="chevronDown" size={14} className="rotate-180" />
+            </button>
+            <button
+              type="button"
+              aria-label="Move rule down, lower priority"
+              disabled={!onMoveDown}
+              onClick={onMoveDown}
+              className="rounded-xs bg-transparent p-2 text-dim-2 transition-colors duration-hover ease-out hover:text-ink disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:text-dim-2"
+            >
+              <Icon name="chevronDown" size={14} />
+            </button>
+          </span>
           <button
             type="button"
             onClick={() => {

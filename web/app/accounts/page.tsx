@@ -19,6 +19,7 @@ import {
   Panel,
   PanelFooter,
   PanelHeader,
+  PinnedColumn,
   Readout,
   RowName,
   SectionLabel,
@@ -182,9 +183,9 @@ export default function AccountsPage() {
           )}
         </div>
 
-        <div className="xl:sticky xl:top-32">
+        <PinnedColumn>
           <AddAccountPanel />
-        </div>
+        </PinnedColumn>
       </div>
     </ProtectedLayout>
   );

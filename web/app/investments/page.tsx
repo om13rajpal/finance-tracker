@@ -29,6 +29,7 @@ import {
   Panel,
   PanelFooter,
   PanelHeader,
+  PinnedColumn,
   Readout,
   ScrollableTable,
   SectionLabel,
@@ -340,10 +341,10 @@ export default function InvestmentsPage() {
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-22 xl:sticky xl:top-32">
+        <PinnedColumn className="flex flex-col gap-22">
           <BuySellPanel accounts={accounts.data ?? []} />
           <ImportPanel />
-        </div>
+        </PinnedColumn>
       </div>
     </ProtectedLayout>
   );

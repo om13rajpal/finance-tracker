@@ -12,6 +12,12 @@ import { applyBalanceDelta } from "../accounts/balance.service.js";
 export const transactionsRouter = Router();
 transactionsRouter.use(requireAuth);
 
+// Escapes regex metacharacters so free-text search input (e.g. "a+b") is matched
+// literally instead of being interpreted as a regex pattern.
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 transactionsRouter.get("/", async (req, res, next) => {
   try {
     const userId = (req as any).userId;
@@ -27,10 +33,23 @@ transactionsRouter.get("/", async (req, res, next) => {
       };
     }
 
+    // Cursor pagination and text search each need their own $or clause; combine
+    // them with $and rather than assigning filter.$or twice (the second
+    // assignment would silently clobber the first).
+    const andConditions: Record<string, unknown>[] = [];
+
     if (req.query.cursor) {
       const { date, id } = decodeCursor(req.query.cursor as string);
-      filter.$or = [{ date: { $lt: date } }, { date, _id: { $lt: id } }];
+      andConditions.push({ $or: [{ date: { $lt: date } }, { date, _id: { $lt: id } }] });
     }
+
+    const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    if (q) {
+      const re = new RegExp(escapeRegExp(q), "i");
+      andConditions.push({ $or: [{ merchant: re }, { note: re }] });
+    }
+
+    if (andConditions.length > 0) filter.$and = andConditions;
 
     const items = await Transaction.find(filter)
       .sort({ date: -1, _id: -1 })

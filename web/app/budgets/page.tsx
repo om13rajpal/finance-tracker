@@ -28,6 +28,7 @@ import {
   Panel,
   PanelFooter,
   PanelHeader,
+  PinnedColumn,
   Skeleton,
 } from "@/components/app/primitives";
 import { Button } from "@/components/shadcn/button";
@@ -232,9 +233,9 @@ export default function BudgetsPage() {
           </Panel>
         </div>
 
-        <div className="xl:sticky xl:top-32">
+        <PinnedColumn>
           <AddCategoryPanel tree={tree} />
-        </div>
+        </PinnedColumn>
       </div>
     </ProtectedLayout>
   );

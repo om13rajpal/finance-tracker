@@ -597,6 +597,43 @@ export function PanelGrid({
   );
 }
 
+/**
+ * The right-hand side of a page's own `grid items-start gap-22
+ * xl:grid-cols-[7fr_5fr]` split (an add/edit form, mostly, sometimes a few
+ * stacked panels — see Settings). At `xl` and up it sticks below the page's
+ * own top padding and scrolls on its own once its content outgrows the room
+ * that's left, instead of either scrolling away above the fold while the
+ * wider column still has more below it, or (its old failure mode here: it
+ * used to be `sticky` with no height cap at all) hanging off the bottom of
+ * the screen with no way to reach the rest. Below `xl` it's a plain block —
+ * both columns already stack there and share the page's own scroll, which is
+ * correct on a narrow screen.
+ *
+ * `top-32` matches `ProtectedLayout`'s own `<main>` top padding at this
+ * breakpoint (`lg:pt-32`, unchanged going into `xl`), so the panel settles
+ * exactly where it started once it's scrolled into its stuck position rather
+ * than jumping flush to the very top of the viewport. `76px` is that same
+ * 32px plus `<main>`'s `pb-44` bottom padding, so this column's own
+ * scrollbar (once it needs one) never runs its content under that padding.
+ */
+export function PinnedColumn({
+  className,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "xl:sticky xl:top-32 xl:max-h-[calc(100vh-76px)] xl:self-start xl:overflow-y-auto",
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
+
 /** A small circular icon button: the row-level affordance. */
 export const IconButton = React.forwardRef<
   HTMLButtonElement,

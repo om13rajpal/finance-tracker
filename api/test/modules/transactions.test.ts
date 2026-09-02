@@ -200,6 +200,67 @@ describe("transactions", () => {
     expect(byCategory.body.items[0].categoryId).toBe("cat-2");
   });
 
+  it("filters by free-text search across merchant and note", async () => {
+    const cookie = authCookie("user-search");
+    await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId: "acc-1", amount: -450, date: "2026-05-01", merchant: "Swiggy Instamart", note: "" });
+    await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId: "acc-1", amount: -200, date: "2026-05-02", merchant: "Zomato", note: "" });
+    await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId: "acc-1", amount: -80, date: "2026-05-03", merchant: "Cafe", note: "swiggy delivery tip" });
+
+    const byMerchant = await request(app).get("/transactions?q=swiggy").set("Cookie", cookie);
+    expect(byMerchant.body.items).toHaveLength(2);
+    expect(byMerchant.body.items.map((i: any) => i.merchant).sort()).toEqual(["Cafe", "Swiggy Instamart"]);
+
+    const byNote = await request(app).get("/transactions?q=delivery").set("Cookie", cookie);
+    expect(byNote.body.items).toHaveLength(1);
+    expect(byNote.body.items[0].merchant).toBe("Cafe");
+
+    const caseInsensitive = await request(app).get("/transactions?q=ZOMATO").set("Cookie", cookie);
+    expect(caseInsensitive.body.items).toHaveLength(1);
+    expect(caseInsensitive.body.items[0].merchant).toBe("Zomato");
+  });
+
+  it("combines free-text search with an existing filter (accountId)", async () => {
+    const cookie = authCookie("user-search-combo");
+    await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId: "acc-A", amount: -100, date: "2026-05-01", merchant: "Amazon" });
+    await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId: "acc-B", amount: -100, date: "2026-05-02", merchant: "Amazon" });
+
+    const res = await request(app).get("/transactions?q=amazon&accountId=acc-A").set("Cookie", cookie);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].accountId).toBe("acc-A");
+  });
+
+  it("treats regex-special characters in q as literal text instead of throwing or matching broadly", async () => {
+    const cookie = authCookie("user-search-regex");
+    await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId: "acc-1", amount: -100, date: "2026-05-01", merchant: "A+B Store" });
+    await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId: "acc-1", amount: -100, date: "2026-05-02", merchant: "AB Store" });
+
+    const res = await request(app).get("/transactions?q=" + encodeURIComponent("a+b")).set("Cookie", cookie);
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0].merchant).toBe("A+B Store");
+  });
+
   it("does not list another user's transactions", async () => {
     const cookieA = authCookie("scope-user-a");
     const cookieB = authCookie("scope-user-b");

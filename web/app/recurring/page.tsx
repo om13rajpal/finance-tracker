@@ -43,6 +43,7 @@ import {
   Panel,
   PanelFooter,
   PanelHeader,
+  PinnedColumn,
   Readout,
   RowName,
   Skeleton,
@@ -227,12 +228,12 @@ export default function RecurringPage() {
           )}
         </div>
 
-        <div className="xl:sticky xl:top-32">
+        <PinnedColumn>
           <AddRecurringPanel
             accounts={accounts.data ?? []}
             categories={flattenCategories(categories.data)}
           />
-        </div>
+        </PinnedColumn>
       </div>
     </ProtectedLayout>
   );

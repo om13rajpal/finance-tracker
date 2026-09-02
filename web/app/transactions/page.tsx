@@ -53,6 +53,7 @@ import {
   Panel,
   PanelFooter,
   PanelHeader,
+  PinnedColumn,
   RowName,
   SectionLabel,
   Skeleton,
@@ -83,9 +84,10 @@ interface Filters {
   categoryId: string;
   dateFrom: string;
   dateTo: string;
+  q: string;
 }
 
-const NO_FILTERS: Filters = { accountId: "", categoryId: "", dateFrom: "", dateTo: "" };
+const NO_FILTERS: Filters = { accountId: "", categoryId: "", dateFrom: "", dateTo: "", q: "" };
 
 function buildQuery(filters: Filters, cursor?: string): string {
   const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
@@ -96,6 +98,7 @@ function buildQuery(filters: Filters, cursor?: string): string {
   // parses as midnight UTC and silently excludes everything that happened that
   // day. Push it to the end of the day the person actually meant.
   if (filters.dateTo) params.set("dateTo", `${filters.dateTo}T23:59:59.999Z`);
+  if (filters.q) params.set("q", filters.q);
   if (cursor) params.set("cursor", cursor);
   return params.toString();
 }
@@ -278,7 +281,7 @@ export default function TransactionsPage() {
           </Panel>
         </div>
 
-        <div className="flex min-w-0 flex-col gap-22 xl:sticky xl:top-32">
+        <PinnedColumn className="flex min-w-0 flex-col gap-22">
           <AddTransactionPanel
             accounts={accounts.data ?? []}
             categories={flatCategories}
@@ -289,7 +292,7 @@ export default function TransactionsPage() {
             showToast={showToast}
           />
           <ImportPanel accounts={accounts.data ?? []} showToast={showToast} />
-        </div>
+        </PinnedColumn>
       </div>
     </ProtectedLayout>
   );
@@ -313,8 +316,36 @@ function FilterBar({
   categories: { node: CategoryNode; depth: number }[];
 }) {
   const active = Object.values(filters).some(Boolean);
+
+  // Debounced locally so typing doesn't fire a request (and reset pagination)
+  // on every keystroke. Mirrors `filters.q` back in when it changes from
+  // outside this input (e.g. "Clear filters").
+  const [searchInput, setSearchInput] = useState(filters.q);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
+
+  useEffect(() => {
+    setSearchInput(filters.q);
+  }, [filters.q]);
+
+  useEffect(() => {
+    if (searchInput === filtersRef.current.q) return;
+    const timer = setTimeout(() => {
+      onChange({ ...filtersRef.current, q: searchInput });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput, onChange]);
+
   return (
     <div id={id} className="mb-4 flex flex-col gap-12 border-b border-rule pb-18">
+      <Field id="filter-q" label="Search">
+        <Input
+          id="filter-q"
+          placeholder="Merchant or note"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+        />
+      </Field>
       <div className="grid gap-12 sm:grid-cols-2">
         <Field id="filter-account" label="Account">
           <Select
@@ -1000,7 +1031,11 @@ function PendingPanel({
             <div className="flex flex-none items-center gap-14">
               <button
                 type="button"
-                onClick={() => bulkReject.mutate([...selected])}
+                onClick={() => {
+                  if (window.confirm(`Discard ${selected.size} pending transaction${selected.size === 1 ? "" : "s"}? This cannot be undone.`)) {
+                    bulkReject.mutate([...selected]);
+                  }
+                }}
                 disabled={bulkBusy}
                 className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink disabled:opacity-[.55]"
               >
@@ -1089,7 +1124,11 @@ function PendingPanel({
               <div className="flex flex-none items-center gap-14">
                 <button
                   type="button"
-                  onClick={() => reject.mutate(item._id)}
+                  onClick={() => {
+                    if (window.confirm(`Discard "${item.merchant || item.note || "this transaction"}"? This cannot be undone.`)) {
+                      reject.mutate(item._id);
+                    }
+                  }}
                   disabled={reject.isPending}
                   className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink disabled:opacity-[.55]"
                 >
