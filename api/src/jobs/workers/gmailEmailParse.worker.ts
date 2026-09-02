@@ -157,7 +157,7 @@ async function processPdfAttachment(params: {
     const buffer = Buffer.from(base64Data, "base64url");
     const fileHash = crypto.createHash("sha256").update(buffer).digest("hex");
 
-    const existingBatch = await ImportBatch.findOne({ userId, fileHash });
+    const existingBatch = await ImportBatch.findOne({ userId, fileHash, status: { $ne: "failed" } });
     if (existingBatch) {
       await tryReserveImportLog({ userId, emailId: pdfLogKey, sourceId, parseStatus: "failed" });
       return;

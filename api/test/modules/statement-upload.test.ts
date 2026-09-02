@@ -125,6 +125,37 @@ describe("POST /transactions/import-pdf", () => {
     expect(await PendingTransaction.countDocuments({ userId })).toBe(pendingCountAfterFirst);
   });
 
+  it("re-uploading the same bytes after a FAILED prior batch is allowed to retry, not blocked as a dupe", async () => {
+    const userId = "user-pdf-retry-after-fail";
+    await StatementPassword.create({ userId, label: "wrong", passwordEncrypted: encrypt("nope") });
+
+    const first = await request(app)
+      .post("/transactions/import-pdf")
+      .set("Cookie", authCookie(userId))
+      .field("accountId", "acc-1")
+      .attach("file", fixturePath("statement-protected.pdf"));
+    expect(first.status).toBe(202);
+    await runNextQueuedJob();
+
+    const failedBatch = await ImportBatch.findById(first.body.batchId);
+    expect(failedBatch!.status).toBe("failed");
+
+    // Add the real password, then retry the exact same file bytes.
+    await StatementPassword.create({ userId, label: "the real one", passwordEncrypted: encrypt(REAL_PASSWORD) });
+
+    const second = await request(app)
+      .post("/transactions/import-pdf")
+      .set("Cookie", authCookie(userId))
+      .field("accountId", "acc-1")
+      .attach("file", fixturePath("statement-protected.pdf"));
+    expect(second.status).toBe(202);
+    await runNextQueuedJob();
+
+    const done = await ImportBatch.findById(second.body.batchId);
+    expect(done!.status).toBe("completed");
+    expect(done!.rowResults.length).toBeGreaterThan(0);
+  });
+
   it("filters a row that matches an existing confirmed Transaction via findLikelyDuplicate, without creating a PendingTransaction for it", async () => {
     const userId = "user-pdf-dupe-row";
     // The generic-fallback parse of statement-unprotected.pdf's one
