@@ -8,6 +8,7 @@ import { API_BASE, apiFetch } from "@/lib/api-client";
 import type {
   CategorizationRule,
   CategoryNode,
+  EmailSource,
   GmailStatus,
   MatchField,
   MatchType,
@@ -63,6 +64,7 @@ export default function SettingsPage() {
         </div>
         <div className="flex min-w-0 flex-col gap-22">
           <GmailPanel />
+          <TrustedSendersPanel />
           <StatementPasswordsPanel />
           <ExportPanel />
         </div>
@@ -402,6 +404,149 @@ function GmailPanel() {
 // ═══════════════════════════════════════════════════════════════════════════
 // Statement passwords
 // ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Automatic ingestion (bank-alert-email parsing, and a PDF statement arriving
+ * as a Gmail attachment) only ever runs for a sender listed here. Everything
+ * else is skipped, untouched, no matter what else is configured. Match is the
+ * EXACT sender address a message's own "From" header resolves to, never a
+ * domain or a substring: a lookalike sender must never be trusted by
+ * accident.
+ */
+function TrustedSendersPanel() {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  const sources = useQuery({
+    queryKey: ["email-sources"],
+    queryFn: () => apiFetch<EmailSource[]>("/email-sources"),
+  });
+
+  const [form, setForm] = useState({ senderPattern: "", institution: "" });
+
+  const create = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiFetch<EmailSource>("/email-sources", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-sources"] });
+      setForm({ senderPattern: "", institution: "" });
+      showToast("Sender trusted", "success");
+    },
+    onError: () => showToast("Could not save that sender", "error"),
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: string) => apiFetch<void>(`/email-sources/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["email-sources"] });
+      showToast("Sender removed", "success");
+    },
+    onError: () => showToast("Could not remove that sender", "error"),
+  });
+
+  const rows = sources.data ?? [];
+
+  return (
+    <Panel>
+      <PanelHeader title="§ Trusted senders" meta={rows.length > 0 ? `${rows.length}` : undefined} />
+      <Helper className="-mt-8 mb-18 max-w-[56ch]">
+        The exact email address a statement or alert has to arrive from before Sorted will read
+        it automatically. Nothing outside this list is ever touched, no matter what else you have
+        configured.
+      </Helper>
+
+      {sources.isLoading ? (
+        <div className="flex flex-col gap-12">
+          {Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-[22px] w-full rounded-sm opacity-40" />
+          ))}
+        </div>
+      ) : sources.isError ? (
+        <Notice
+          title="Could not load your trusted senders."
+          body="Please try again shortly. Nothing has been lost."
+        />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title="No senders trusted yet."
+          body="Add the exact address your bank's statements or alerts arrive from, and Sorted will start reading them automatically."
+        />
+      ) : (
+        <div>
+          {rows.map((entry) => (
+            <div
+              key={entry._id}
+              className="grid grid-cols-[1fr_auto] items-center gap-14 border-b border-rule py-12 last:border-b-0"
+            >
+              <RowName
+                name={entry.institution}
+                sub={
+                  entry.hasEmailBodyParser
+                    ? `${entry.senderPattern} · alerts and statements`
+                    : `${entry.senderPattern} · statements only`
+                }
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm(`Stop trusting "${entry.senderPattern}"?`)) {
+                    remove.mutate(entry._id);
+                  }
+                }}
+                disabled={remove.isPending}
+                className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-alert disabled:opacity-[.55]"
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <form
+        noValidate
+        className="mt-18 flex flex-col gap-14 border-t border-rule pt-18"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!form.senderPattern.trim() || !form.institution.trim()) {
+            showToast("Enter both the sender address and the institution name");
+            return;
+          }
+          create.mutate({
+            senderPattern: form.senderPattern.trim(),
+            institution: form.institution.trim(),
+          });
+        }}
+      >
+        <SectionLabel>§ Trust a sender</SectionLabel>
+        <Field id="es-sender" label="Sender address" hint="Exact, not a domain">
+          <Input
+            id="es-sender"
+            placeholder="alerts@hdfcbank.net"
+            value={form.senderPattern}
+            onChange={(e) => setForm({ ...form, senderPattern: e.target.value })}
+          />
+        </Field>
+        <Field id="es-institution" label="Institution">
+          <Input
+            id="es-institution"
+            placeholder="HDFC Bank"
+            value={form.institution}
+            onChange={(e) => setForm({ ...form, institution: e.target.value })}
+          />
+        </Field>
+        <FormActions className="mt-0 border-t-0 pt-0">
+          <Button type="submit" busy={create.isPending}>
+            Trust Sender
+          </Button>
+        </FormActions>
+      </form>
+    </Panel>
+  );
+}
 
 /**
  * A flat, unordered list of passwords Sorted tries against any statement PDF,

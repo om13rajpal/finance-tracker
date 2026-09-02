@@ -156,6 +156,23 @@ export interface StatementPassword {
   createdAt: string;
 }
 
+// ── trusted senders (automatic Gmail ingestion) ────────────────────────────
+
+/**
+ * Gates BOTH automatic bank-alert-email parsing and automatic PDF-statement-
+ * attachment processing: an email from a sender with no matching row here is
+ * skipped entirely, before either ever runs.
+ */
+export interface EmailSource {
+  _id: string;
+  senderPattern: string;
+  institution: string;
+  /** True when alert-email BODY parsing is actually wired up for this
+   * institution (HDFC only, today). PDF-statement attachments work for any
+   * trusted sender regardless of this flag. */
+  hasEmailBodyParser: boolean;
+}
+
 // ── categorization ─────────────────────────────────────────────────────────
 
 export type MatchField = "merchant" | "note";
