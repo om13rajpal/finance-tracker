@@ -206,6 +206,71 @@ describe("detectRecurringSuggestions", () => {
     expect(suggestions.find((s) => s.merchant === "Mixed Category")?.categoryId).toBeNull();
   });
 
+  // Reproduces real production data: a truncated merchant name ("Apple Me",
+  // from a statement-parsing edge case) merged a genuine fixed monthly
+  // charge together with unrelated one-off purchases and same-day
+  // debit/credit pairs, all under one identical label. The whole group
+  // fails (mixed signs, no consistent overall gap), but a real ₹75/month
+  // pattern is sitting right inside it and must still surface.
+  it("finds a real recurring pattern hidden inside a noisy merchant group (mixed amounts/signs)", async () => {
+    const noisy: { amount: number; date: Date }[] = [
+      { amount: -1600, date: new Date(Date.UTC(2026, 5, 17)) },
+      { amount: -75, date: new Date(Date.UTC(2026, 5, 28)) },
+      { amount: -5, date: new Date(Date.UTC(2026, 5, 29)) },
+      { amount: 5, date: new Date(Date.UTC(2026, 5, 29)) },
+      { amount: -75, date: new Date(Date.UTC(2026, 6, 28)) },
+      { amount: -49, date: new Date(Date.UTC(2026, 7, 20)) },
+      { amount: 5, date: new Date(Date.UTC(2026, 7, 24)) },
+      { amount: -5, date: new Date(Date.UTC(2026, 7, 24)) },
+      { amount: -75, date: new Date(Date.UTC(2026, 7, 28)) },
+    ];
+    for (const { amount, date } of noisy) {
+      await Transaction.create({
+        userId,
+        accountId,
+        amount,
+        date,
+        merchant: "Apple Me",
+        source: "pdf_statement_parsed",
+        status: "confirmed",
+      });
+    }
+
+    const suggestions = await detectRecurringSuggestions(userId);
+    const applePattern = suggestions.find((s) => s.merchant === "Apple Me" && s.amount === 75);
+    expect(applePattern).toMatchObject({
+      type: "expense",
+      amount: 75,
+      frequency: "monthly",
+      occurrenceCount: 3,
+    });
+    // The noise (the -1600, the ±5 pairs, the -49) never forms its own
+    // suggestion: each of those amounts appears fewer than 3 times.
+    expect(suggestions.filter((s) => s.merchant === "Apple Me")).toHaveLength(1);
+  });
+
+  it("still prefers the whole-group pattern when amounts drift over time (e.g. a price hike), not a fragmented one", async () => {
+    const prices = [199, 199, 199, 249, 249];
+    for (let i = 0; i < prices.length; i++) {
+      await Transaction.create({
+        userId,
+        accountId,
+        amount: -prices[i],
+        date: monthlyDate(i),
+        merchant: "Streaming Service",
+        source: "pdf_statement_parsed",
+        status: "confirmed",
+      });
+    }
+
+    const suggestions = await detectRecurringSuggestions(userId);
+    const streaming = suggestions.filter((s) => s.merchant === "Streaming Service");
+    // One suggestion for the whole group (price drift tolerated), not two
+    // fragmented ones split by exact amount.
+    expect(streaming).toHaveLength(1);
+    expect(streaming[0].occurrenceCount).toBe(5);
+  });
+
   it("ignores transactions from other users", async () => {
     await Transaction.create({
       userId: "someone-else",

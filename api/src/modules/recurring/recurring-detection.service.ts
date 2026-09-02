@@ -62,6 +62,52 @@ function classifyFrequency(gaps: number[]): { frequency: RecurringSuggestion["fr
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+type Occurrence = { accountId: string; merchant: string; amount: number; date: Date; categoryId: string | null };
+
+/**
+ * Tries to classify one already-grouped set of occurrences as a single
+ * recurring pattern: same sign throughout, and a day-gap sequence
+ * `classifyFrequency` accepts. Returns `null` when it doesn't qualify,
+ * rather than guessing. Shared by both the whole-(account,merchant)-group
+ * pass and the by-amount fallback below, so "what counts as recurring"
+ * is defined in exactly one place.
+ */
+function classifyOccurrences(
+  occurrences: Occurrence[]
+): Omit<RecurringSuggestion, "key" | "merchant" | "accountId"> | null {
+  if (occurrences.length < MIN_OCCURRENCES) return null;
+
+  const allExpense = occurrences.every((o) => o.amount < 0);
+  const allIncome = occurrences.every((o) => o.amount > 0);
+  if (!allExpense && !allIncome) return null;
+
+  const dates = occurrences.map((o) => o.date.getTime()).sort((a, b) => a - b);
+  const gaps: number[] = [];
+  for (let i = 1; i < dates.length; i++) {
+    gaps.push(Math.round((dates[i] - dates[i - 1]) / DAY_MS));
+  }
+
+  const classification = classifyFrequency(gaps);
+  if (!classification) return null;
+
+  const last = occurrences.reduce((latest, o) => (o.date > latest.date ? o : latest));
+  const first = occurrences.reduce((earliest, o) => (o.date < earliest.date ? o : earliest));
+
+  const categoryIds = new Set(occurrences.map((o) => o.categoryId).filter((c): c is string => c !== null));
+  const suggestedCategoryId = categoryIds.size === 1 ? [...categoryIds][0] : null;
+
+  return {
+    type: allIncome ? "income" : "expense",
+    amount: Math.abs(last.amount),
+    frequency: classification.frequency,
+    nextDueDate: advanceNextDueDate(last.date, classification.frequency).toISOString(),
+    occurrenceCount: occurrences.length,
+    firstSeen: first.date.toISOString(),
+    lastSeen: last.date.toISOString(),
+    categoryId: suggestedCategoryId,
+  };
+}
+
 /**
  * Scans this user's CONFIRMED transaction history for (account, merchant)
  * pairs that repeat at a regular interval and aren't already tracked as a
@@ -78,6 +124,19 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * all) + `accountId`, since the same subscription paid from two different
  * accounts is two separate, separately-trackable commitments, not one.
  *
+ * Two-tier: a (account, merchant) group is tried WHOLE first (tolerates a
+ * subscription's amount drifting over time, e.g. a price hike, since
+ * `classifyOccurrences` doesn't require identical amounts). Only when the
+ * whole group DOESN'T qualify (mixed debit/credit, or gaps too irregular)
+ * does it get re-tried split by exact `amount`. This matters for real,
+ * confirmed production data: a truncated merchant name (a bank's own
+ * narration cut short, or a statement-parsing edge case) silently merges
+ * economically unrelated things under one identical label — a genuine fixed
+ * monthly subscription, one-off purchases of other amounts, and same-day
+ * debit/credit pairs. Without the second pass, that one noisy name poisons
+ * the whole group and a real, obvious pattern sitting right inside it (the
+ * same amount, the same ~30-day gap, every time) never surfaces at all.
+ *
  * Deliberately suggests, never auto-creates: turning a detected pattern
  * into a real `RecurringTransaction` (optionally with `autoCreate: true`,
  * which would start creating real future transactions on its own) is a
@@ -90,10 +149,7 @@ export async function detectRecurringSuggestions(userId: string): Promise<Recurr
     .sort({ date: 1 })
     .lean();
 
-  const groups = new Map<
-    string,
-    { accountId: string; merchant: string; amount: number; date: Date; categoryId: string | null }[]
-  >();
+  const groups = new Map<string, Occurrence[]>();
 
   for (const tx of transactions) {
     const merchant = (tx.merchant ?? "").trim();
@@ -119,46 +175,38 @@ export async function detectRecurringSuggestions(userId: string): Promise<Recurr
   const suggestions: RecurringSuggestion[] = [];
 
   for (const [key, occurrences] of groups) {
-    if (occurrences.length < MIN_OCCURRENCES) continue;
-
     const merchant = occurrences[0].merchant;
     if (existingNames.has(merchant.toLowerCase())) continue;
 
-    // A merchant that's sometimes a debit and sometimes a credit on the same
-    // account (a purchase AND its refund, say) isn't one coherent recurring
-    // commitment, so skip rather than guess which sign is "the real pattern".
-    const allExpense = occurrences.every((o) => o.amount < 0);
-    const allIncome = occurrences.every((o) => o.amount > 0);
-    if (!allExpense && !allIncome) continue;
-
-    const dates = occurrences.map((o) => o.date.getTime()).sort((a, b) => a - b);
-    const gaps: number[] = [];
-    for (let i = 1; i < dates.length; i++) {
-      gaps.push(Math.round((dates[i] - dates[i - 1]) / DAY_MS));
+    const whole = classifyOccurrences(occurrences);
+    if (whole) {
+      suggestions.push({ key, merchant, accountId: occurrences[occurrences.length - 1].accountId, ...whole });
+      continue;
     }
 
-    const classification = classifyFrequency(gaps);
-    if (!classification) continue;
-
-    const last = occurrences.reduce((latest, o) => (o.date > latest.date ? o : latest));
-    const first = occurrences.reduce((earliest, o) => (o.date < earliest.date ? o : earliest));
-
-    const categoryIds = new Set(occurrences.map((o) => o.categoryId).filter((c): c is string => c !== null));
-    const suggestedCategoryId = categoryIds.size === 1 ? [...categoryIds][0] : null;
-
-    suggestions.push({
-      key,
-      merchant,
-      accountId: last.accountId,
-      type: allIncome ? "income" : "expense",
-      amount: Math.abs(last.amount),
-      frequency: classification.frequency,
-      nextDueDate: advanceNextDueDate(last.date, classification.frequency).toISOString(),
-      occurrenceCount: occurrences.length,
-      firstSeen: first.date.toISOString(),
-      lastSeen: last.date.toISOString(),
-      categoryId: suggestedCategoryId,
-    });
+    // Fallback: the whole group wasn't one coherent pattern. Re-partition by
+    // exact amount (which also makes the amount itself constant, so
+    // `classifyOccurrences`' sign check is automatically satisfied) and
+    // evaluate each amount-subgroup independently. A merchant can genuinely
+    // contain more than one real recurring commitment this way (e.g. two
+    // different fixed charges both mislabeled with the same truncated
+    // name), so every qualifying subgroup becomes its own suggestion.
+    const byAmount = new Map<number, Occurrence[]>();
+    for (const occ of occurrences) {
+      const sub = byAmount.get(occ.amount) ?? [];
+      sub.push(occ);
+      byAmount.set(occ.amount, sub);
+    }
+    for (const [amount, subOccurrences] of byAmount) {
+      const result = classifyOccurrences(subOccurrences);
+      if (!result) continue;
+      suggestions.push({
+        key: `${key}::${amount}`,
+        merchant,
+        accountId: subOccurrences[subOccurrences.length - 1].accountId,
+        ...result,
+      });
+    }
   }
 
   // Most-established pattern (most occurrences) first: the strongest
