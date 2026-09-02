@@ -28,9 +28,17 @@ investmentsRouter.get("/holdings", async (req, res, next) => {
 investmentsRouter.get("/holding-lots", async (req, res, next) => {
   try {
     const userId = (req as any).userId;
-    const limit = Math.min(Number(req.query.limit) || 50, 200);
-    const items = await HoldingLot.find({ userId }).sort({ buyDate: -1 }).limit(limit);
-    res.json({ items });
+    const limit = Math.min(Number(req.query.limit) || 100, 500);
+    const offset = Math.max(Number(req.query.offset) || 0, 0);
+    // `totalCount` is what makes a truncated result HONEST rather than
+    // silent: without it, a lot beyond `limit` was simply invisible with no
+    // signal anything was missing at all. The frontend uses this to show
+    // "N of M" and a "Show more" control (via `offset`) whenever they differ.
+    const [items, totalCount] = await Promise.all([
+      HoldingLot.find({ userId }).sort({ buyDate: -1 }).skip(offset).limit(limit),
+      HoldingLot.countDocuments({ userId }),
+    ]);
+    res.json({ items, totalCount });
   } catch (err) {
     next(err);
   }

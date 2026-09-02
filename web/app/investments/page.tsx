@@ -20,6 +20,7 @@ import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Icon } from "@/components/app/icons";
 import { Field, FieldGrid, FormActions, MoneyInput, DateInput, Segmented, Select } from "@/components/app/form";
 import {
+  CollapsiblePanel,
   EmptyState,
   Helper,
   IconButton,
@@ -66,9 +67,10 @@ export default function InvestmentsPage() {
     queryKey: ["holdings"],
     queryFn: () => apiFetch<Holding[]>("/holdings"),
   });
+  const [lotsShown, setLotsShown] = useState(50);
   const lots = useQuery({
-    queryKey: ["holding-lots"],
-    queryFn: () => apiFetch<{ items: HoldingLot[] }>("/holding-lots?limit=50"),
+    queryKey: ["holding-lots", lotsShown],
+    queryFn: () => apiFetch<{ items: HoldingLot[]; totalCount: number }>(`/holding-lots?limit=${lotsShown}`),
   });
   const accounts = useQuery({
     queryKey: ["accounts"],
@@ -150,7 +152,7 @@ export default function InvestmentsPage() {
                  affordance. Average cost and price move INTO the symbol cell
                  on a phone instead, and come back as their own columns from
                  `sm` up: nothing is hidden, it is re-laid-out. */
-              <ScrollableTable label="Holdings">
+              <ScrollableTable label="Holdings" className="reveal-in">
                 <table className="w-full border-collapse text-body-s sm:min-w-[560px]">
                   <caption className="sr-only">
                     Open holdings, with units, average cost, latest price and current value
@@ -170,12 +172,16 @@ export default function InvestmentsPage() {
                       <Th align="right">Value</Th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {rows.map((h) => {
+                  <tbody data-stagger>
+                    {rows.map((h, i) => {
                       const fallback = h.currentValue === null;
                       const rowValue = h.currentValue ?? h.avgCost * h.totalUnits;
                       return (
-                        <tr key={h.symbol} className="border-b border-rule last:border-b-0">
+                        <tr
+                          key={h.symbol}
+                          className="row-stagger border-b border-rule last:border-b-0"
+                          style={{ ["--i" as string]: i }}
+                        >
                           <td className="py-12 pr-14 align-top">
                             <span className="block break-words font-medium">{h.symbol}</span>
                             <span className="mt-2 block font-num text-micro uppercase tracking-micro text-dim">
@@ -227,11 +233,14 @@ export default function InvestmentsPage() {
               not an implementation detail, they are the audit trail behind
               every capital-gains figure on the Tax screen. */}
           {(lots.data?.items.length ?? 0) > 0 ? (
-            <Panel>
-              <PanelHeader
-                title="§ Lots"
-                meta={`${lots.data!.items.length} most recent`}
-              />
+            <CollapsiblePanel
+              title="§ Lots"
+              meta={
+                lots.data!.totalCount > lots.data!.items.length
+                  ? `${lots.data!.items.length} of ${lots.data!.totalCount}`
+                  : `${lots.data!.items.length}`
+              }
+            >
               <Helper className="-mt-8 mb-14 max-w-[60ch]">
                 Every buy is its own lot. A sale is matched against the oldest lot first, which is
                 what decides whether a gain is short or long term.
@@ -257,14 +266,18 @@ export default function InvestmentsPage() {
                       </Th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {lots.data!.items.map((lot) => {
+                  <tbody data-stagger>
+                    {lots.data!.items.map((lot, i) => {
                       // Only an untouched lot (nothing FIFO-matched off it yet)
                       // can be deleted: see the route's own doc comment. A
                       // partially/fully sold lot has SellEvents referencing it.
                       const deletable = lot.remainingUnits === lot.units;
                       return (
-                        <tr key={lot._id} className="border-b border-rule last:border-b-0">
+                        <tr
+                          key={lot._id}
+                          className="row-stagger border-b border-rule last:border-b-0"
+                          style={{ ["--i" as string]: i }}
+                        >
                           <td className="py-10 pr-14 align-top">
                             <span className="block break-words font-medium">{lot.symbol}</span>
                             <span className="mt-2 block font-num text-micro uppercase tracking-micro text-dim sm:hidden">
@@ -313,10 +326,17 @@ export default function InvestmentsPage() {
                   </tbody>
                 </table>
               </ScrollableTable>
+              {lots.data!.totalCount > lots.data!.items.length ? (
+                <div className="mt-14 flex justify-center">
+                  <Button size="sm" variant="ghost" onClick={() => setLotsShown((n) => Math.min(n + 50, 500))}>
+                    Show more ({lots.data!.totalCount - lots.data!.items.length} left)
+                  </Button>
+                </div>
+              ) : null}
               <PanelFooter>
                 A fully sold lot keeps its row here but leaves the holdings table above
               </PanelFooter>
-            </Panel>
+            </CollapsiblePanel>
           ) : null}
         </div>
 
@@ -695,7 +715,7 @@ function ImportPanel() {
         </div>
 
         {result ? (
-          <div className="rounded-panel border-panel border-ink p-18">
+          <div className="reveal-in rounded-panel border-panel border-ink p-18">
             <SectionLabel>§ Import result</SectionLabel>
             <p className="m-0 mt-8 text-body-s">
               {imported} rows accepted, {failures.length} skipped.

@@ -35,6 +35,58 @@ export function Panel({
 }
 
 /**
+ * A `Panel` whose body starts collapsed (or open, via `defaultOpen`) behind
+ * a click on its own header. For supporting/audit-detail content that
+ * doesn't need to compete with the primary content on a page for attention
+ * on first load (a lots table under a holdings summary, a tax deduction
+ * editor under the regime comparison a visit is usually actually for) —
+ * everything is still one click away, just not fighting for the same amount
+ * of visual weight as the thing the page is for. `meta` stays visible even
+ * collapsed (e.g. a count), so the header alone answers "is there anything
+ * here worth opening."
+ */
+export function CollapsiblePanel({
+  title,
+  meta,
+  defaultOpen = false,
+  children,
+  className,
+  id,
+}: {
+  title: React.ReactNode;
+  meta?: React.ReactNode;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+  className?: string;
+  /** Forwarded to the root `Panel`: lets another screen deep-link here
+   * (e.g. an anchor href="#this-id") the same way a plain `Panel` would. */
+  id?: string;
+}) {
+  const [open, setOpen] = React.useState(defaultOpen);
+  return (
+    <Panel id={id} className={className}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="mb-0 flex w-full items-center justify-between gap-14 bg-transparent p-0 text-left"
+      >
+        <SectionLabel>{title}</SectionLabel>
+        <span className="flex items-center gap-10">
+          {meta ? <SectionLabel className="text-right">{meta}</SectionLabel> : null}
+          <Icon
+            name="chevronDown"
+            size={14}
+            className={cn("transition-transform duration-hover ease-out", open && "rotate-180")}
+          />
+        </span>
+      </button>
+      {open ? <div className="reveal-in mt-14">{children}</div> : null}
+    </Panel>
+  );
+}
+
+/**
  * The § label. Mono, uppercase, tracked, --dim.
  *
  * --dim is 4.37:1 and fails AA at body size, which is exactly why it is

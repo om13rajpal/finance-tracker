@@ -1027,5 +1027,38 @@ HCLTECH,03/08/2026,buy,2,1200
       const res = await request(app).get("/holdings");
       expect(res.status).toBe(401);
     });
+
+    // Regression: a lot beyond the page size used to be silently invisible,
+    // with nothing in the response to say more existed at all.
+    it("reports totalCount alongside a truncated page, so a caller can tell more exist", async () => {
+      const userId = "user-lots-paginate";
+      const cookie = authCookie(userId);
+      for (let i = 0; i < 5; i++) {
+        await HoldingLot.create({
+          userId,
+          symbol: `SYM${i}`,
+          platform: "groww",
+          instrumentType: "stock",
+          buyDate: new Date(2026, 0, i + 1),
+          buyPrice: 100,
+          units: 1,
+          remainingUnits: 1,
+        });
+      }
+
+      const firstPage = await request(app).get("/holding-lots?limit=2").set("Cookie", cookie);
+      expect(firstPage.status).toBe(200);
+      expect(firstPage.body.items).toHaveLength(2);
+      expect(firstPage.body.totalCount).toBe(5);
+
+      const secondPage = await request(app).get("/holding-lots?limit=2&offset=2").set("Cookie", cookie);
+      expect(secondPage.status).toBe(200);
+      expect(secondPage.body.items).toHaveLength(2);
+      expect(secondPage.body.totalCount).toBe(5);
+      // The two pages don't overlap.
+      const firstIds = firstPage.body.items.map((l: { _id: string }) => l._id);
+      const secondIds = secondPage.body.items.map((l: { _id: string }) => l._id);
+      expect(firstIds.some((id: string) => secondIds.includes(id))).toBe(false);
+    });
   });
 });

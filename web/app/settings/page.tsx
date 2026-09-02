@@ -17,6 +17,7 @@ import type {
 } from "@/lib/api-types";
 import { flattenCategories, indexCategories, resolveChip } from "@/lib/buckets";
 import { formatDate, formatSignedInr } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Chip } from "@/components/app/chip";
 import { Icon, Tether } from "@/components/app/icons";
@@ -230,9 +231,16 @@ function RulesPanel() {
           body="The fastest way to make one is from a transaction: change its category and tick “always file this merchant here”."
         />
       ) : (
-        <div>
-          {rows.map((rule) => (
-            <RuleRow key={rule._id} rule={rule} index={index} flat={flat} onDelete={() => remove.mutate(rule._id)} />
+        <div className="reveal-in" data-stagger>
+          {rows.map((rule, i) => (
+            <RuleRow
+              key={rule._id}
+              rule={rule}
+              index={index}
+              flat={flat}
+              onDelete={() => remove.mutate(rule._id)}
+              staggerIndex={i}
+            />
           ))}
         </div>
       )}
@@ -322,7 +330,7 @@ function RulesPanel() {
             before the rule exists, not a surprise after. Nothing here is
             touched until the form is actually submitted. */}
         {trimmedMatchValue.length > 0 ? (
-          <div className="rounded-panel border-panel border-ink p-18">
+          <div className="reveal-in rounded-panel border-panel border-ink p-18">
             {preview.isLoading ? (
               <Skeleton className="h-[18px] w-[60%] rounded-sm opacity-40" />
             ) : preview.isError ? (
@@ -401,11 +409,13 @@ function RuleRow({
   index,
   flat,
   onDelete,
+  staggerIndex,
 }: {
   rule: CategorizationRule;
   index: ReturnType<typeof indexCategories>;
   flat: ReturnType<typeof flattenCategories>;
   onDelete: () => void;
+  staggerIndex?: number;
 }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -436,7 +446,13 @@ function RuleRow({
 
   if (!editing) {
     return (
-      <div className="grid grid-cols-row items-center gap-14 border-b border-rule py-12 last:border-b-0">
+      <div
+        className={cn(
+          "grid grid-cols-row items-center gap-14 border-b border-rule py-12 last:border-b-0",
+          staggerIndex !== undefined && "row-stagger"
+        )}
+        style={staggerIndex !== undefined ? { ["--i" as string]: staggerIndex } : undefined}
+      >
         <Chip spec={spec} labelled />
         <RowName
           name={
@@ -481,7 +497,7 @@ function RuleRow({
   return (
     <form
       noValidate
-      className="flex flex-col gap-14 border-b border-rule py-14 last:border-b-0"
+      className="reveal-in flex flex-col gap-14 border-b border-rule py-14 last:border-b-0"
       onSubmit={(e) => {
         e.preventDefault();
         if (!form.matchValue.trim()) {
@@ -768,11 +784,12 @@ function TrustedSendersPanel() {
           body="Add the exact address your bank's statements or alerts arrive from, and Sorted will start reading them automatically."
         />
       ) : (
-        <div>
-          {rows.map((entry) => (
+        <div className="reveal-in" data-stagger>
+          {rows.map((entry, i) => (
             <div
               key={entry._id}
-              className="grid grid-cols-[1fr_auto] items-center gap-14 border-b border-rule py-12 last:border-b-0"
+              className="row-stagger grid grid-cols-[1fr_auto] items-center gap-14 border-b border-rule py-12 last:border-b-0"
+              style={{ ["--i" as string]: i }}
             >
               <RowName
                 name={entry.institution}
@@ -910,11 +927,12 @@ function StatementPasswordsPanel() {
           body="Add the password on your bank's e-statement PDF here, once, and Sorted will try it automatically on every statement."
         />
       ) : (
-        <div>
-          {rows.map((entry) => (
+        <div className="reveal-in" data-stagger>
+          {rows.map((entry, i) => (
             <div
               key={entry._id}
-              className="grid grid-cols-[1fr_auto] items-center gap-14 border-b border-rule py-12 last:border-b-0"
+              className="row-stagger grid grid-cols-[1fr_auto] items-center gap-14 border-b border-rule py-12 last:border-b-0"
+              style={{ ["--i" as string]: i }}
             >
               <RowName name={entry.label || "Untitled password"} sub="Never shown again once saved" />
               <button

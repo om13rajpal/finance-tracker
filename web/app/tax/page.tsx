@@ -37,6 +37,7 @@ import {
 import {
   Amount,
   Bar,
+  CollapsiblePanel,
   EmptyState,
   Helper,
   IconButton,
@@ -130,7 +131,10 @@ export default function TaxPage() {
             column that ran off the screen. */}
         <div className="grid items-start gap-22 xl:grid-cols-[7fr_5fr]">
           <div className="flex min-w-0 flex-col gap-22">
-            <CapitalGains fy={fy} />
+            {/* Keyed by fy: remounts on a year switch, which is what resets
+                the events list's own "how many shown" window back to the
+                first page instead of carrying a stale count over. */}
+            <CapitalGains key={fy} fy={fy} />
             <IncomeSources fy={fy} />
           </div>
           <div className="flex min-w-0 flex-col gap-22">
@@ -202,7 +206,7 @@ function RegimeComparison({ fy }: { fy: string }) {
   const saving = Math.abs(data.old.totalTax - data.new.totalTax);
 
   return (
-    <Panel>
+    <Panel className="reveal-in">
       <PanelHeader
         title="§ Old regime versus new"
         meta={saving > 0 ? `${formatInr(saving)} apart` : "Identical"}
@@ -268,15 +272,20 @@ function RegimeComparison({ fy }: { fy: string }) {
 // Capital gains
 // ═══════════════════════════════════════════════════════════════════════════
 
+const CAPITAL_GAINS_PAGE_SIZE = 25;
+
 function CapitalGains({ fy }: { fy: string }) {
   const gains = useQuery({
     queryKey: ["capital-gains", fy],
     queryFn: () =>
       apiFetch<CapitalGainsResponse>(`/tax/capital-gains?fy=${encodeURIComponent(fy)}`),
   });
+  const [eventsShown, setEventsShown] = useState(CAPITAL_GAINS_PAGE_SIZE);
+  const allEvents = gains.data?.events ?? [];
+  const visibleEvents = allEvents.slice(0, eventsShown);
 
   return (
-    <Panel>
+    <Panel className="reveal-in">
       <PanelHeader title="§ Capital gains" meta={`FY ${fy}`} />
       {gains.isLoading ? (
         <div className="flex flex-col gap-12">
@@ -349,9 +358,13 @@ function CapitalGains({ fy }: { fy: string }) {
                     </th>
                   </tr>
                 </thead>
-                <tbody>
-                  {gains.data!.events.map((event) => (
-                    <tr key={event._id} className="border-b border-rule last:border-b-0">
+                <tbody data-stagger>
+                  {visibleEvents.map((event, i) => (
+                    <tr
+                      key={event._id}
+                      className="row-stagger border-b border-rule last:border-b-0"
+                      style={{ ["--i" as string]: i }}
+                    >
                       <td className="py-10 pr-14 align-top">
                         <span className="block font-medium">{event.symbol}</span>
                         <span className="mt-2 block font-num text-micro uppercase tracking-micro text-dim">
@@ -380,6 +393,13 @@ function CapitalGains({ fy }: { fy: string }) {
               </table>
             </ScrollableTable>
           )}
+          {eventsShown < allEvents.length ? (
+            <div className="mt-14 flex justify-center">
+              <Button size="sm" variant="ghost" onClick={() => setEventsShown((n) => n + CAPITAL_GAINS_PAGE_SIZE)}>
+                Show more ({allEvents.length - eventsShown} left)
+              </Button>
+            </div>
+          ) : null}
           <PanelFooter>
             Equity rules are the same under both regimes, so these figures do not move the
             comparison above by themselves
@@ -447,8 +467,7 @@ function Deductions({ fy }: { fy: string }) {
   const total = rows.reduce((sum, d) => sum + d.amount, 0);
 
   return (
-    <Panel>
-      <PanelHeader title="§ Deductions" meta={`FY ${fy}`} />
+    <CollapsiblePanel title="§ Deductions" meta={`FY ${fy}`}>
       {deductions.isLoading ? (
         <div className="flex flex-col gap-12">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -583,7 +602,7 @@ function Deductions({ fy }: { fy: string }) {
           </Button>
         </FormActions>
       </form>
-    </Panel>
+    </CollapsiblePanel>
   );
 }
 
@@ -640,11 +659,7 @@ function IncomeSources({ fy }: { fy: string }) {
   const total = rows.reduce((sum, s) => sum + s.annualAmount, 0);
 
   return (
-    <Panel>
-      <PanelHeader
-        title="§ Income"
-        meta={rows.length > 0 ? formatInr(total) : `FY ${fy}`}
-      />
+    <CollapsiblePanel title="§ Income" meta={rows.length > 0 ? formatInr(total) : `FY ${fy}`}>
       {sources.isLoading ? (
         <div className="flex flex-col gap-12">
           {Array.from({ length: 2 }).map((_, i) => (
@@ -824,7 +839,7 @@ function IncomeSources({ fy }: { fy: string }) {
           </Button>
         </FormActions>
       </form>
-    </Panel>
+    </CollapsiblePanel>
   );
 }
 
@@ -990,8 +1005,12 @@ function SlabConfigPanel({ defaultFy }: { defaultFy: string }) {
   }
 
   return (
-    <Panel id="tax-slab-config">
-      <PanelHeader title="§ Tax slab configuration" meta={rows.length > 0 ? `${rows.length}` : undefined} />
+    <CollapsiblePanel
+      id="tax-slab-config"
+      title="§ Tax slab configuration"
+      meta={rows.length > 0 ? `${rows.length}` : undefined}
+      defaultOpen
+    >
       <Helper className="-mt-8 mb-18 max-w-[56ch]">
         Every figure the comparison and estimates on this screen are computed from: income slabs,
         rebate limits, capital-gains rules. These change with the Union Budget, so verify against
@@ -1201,6 +1220,6 @@ function SlabConfigPanel({ defaultFy }: { defaultFy: string }) {
           </Button>
         </FormActions>
       </form>
-    </Panel>
+    </CollapsiblePanel>
   );
 }
