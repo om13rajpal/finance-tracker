@@ -73,6 +73,10 @@ const KNOWN_MERCHANTS: { pattern: RegExp; label: string }[] = [
   { pattern: /BLUE\s*TOKAI/, label: "Blue Tokai" },
 ];
 
+/** Entries in `KNOWN_MERCHANTS` that are payment RAILS, not always the
+ * actual merchant: see the check in `cleanMerchantLabelWithTier` for why. */
+const PAYMENT_RAIL_LABELS = new Set(["Paytm", "PhonePe"]);
+
 // Bank/IFSC-shaped codes and payment-gateway operator names that show up as
 // standalone tokens inside UPI/NEFT narration and carry no merchant
 // information of their own (IFSC is always 4 letters + a literal "0" +
@@ -211,7 +215,27 @@ function cleanMerchantLabelWithTier(raw: string): { label: string; tier: 1 | 2 |
 
   // Tier 1: known merchants/billers, matched anywhere in the text.
   for (const { pattern, label } of KNOWN_MERCHANTS) {
-    if (pattern.test(upper)) return { label, tier: 1 };
+    if (!pattern.test(upper)) continue;
+
+    // PAYTM/PhonePe are payment RAILS, not always the actual merchant: they
+    // routinely show up as a pass-through segment inside someone ELSE's UPI
+    // payee chain (e.g. "UPI-HUNGERBOX-PAYTM-8774066@PTYBL", a real
+    // production narration), where the real counterparty ("Hungerbox") is
+    // exactly what `extractUpiPayee` below is built to find. Confirmed
+    // against real data: without this check, a purchase made VIA Paytm
+    // showed as just "Paytm" — the payment method, not who the money
+    // actually went to. Only overridden when a DIFFERENT, valid payee is
+    // actually extractable; a bare "PAYTM" narration with no UPI chain at
+    // all (e.g. a wallet top-up) still correctly returns "Paytm" itself,
+    // since `extractUpiPayee` finds nothing to override it with.
+    if (PAYMENT_RAIL_LABELS.has(label)) {
+      const payee = extractUpiPayee(trimmed);
+      if (payee && payee.toUpperCase() !== label.toUpperCase()) {
+        return { label: titleCase(payee), tier: 2 };
+      }
+    }
+
+    return { label, tier: 1 };
   }
 
   // Tier 2: structural transaction-type patterns.

@@ -55,6 +55,28 @@ describe("cleanMerchantLabel", () => {
     });
   });
 
+  // Reproduces a real bug found against production data: PAYTM (and PhonePe)
+  // are payment RAILS, not always the actual merchant, and routinely show up
+  // as a pass-through segment inside someone else's UPI payee chain. Tier 1's
+  // plain substring match used to fire on "PAYTM" there and return "Paytm"
+  // as the merchant, even though the real counterparty ("Hungerbox") was
+  // sitting right there in the same narration.
+  describe("payment-rail names inside someone else's UPI chain", () => {
+    it("extracts the real payee, not the payment rail, when Paytm is just a pass-through segment", () => {
+      expect(cleanMerchantLabel("@AXB-UTIB0000100-623564914578-UPI UPI-HUNGERBOX-PAYTM-8774066@PTYBL-YESB0P")).toBe(
+        "Hungerbox"
+      );
+    });
+
+    it("still returns Paytm itself for a narration with no UPI payee chain to extract from", () => {
+      expect(cleanMerchantLabel("PAYTM WALLET TOPUP")).toBe("Paytm");
+    });
+
+    it("does the same override for PhonePe", () => {
+      expect(cleanMerchantLabel("UPI-SOMECAFE-PHONEPE-9876543@YBL-YBL0001234")).toBe("Somecafe");
+    });
+  });
+
   describe("structural transaction-type patterns", () => {
     it("labels an ATM withdrawal with a trailing city", () => {
       expect(cleanMerchantLabel("ATW-531209XXXXXX8884-P3DCPA09-PATIALA")).toBe("ATM Withdrawal · Patiala");
