@@ -210,6 +210,7 @@ export default function BudgetsPage() {
                   depth={0}
                   inheritedBucket={null}
                   row={spendByCategory.get(node._id)}
+                  tree={tree}
                 />
               ))
             )}
@@ -233,22 +234,45 @@ export default function BudgetsPage() {
 // One node of the tree
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** `CategoryNode` carries `children`, never a `parentCategoryId` back-reference
+ * (it's a tree, reconstructed server-side): finding a node's current parent
+ * means walking down from the root looking for whichever node's `children`
+ * contains it. `null` for a top-level node (or one no longer in the tree). */
+function findParentId(tree: CategoryNode[], childId: string): string | null {
+  for (const node of tree) {
+    if (node.children.some((c) => c._id === childId)) return node._id;
+    const found = findParentId(node.children, childId);
+    if (found) return found;
+  }
+  return null;
+}
+
 function CategoryRow({
   node,
   depth,
   inheritedBucket,
   row,
   isFirstChild = false,
+  tree,
 }: {
   node: CategoryNode;
   depth: number;
   inheritedBucket: Bucket | null;
   row?: BudgetVsSpendRow;
   isFirstChild?: boolean;
+  tree: CategoryNode[];
 }) {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const bucket = isBucket(node.bucket) ? node.bucket : inheritedBucket;
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({
+    name: node.name,
+    type: node.type,
+    bucket: (isBucket(node.bucket) ? node.bucket : "guilt_free") as Bucket,
+    parentCategoryId: findParentId(tree, node._id) ?? "",
+    budgetLimit: String(node.budgetLimit ?? 0),
+  });
 
   const update = useMutation({
     mutationFn: (budgetLimit: number) =>
@@ -264,6 +288,21 @@ function CategoryRow({
     onError: () => showToast("Could not update that budget", "error"),
   });
 
+  const saveEdit = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiFetch(`/categories/${node._id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      setEditing(false);
+      showToast("Category updated", "success");
+    },
+    onError: () => showToast("Could not update that category", "error"),
+  });
+
   const remove = useMutation({
     mutationFn: () => apiFetch<void>(`/categories/${node._id}`, { method: "DELETE" }),
     onSuccess: () => {
@@ -276,6 +315,130 @@ function CategoryRow({
 
   const hasLimit = (node.budgetLimit ?? 0) > 0;
   const over = row ? row.budgetLimit > 0 && row.spent > row.budgetLimit : false;
+
+  // Every category except this one and (to avoid a cycle) its own
+  // descendants: a node can't become its own ancestor. The backend only
+  // rejects the direct self-parent case; excluding descendants here too is
+  // this form's own, stricter guard.
+  const descendantIds = useMemo(() => {
+    const ids = new Set<string>();
+    const walk = (n: CategoryNode) => {
+      for (const child of n.children) {
+        ids.add(child._id);
+        walk(child);
+      }
+    };
+    walk(node);
+    return ids;
+  }, [node]);
+  const parentOptions = useMemo(
+    () => flattenCategories(tree).filter(({ node: n }) => n._id !== node._id && !descendantIds.has(n._id)),
+    [tree, node._id, descendantIds]
+  );
+
+  if (editing) {
+    return (
+      <>
+        <form
+          noValidate
+          className="flex flex-col gap-14 border-b border-rule py-14 last:border-b-0"
+          style={{ paddingLeft: depth * 22 }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!form.name.trim()) {
+              showToast("Give the category a name");
+              return;
+            }
+            saveEdit.mutate({
+              name: form.name.trim(),
+              type: form.type,
+              bucket: form.bucket,
+              parentCategoryId: form.parentCategoryId || null,
+              budgetLimit: form.budgetLimit ? Number(form.budgetLimit) : 0,
+            });
+          }}
+        >
+          <Field id={`edit-cat-name-${node._id}`} label="Name">
+            <Input
+              id={`edit-cat-name-${node._id}`}
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </Field>
+          <div className="flex flex-col gap-8">
+            <span className="font-sans text-body-s font-medium text-ink">Type</span>
+            <Segmented
+              name={`edit-cat-type-${node._id}`}
+              ariaLabel="Type"
+              value={form.type}
+              onChange={(type) => setForm({ ...form, type })}
+              options={[
+                { value: "expense", label: "Expense" },
+                { value: "income", label: "Income" },
+              ]}
+            />
+          </div>
+          <Field id={`edit-cat-bucket-${node._id}`} label="Bucket" helper={BUCKET_META[form.bucket].hint}>
+            <Select
+              id={`edit-cat-bucket-${node._id}`}
+              value={form.bucket}
+              onChange={(e) => setForm({ ...form, bucket: e.target.value as Bucket })}
+            >
+              {BUCKET_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field
+            id={`edit-cat-parent-${node._id}`}
+            label="Parent category"
+            helper="Optional. A sub-category's spend rolls up into its parent's total."
+          >
+            <Select
+              id={`edit-cat-parent-${node._id}`}
+              value={form.parentCategoryId}
+              onChange={(e) => setForm({ ...form, parentCategoryId: e.target.value })}
+            >
+              <option value="">None (top level)</option>
+              {parentOptions.map(({ node: n, depth: d }) => (
+                <option key={n._id} value={n._id}>
+                  {"– ".repeat(d)}
+                  {n.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field id={`edit-cat-budget-${node._id}`} label="Monthly Budget" hint="Optional">
+            <MoneyInput
+              id={`edit-cat-budget-${node._id}`}
+              value={form.budgetLimit}
+              onChange={(e) => setForm({ ...form, budgetLimit: e.target.value })}
+            />
+          </Field>
+          <FormActions>
+            <Button type="submit" busy={saveEdit.isPending}>
+              Save
+            </Button>
+            <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+          </FormActions>
+        </form>
+        {node.children.map((child, i) => (
+          <CategoryRow
+            key={child._id}
+            node={child}
+            depth={depth + 1}
+            inheritedBucket={bucket}
+            isFirstChild={i === 0}
+            tree={tree}
+          />
+        ))}
+      </>
+    );
+  }
 
   return (
     <>
@@ -326,6 +489,22 @@ function CategoryRow({
               update.mutate(value);
             }}
           />
+          <button
+            type="button"
+            onClick={() => {
+              setForm({
+                name: node.name,
+                type: node.type,
+                bucket: (isBucket(node.bucket) ? node.bucket : "guilt_free") as Bucket,
+                parentCategoryId: findParentId(tree, node._id) ?? "",
+                budgetLimit: String(node.budgetLimit ?? 0),
+              });
+              setEditing(true);
+            }}
+            className="flex-none rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink"
+          >
+            Edit
+          </button>
           {/* An icon, not the word DELETE.
               Fourteen rows of uppercase mono "DELETE" set in --dim read as
               metadata about each category rather than as a destructive control,
@@ -383,6 +562,7 @@ function CategoryRow({
           depth={depth + 1}
           inheritedBucket={bucket}
           isFirstChild={i === 0}
+          tree={tree}
         />
       ))}
     </>
