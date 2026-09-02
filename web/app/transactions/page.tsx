@@ -324,7 +324,7 @@ function FilterBar({
             <option value="">All accounts</option>
             {accounts.map((a) => (
               <option key={a._id} value={a._id}>
-                {a.nickname}
+                {a.institution} · {a.nickname}
               </option>
             ))}
           </Select>
@@ -1165,7 +1165,7 @@ function AddTransactionPanel({
             <option value="">Select account</option>
             {accounts.map((a) => (
               <option key={a._id} value={a._id}>
-                {a.nickname}
+                {a.institution} · {a.nickname}
               </option>
             ))}
           </Select>
@@ -1413,7 +1413,7 @@ function ImportPanel({
             <option value="">Select account</option>
             {accounts.map((a) => (
               <option key={a._id} value={a._id}>
-                {a.nickname}
+                {a.institution} · {a.nickname}
               </option>
             ))}
           </Select>

@@ -132,13 +132,14 @@ test("golden path: login, add account, add category, add transaction, see net wo
   // id-based, not getByLabel: the <select> is nested inside its <label> (as
   // are all form selects on this page), so its computed accessible name is
   // "<label text><concatenated option text>", e.g. tx-account's name becomes
-  // "AccountSelect accountMain Savings" once an option is present. The page
-  // also has a second, differently-labeled "Import Account" select for CSV
-  // import, whose computed name likewise contains the substring "Account".
-  // getByLabel("Account") therefore always resolves to both selects here, a
-  // real DOM property of this page rather than a naming choice this test can
-  // route around, so these two fields are targeted by their stable ids.
-  await page.locator("#tx-account").selectOption({ label: "Main Savings" });
+  // "AccountSelect accountTest Bank · Main Savings" once an option is
+  // present. The page also has a second, differently-labeled "Import
+  // Account" select for CSV import, whose computed name likewise contains
+  // the substring "Account". getByLabel("Account") therefore always resolves
+  // to both selects here, a real DOM property of this page rather than a
+  // naming choice this test can route around, so these two fields are
+  // targeted by their stable ids.
+  await page.locator("#tx-account").selectOption({ label: "Test Bank · Main Savings" });
   await page.locator("#tx-category").selectOption({ label: "Dining Out" });
   await page.getByLabel(/Amount/).fill("-500");
   await page.getByLabel("Merchant").fill("Test Cafe");
