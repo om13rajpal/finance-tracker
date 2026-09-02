@@ -32,6 +32,14 @@ process.env.TOKEN_ENCRYPTION_KEY ??=
 process.env.WEB_ORIGIN ??= "http://localhost:3000";
 process.env.GMAIL_PUBSUB_TOPIC ??= "projects/test-project/topics/gmail-notifications";
 process.env.GMAIL_WEBHOOK_SECRET ??= "test-webhook-secret";
+// Forced blank, not left unset: a real key sitting in a developer's local
+// api/.env would otherwise leak into every test run (dotenv only fills in
+// keys process.env doesn't already have — see config/env.ts), making the
+// suite silently start making real, slow, rate-limited network calls to
+// Gemini and turning deterministic tests into flaky ones. Individual tests
+// that need to exercise the LLM path mock `config/env.js` directly (see
+// merchant-llm-cleanup.test.ts) rather than relying on a real key.
+process.env.GEMINI_API_KEY ??= "";
 
 import { beforeAll, afterAll, afterEach } from "vitest";
 import { MongoMemoryServer } from "mongodb-memory-server";

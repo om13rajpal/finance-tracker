@@ -17,6 +17,7 @@ import { dashboardRouter } from "./modules/dashboard/dashboard.routes.js";
 import { exportRouter } from "./modules/export/export.routes.js";
 import { gmailRouter } from "./modules/email-ingestion/gmail.routes.js";
 import { gmailWebhookRouter } from "./modules/email-ingestion/gmail-webhook.routes.js";
+import { emailSourcesRouter } from "./modules/email-ingestion/email-sources.routes.js";
 import { capitalGainsRouter } from "./modules/tax/capital-gains.routes.js";
 import { deductionsRouter } from "./modules/tax/deductions.routes.js";
 import { incomeSourcesRouter } from "./modules/tax/income-sources.routes.js";
@@ -64,6 +65,7 @@ app.use("/transactions", csvImportRouter);
 app.use("/transactions", statementUploadRouter);
 app.use("/pending-transactions", pendingTransactionsRouter);
 app.use("/statement-passwords", statementPasswordsRouter);
+app.use("/email-sources", emailSourcesRouter);
 // Mounted at root (not "/investments") so its internal routes resolve at the
 // exact top-level paths the spec calls for (GET /holdings, /holding-lots,
 // POST /investments/import). Side effect: its own requireAuth middleware runs
