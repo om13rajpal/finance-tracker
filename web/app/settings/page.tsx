@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { API_BASE, apiFetch } from "@/lib/api-client";
 import type {
+  CategorizationPreviewResponse,
   CategorizationRule,
   CategoryNode,
   EmailSource,
@@ -15,10 +16,11 @@ import type {
   StatementPassword,
 } from "@/lib/api-types";
 import { flattenCategories, indexCategories, resolveChip } from "@/lib/buckets";
+import { formatDate, formatSignedInr } from "@/lib/format";
 import { ProtectedLayout } from "@/components/ProtectedLayout";
 import { Chip } from "@/components/app/chip";
 import { Icon, Tether } from "@/components/app/icons";
-import { Field, FieldGrid, FormActions, Select } from "@/components/app/form";
+import { Checkbox, Field, FieldGrid, FormActions, Select } from "@/components/app/form";
 import {
   EmptyState,
   Helper,
@@ -77,6 +79,13 @@ export default function SettingsPage() {
 // Categorisation rules
 // ═══════════════════════════════════════════════════════════════════════════
 
+/** A `matchesRule`-checked candidate from `GET /categorization-rules/preview`, tagged with which collection it came from so a mixed selection Set can tell them apart and the create payload can split them back into `applyToPendingIds`/`applyToTransactionIds`. */
+type PreviewRow = { _id: string; merchant?: string; note?: string; amount: number; date: string; kind: "pending" | "tx" };
+
+function previewSelectionKey(row: PreviewRow): string {
+  return `${row.kind}:${row._id}`;
+}
+
 function RulesPanel() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -100,16 +109,82 @@ function RulesPanel() {
     categoryId: "",
   });
 
+  // Debounced so the preview doesn't fire on every keystroke: 300ms is
+  // imperceptible as a delay but comfortably skips the request for someone
+  // still mid-word.
+  const [debouncedMatchValue, setDebouncedMatchValue] = useState(form.matchValue);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedMatchValue(form.matchValue), 300);
+    return () => clearTimeout(t);
+  }, [form.matchValue]);
+  const trimmedMatchValue = debouncedMatchValue.trim();
+
+  const preview = useQuery({
+    queryKey: ["categorization-rule-preview", form.matchField, form.matchType, trimmedMatchValue],
+    queryFn: () =>
+      apiFetch<CategorizationPreviewResponse>(
+        `/categorization-rules/preview?${new URLSearchParams({
+          matchField: form.matchField,
+          matchType: form.matchType,
+          matchValue: trimmedMatchValue,
+        })}`
+      ),
+    enabled: trimmedMatchValue.length > 0,
+  });
+
+  const previewRows: PreviewRow[] = useMemo(() => {
+    if (!preview.data) return [];
+    return [
+      ...preview.data.pending.map((r) => ({ ...r, kind: "pending" as const })),
+      ...preview.data.transactions.map((r) => ({ ...r, kind: "tx" as const })),
+    ];
+  }, [preview.data]);
+
+  // Selected-for-backfill, keyed by `previewSelectionKey`. Reset to "every
+  // current candidate" whenever the candidate set itself changes (a new
+  // search, or the debounce landing on fresh text): the person's default
+  // expectation, per their own ask, is everything shown gets backfilled
+  // unless they opt individual rows OUT, not the reverse.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    setSelected(new Set(previewRows.map(previewSelectionKey)));
+    // Only the candidate identity should reset the selection, not a
+    // re-render of the same rows (e.g. a background refetch).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preview.data]);
+
+  const allSelected = previewRows.length > 0 && selected.size === previewRows.length;
+  function togglePreviewRow(key: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+  function togglePreviewAll() {
+    setSelected(allSelected ? new Set() : new Set(previewRows.map(previewSelectionKey)));
+  }
+
   const create = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
       apiFetch<CategorizationRule>("/categorization-rules", {
         method: "POST",
         body: JSON.stringify(payload),
       }),
-    onSuccess: () => {
+    onSuccess: (_rule, variables) => {
       queryClient.invalidateQueries({ queryKey: ["categorization-rules"] });
+      const pendingCount = (variables.applyToPendingIds as string[] | undefined)?.length ?? 0;
+      const txCount = (variables.applyToTransactionIds as string[] | undefined)?.length ?? 0;
+      const backfilled = pendingCount + txCount;
+      if (backfilled > 0) {
+        queryClient.invalidateQueries({ queryKey: ["pending-transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["transactions"] });
+        queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      }
       setForm({ matchField: "merchant", matchType: "contains", matchValue: "", categoryId: "" });
-      showToast("Rule added", "success");
+      setSelected(new Set());
+      showToast(backfilled > 0 ? `Rule added, ${backfilled} filed` : "Rule added", "success");
     },
     onError: () => showToast("Could not add that rule", "error"),
   });
@@ -156,40 +231,9 @@ function RulesPanel() {
         />
       ) : (
         <div>
-          {rows.map((rule) => {
-            const entry = index.get(rule.categoryId);
-            const spec = resolveChip(rule.categoryId, index);
-            return (
-              <div
-                key={rule._id}
-                className="grid grid-cols-row items-center gap-14 border-b border-rule py-12 last:border-b-0"
-              >
-                <Chip spec={spec} labelled />
-                <RowName
-                  name={
-                    <>
-                      {MATCH_FIELD_LABELS[rule.matchField]}{" "}
-                      <span className="text-dim-2">{MATCH_TYPE_LABELS[rule.matchType]}</span>{" "}
-                      <span className="font-medium">{rule.matchValue}</span>
-                    </>
-                  }
-                  sub={`Files into ${entry?.node.name ?? "a category that no longer exists"} · priority ${rule.priority}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (window.confirm(`Delete the rule for “${rule.matchValue}”?`)) {
-                      remove.mutate(rule._id);
-                    }
-                  }}
-                  disabled={remove.isPending}
-                  className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-alert disabled:opacity-[.55]"
-                >
-                  Delete
-                </button>
-              </div>
-            );
-          })}
+          {rows.map((rule) => (
+            <RuleRow key={rule._id} rule={rule} index={index} flat={flat} onDelete={() => remove.mutate(rule._id)} />
+          ))}
         </div>
       )}
 
@@ -206,11 +250,19 @@ function RulesPanel() {
             showToast("Choose the category to file into");
             return;
           }
+          const applyToPendingIds = previewRows
+            .filter((r) => r.kind === "pending" && selected.has(previewSelectionKey(r)))
+            .map((r) => r._id);
+          const applyToTransactionIds = previewRows
+            .filter((r) => r.kind === "tx" && selected.has(previewSelectionKey(r)))
+            .map((r) => r._id);
           create.mutate({
             matchField: form.matchField,
             matchType: form.matchType,
             matchValue: form.matchValue.trim(),
             categoryId: form.categoryId,
+            ...(applyToPendingIds.length > 0 ? { applyToPendingIds } : {}),
+            ...(applyToTransactionIds.length > 0 ? { applyToTransactionIds } : {}),
           });
         }}
       >
@@ -264,6 +316,70 @@ function RulesPanel() {
             ))}
           </Select>
         </Field>
+
+        {/* Live preview of what this not-yet-created rule would already
+            apply to, so accepting the backfill is an informed choice made
+            before the rule exists, not a surprise after. Nothing here is
+            touched until the form is actually submitted. */}
+        {trimmedMatchValue.length > 0 ? (
+          <div className="rounded-panel border-panel border-ink p-18">
+            {preview.isLoading ? (
+              <Skeleton className="h-[18px] w-[60%] rounded-sm opacity-40" />
+            ) : preview.isError ? (
+              <p className="m-0 text-body-s text-dim-2">Could not check existing transactions.</p>
+            ) : previewRows.length === 0 ? (
+              <p className="m-0 text-body-s text-dim-2">
+                Nothing uncategorized matches this yet. The rule will still apply going forward.
+              </p>
+            ) : (
+              <>
+                <div className="mb-12 flex flex-wrap items-center justify-between gap-12">
+                  <Checkbox
+                    id="rule-preview-select-all"
+                    label={
+                      selected.size > 0
+                        ? `${selected.size} of ${previewRows.length} will also be filed`
+                        : "Select all"
+                    }
+                    checked={allSelected}
+                    onChange={togglePreviewAll}
+                  />
+                  {previewRows.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={togglePreviewAll}
+                      className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] hover:text-ink"
+                    >
+                      {allSelected ? "Deselect all" : "Select all"}
+                    </button>
+                  ) : null}
+                </div>
+                <div className="flex max-h-[280px] flex-col gap-8 overflow-y-auto">
+                  {previewRows.map((row) => {
+                    const key = previewSelectionKey(row);
+                    return (
+                      <Checkbox
+                        key={key}
+                        id={`rule-preview-${key}`}
+                        checked={selected.has(key)}
+                        onChange={() => togglePreviewRow(key)}
+                        label={
+                          <span className="flex w-full items-center justify-between gap-12 text-body-s">
+                            <span className="truncate">{row.merchant || row.note || "Untitled"}</span>
+                            <span className="money flex-none text-caption text-dim-2">
+                              {formatSignedInr(row.amount)} · {formatDate(row.date)}
+                            </span>
+                          </span>
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        ) : null}
+
         <FormActions className="mt-0 border-t-0 pt-0">
           <Button type="submit" busy={create.isPending}>
             Add Rule
@@ -271,6 +387,167 @@ function RulesPanel() {
         </FormActions>
       </form>
     </Panel>
+  );
+}
+
+/**
+ * One existing rule, either its normal display or (toggled via "Edit") an
+ * inline form prefilled with its current values. Mirrors the transaction
+ * row's own inline-category-editor pattern elsewhere in this app: the edit
+ * surface replaces the row in place rather than opening a separate dialog.
+ */
+function RuleRow({
+  rule,
+  index,
+  flat,
+  onDelete,
+}: {
+  rule: CategorizationRule;
+  index: ReturnType<typeof indexCategories>;
+  flat: ReturnType<typeof flattenCategories>;
+  onDelete: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({
+    matchField: rule.matchField,
+    matchType: rule.matchType,
+    matchValue: rule.matchValue,
+    categoryId: rule.categoryId,
+  });
+
+  const update = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiFetch<CategorizationRule>(`/categorization-rules/${rule._id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["categorization-rules"] });
+      setEditing(false);
+      showToast("Rule updated", "success");
+    },
+    onError: () => showToast("Could not update that rule", "error"),
+  });
+
+  const entry = index.get(rule.categoryId);
+  const spec = resolveChip(rule.categoryId, index);
+
+  if (!editing) {
+    return (
+      <div className="grid grid-cols-row items-center gap-14 border-b border-rule py-12 last:border-b-0">
+        <Chip spec={spec} labelled />
+        <RowName
+          name={
+            <>
+              {MATCH_FIELD_LABELS[rule.matchField]}{" "}
+              <span className="text-dim-2">{MATCH_TYPE_LABELS[rule.matchType]}</span>{" "}
+              <span className="font-medium">{rule.matchValue}</span>
+            </>
+          }
+          sub={`Files into ${entry?.node.name ?? "a category that no longer exists"} · priority ${rule.priority}`}
+        />
+        <span className="flex flex-none items-center gap-12">
+          <button
+            type="button"
+            onClick={() => {
+              setForm({
+                matchField: rule.matchField,
+                matchType: rule.matchType,
+                matchValue: rule.matchValue,
+                categoryId: rule.categoryId,
+              });
+              setEditing(true);
+            }}
+            className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-ink"
+          >
+            Edit
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              if (window.confirm(`Delete the rule for “${rule.matchValue}”?`)) onDelete();
+            }}
+            className="rounded-xs bg-transparent p-0 font-sans text-caption text-dim-2 underline underline-offset-[3px] transition-colors duration-hover ease-out hover:text-alert"
+          >
+            Delete
+          </button>
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      noValidate
+      className="flex flex-col gap-14 border-b border-rule py-14 last:border-b-0"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!form.matchValue.trim()) {
+          showToast("Enter the text to match on");
+          return;
+        }
+        if (!form.categoryId) {
+          showToast("Choose the category to file into");
+          return;
+        }
+        update.mutate({ ...form, matchValue: form.matchValue.trim() });
+      }}
+    >
+      <FieldGrid>
+        <Field id={`edit-rule-field-${rule._id}`} label="Look at">
+          <Select
+            id={`edit-rule-field-${rule._id}`}
+            value={form.matchField}
+            onChange={(e) => setForm({ ...form, matchField: e.target.value as MatchField })}
+          >
+            <option value="merchant">Merchant</option>
+            <option value="note">Note</option>
+          </Select>
+        </Field>
+        <Field id={`edit-rule-type-${rule._id}`} label="Match">
+          <Select
+            id={`edit-rule-type-${rule._id}`}
+            value={form.matchType}
+            onChange={(e) => setForm({ ...form, matchType: e.target.value as MatchType })}
+          >
+            <option value="contains">Contains</option>
+            <option value="exact">Is exactly</option>
+          </Select>
+        </Field>
+      </FieldGrid>
+      <Field id={`edit-rule-match-${rule._id}`} label="Text">
+        <Input
+          id={`edit-rule-match-${rule._id}`}
+          value={form.matchValue}
+          onChange={(e) => setForm({ ...form, matchValue: e.target.value })}
+        />
+      </Field>
+      <Field id={`edit-rule-category-${rule._id}`} label="File into">
+        <Select
+          id={`edit-rule-category-${rule._id}`}
+          value={form.categoryId}
+          onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+        >
+          <option value="">Select a category</option>
+          {flat.map(({ node, depth }) => (
+            <option key={node._id} value={node._id}>
+              {"– ".repeat(depth)}
+              {node.name}
+            </option>
+          ))}
+        </Select>
+      </Field>
+      <FormActions className="mt-0 border-t-0 pt-0">
+        <Button type="submit" busy={update.isPending}>
+          Save
+        </Button>
+        <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+          Cancel
+        </Button>
+      </FormActions>
+    </form>
   );
 }
 

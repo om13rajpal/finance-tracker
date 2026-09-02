@@ -308,4 +308,214 @@ describe("categorization rules routes", () => {
     const unchanged = await PendingTransaction.findById(alreadyCategorized._id);
     expect(unchanged!.categoryId).toBe("cat-existing");
   });
+
+  describe("GET /preview", () => {
+    it("requires auth", async () => {
+      const res = await request(app).get("/categorization-rules/preview");
+      expect(res.status).toBe(401);
+    });
+
+    it("returns validation error for missing matchValue", async () => {
+      const res = await request(app)
+        .get("/categorization-rules/preview")
+        .query({ matchField: "merchant", matchType: "contains" })
+        .set("Cookie", authCookie("user-preview-invalid"));
+      expect(res.status).toBe(400);
+    });
+
+    it("returns matching uncategorized pending and confirmed transactions, split by kind", async () => {
+      const userId = "user-preview-basic";
+      const cookie = authCookie(userId);
+
+      const matchingPending = await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        categoryId: null,
+        amount: -649,
+        date: new Date(),
+        merchant: "NETFLIX",
+        source: "pdf_statement_parsed",
+      });
+      const matchingTx = await Transaction.create({
+        userId,
+        accountId: "acc-1",
+        categoryId: null,
+        amount: -649,
+        date: new Date(),
+        merchant: "NETFLIX SUBSCRIPTION",
+        source: "csv_import",
+        status: "confirmed",
+      });
+      await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        categoryId: null,
+        amount: -100,
+        date: new Date(),
+        merchant: "SOME OTHER MERCHANT",
+        source: "pdf_statement_parsed",
+      });
+
+      const res = await request(app)
+        .get("/categorization-rules/preview")
+        .query({ matchField: "merchant", matchType: "contains", matchValue: "NETFLIX" })
+        .set("Cookie", cookie);
+      expect(res.status).toBe(200);
+      expect(res.body.pending).toHaveLength(1);
+      expect(res.body.pending[0]._id).toBe(matchingPending._id.toString());
+      expect(res.body.transactions).toHaveLength(1);
+      expect(res.body.transactions[0]._id).toBe(matchingTx._id.toString());
+    });
+
+    it("never includes an already-categorized item", async () => {
+      const userId = "user-preview-skips-categorized";
+      await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        categoryId: "cat-existing",
+        amount: -100,
+        date: new Date(),
+        merchant: "NETFLIX",
+        source: "pdf_statement_parsed",
+      });
+
+      const res = await request(app)
+        .get("/categorization-rules/preview")
+        .query({ matchField: "merchant", matchType: "contains", matchValue: "NETFLIX" })
+        .set("Cookie", authCookie(userId));
+      expect(res.status).toBe(200);
+      expect(res.body.pending).toHaveLength(0);
+    });
+
+    it("does not leak another user's transactions into the preview", async () => {
+      await PendingTransaction.create({
+        userId: "user-preview-other",
+        accountId: "acc-1",
+        categoryId: null,
+        amount: -100,
+        date: new Date(),
+        merchant: "NETFLIX",
+        source: "pdf_statement_parsed",
+      });
+
+      const res = await request(app)
+        .get("/categorization-rules/preview")
+        .query({ matchField: "merchant", matchType: "contains", matchValue: "NETFLIX" })
+        .set("Cookie", authCookie("user-preview-self"));
+      expect(res.status).toBe(200);
+      expect(res.body.pending).toHaveLength(0);
+    });
+
+    it("respects exact match type, not just contains", async () => {
+      const userId = "user-preview-exact";
+      await PendingTransaction.create({
+        userId,
+        accountId: "acc-1",
+        categoryId: null,
+        amount: -100,
+        date: new Date(),
+        merchant: "NETFLIX EXTRA TEXT",
+        source: "pdf_statement_parsed",
+      });
+
+      const res = await request(app)
+        .get("/categorization-rules/preview")
+        .query({ matchField: "merchant", matchType: "exact", matchValue: "NETFLIX" })
+        .set("Cookie", authCookie(userId));
+      expect(res.status).toBe(200);
+      expect(res.body.pending).toHaveLength(0);
+    });
+  });
+
+  describe("PATCH /:id", () => {
+    it("requires auth", async () => {
+      const res = await request(app).patch("/categorization-rules/000000000000000000000000");
+      expect(res.status).toBe(401);
+    });
+
+    it("updates a rule's category and match criteria", async () => {
+      const userId = "user-edit-rule";
+      const cookie = authCookie(userId);
+      const created = await request(app)
+        .post("/categorization-rules")
+        .set("Cookie", cookie)
+        .send({ matchField: "merchant", matchType: "contains", matchValue: "SWIGGY", categoryId: "cat-dining" });
+      const id = created.body._id;
+
+      const res = await request(app)
+        .patch(`/categorization-rules/${id}`)
+        .set("Cookie", cookie)
+        .send({ matchValue: "SWIGGY INSTAMART", categoryId: "cat-groceries" });
+      expect(res.status).toBe(200);
+      expect(res.body.matchValue).toBe("SWIGGY INSTAMART");
+      expect(res.body.categoryId).toBe("cat-groceries");
+      // Untouched fields survive a partial edit.
+      expect(res.body.matchField).toBe("merchant");
+      expect(res.body.matchType).toBe("contains");
+    });
+
+    it("does not retroactively touch anything already filed by this rule", async () => {
+      const userId = "user-edit-no-backfill";
+      const cookie = authCookie(userId);
+      const created = await request(app)
+        .post("/categorization-rules")
+        .set("Cookie", cookie)
+        .send({ matchField: "merchant", matchType: "contains", matchValue: "SWIGGY", categoryId: "cat-dining" });
+      const id = created.body._id;
+
+      const alreadyFiled = await Transaction.create({
+        userId,
+        accountId: "acc-1",
+        categoryId: "cat-dining",
+        amount: -300,
+        date: new Date(),
+        merchant: "SWIGGY ORDER",
+        source: "csv_import",
+        status: "confirmed",
+      });
+
+      await request(app)
+        .patch(`/categorization-rules/${id}`)
+        .set("Cookie", cookie)
+        .send({ categoryId: "cat-groceries" });
+
+      const unchanged = await Transaction.findById(alreadyFiled._id);
+      expect(unchanged!.categoryId).toBe("cat-dining");
+    });
+
+    it("404s editing a rule that doesn't exist or belongs to someone else", async () => {
+      const owner = authCookie("user-edit-owner");
+      const created = await request(app)
+        .post("/categorization-rules")
+        .set("Cookie", owner)
+        .send({ matchField: "merchant", matchType: "contains", matchValue: "SWIGGY", categoryId: "cat-dining" });
+      const id = created.body._id;
+
+      const intruderRes = await request(app)
+        .patch(`/categorization-rules/${id}`)
+        .set("Cookie", authCookie("user-edit-intruder"))
+        .send({ categoryId: "cat-hijacked" });
+      expect(intruderRes.status).toBe(404);
+
+      const missingRes = await request(app)
+        .patch("/categorization-rules/000000000000000000000000")
+        .set("Cookie", owner)
+        .send({ categoryId: "cat-x" });
+      expect(missingRes.status).toBe(404);
+    });
+
+    it("rejects an invalid matchField with a validation error, not a 500", async () => {
+      const owner = authCookie("user-edit-invalid");
+      const created = await request(app)
+        .post("/categorization-rules")
+        .set("Cookie", owner)
+        .send({ matchField: "merchant", matchType: "contains", matchValue: "SWIGGY", categoryId: "cat-dining" });
+
+      const res = await request(app)
+        .patch(`/categorization-rules/${created.body._id}`)
+        .set("Cookie", owner)
+        .send({ matchField: "not-a-real-field" });
+      expect(res.status).toBe(400);
+    });
+  });
 });

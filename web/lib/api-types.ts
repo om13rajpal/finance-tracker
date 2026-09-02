@@ -204,6 +204,26 @@ export interface CategorizationSuggestion {
   transactionIds: string[];
 }
 
+/** One row of `GET /categorization-rules/preview`'s `pending`/`transactions` arrays. */
+export interface CategorizationPreviewRow {
+  _id: string;
+  merchant?: string;
+  note?: string;
+  amount: number;
+  date: string;
+  source: string;
+}
+
+/**
+ * Every currently-uncategorized pending/confirmed transaction a rule with
+ * these NOT-YET-created match criteria would apply to, split by kind so the
+ * "Add a rule" form can show both under one live-updating list.
+ */
+export interface CategorizationPreviewResponse {
+  pending: CategorizationPreviewRow[];
+  transactions: CategorizationPreviewRow[];
+}
+
 /**
  * A (account, merchant) pair that repeats at a regular interval in confirmed
  * transaction history and isn't already tracked as a `RecurringItem`: see
