@@ -22,7 +22,12 @@ const createSchema = z.object({
   type: z.enum(["expense", "income"]),
   bucket: z.enum(["fixed_costs", "investments", "savings", "guilt_free"]),
   color: z.string().optional(),
-  parentCategoryId: z.string().optional(),
+  // Nullable, not just optional: an OMITTED field means "leave it as-is" on
+  // a partial update, but editing a category to remove its parent (make it
+  // top-level again) has to send `null` explicitly to actually clear the
+  // existing value, matching the model's own `default: null` sentinel for
+  // "no parent". Plain `.optional()` rejected that null with a 400.
+  parentCategoryId: z.string().optional().nullable(),
   budgetLimit: z.number().optional(),
 });
 

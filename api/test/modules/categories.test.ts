@@ -90,6 +90,43 @@ describe("categories", () => {
     expect(res.status).toBe(404);
   });
 
+  // Reproduces a real bug: the Budgets page's category-edit form always
+  // sends `parentCategoryId: null` for a top-level category (there's no
+  // other way to represent "no parent" on an update, since an omitted
+  // field means "leave it as-is", not "clear it"). The route used to 400
+  // on this because the schema only accepted a string or omission, never a
+  // literal null.
+  it("accepts parentCategoryId: null on update, both for a category that already had none and to clear an existing one", async () => {
+    const cookie = authCookie("user-null-parent");
+    const topLevelRes = await request(app)
+      .post("/categories")
+      .set("Cookie", cookie)
+      .send({ name: "PPF", type: "expense", bucket: "savings", budgetLimit: 5000 });
+
+    const patchRes = await request(app)
+      .patch(`/categories/${topLevelRes.body._id}`)
+      .set("Cookie", cookie)
+      .send({ name: "PPF", type: "expense", bucket: "savings", parentCategoryId: null, budgetLimit: 5000 });
+    expect(patchRes.status).toBe(200);
+    expect(patchRes.body.parentCategoryId).toBeNull();
+
+    const parentRes = await request(app)
+      .post("/categories")
+      .set("Cookie", cookie)
+      .send({ name: "Travel", type: "expense", bucket: "guilt_free", budgetLimit: 1000 });
+    const childRes = await request(app)
+      .post("/categories")
+      .set("Cookie", cookie)
+      .send({ name: "Flights", type: "expense", bucket: "guilt_free", parentCategoryId: parentRes.body._id });
+
+    const clearRes = await request(app)
+      .patch(`/categories/${childRes.body._id}`)
+      .set("Cookie", cookie)
+      .send({ parentCategoryId: null });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.parentCategoryId).toBeNull();
+  });
+
   it("rejects a category being set as its own parent", async () => {
     const cookie = authCookie("user-d");
     const createRes = await request(app)
