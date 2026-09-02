@@ -1,4 +1,5 @@
 import * as React from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 import { formatInr } from "@/lib/format";
@@ -805,7 +806,17 @@ export function Modal({
 
   if (!open) return null;
 
-  return (
+  // Portalled to `document.body` rather than rendered where the trigger
+  // lives in the tree: `position: fixed` only escapes the DOM for LAYOUT,
+  // not for paint/stacking order, which is still resolved by tree position.
+  // A `position: sticky` ancestor elsewhere on the page (e.g. `PinnedColumn`)
+  // has z-index:auto too, so without a portal it can end up painted (and
+  // hit-tested) ABOVE this backdrop the moment it's later in the DOM than
+  // wherever this modal happens to be nested — which silently broke both the
+  // dimming and the click-blocking on any page with a sticky side column.
+  // Rendering at `document.body`'s root sidesteps the whole ancestor chain,
+  // so no future positioning change anywhere on the page can repeat this.
+  return createPortal(
     <>
       <div
         className="fixed inset-0 z-50 bg-ink opacity-[.34]"
@@ -842,7 +853,8 @@ export function Modal({
           {children}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 
