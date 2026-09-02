@@ -42,6 +42,15 @@ const BOILERPLATE_RES: RegExp[] = [
   /please do not share/i,
   /if your account is operated/i,
   /this is a computer generated statement/i,
+  // Confirmed against real production data: a trailing disclaimer sentence
+  // (e.g. "...for details of this statement.") that doesn't match any
+  // pattern above got silently absorbed as continuation text into whatever
+  // row was `current` when it was encountered — exactly the failure mode
+  // `MAX_CONTINUATION_LINES`'s own doc comment already anticipated ("if some
+  // boilerplate phrase isn't in the filter list above"). No real UPI/NEFT
+  // narration or branch address ever contains the literal phrase "this
+  // statement", so this is safe to filter unconditionally.
+  /this statement/i,
 ];
 
 function isBoilerplate(line: string): boolean {
@@ -64,9 +73,24 @@ function isBoilerplate(line: string): boolean {
  * on the row that follows. The comma is what reliably tells the two apart
  * in every real example seen: a label is never comma-punctuated, an
  * address continuation line practically always is.
+ *
+ * Two more real-data signals, both confirmed against production imports:
+ * every genuine label above is short (well under 40 chars) and contains no
+ * digits at all. A line that's longer, or that contains a run of 6+ digits
+ * (an account/UPI-reference number), is real narration text — most
+ * damagingly, the tail end of a merchant NAME wrapped onto its own line
+ * (e.g. "ANDARI-9876543210-SBIN0001234", the back half of "Meenu Bhandari"
+ * split across two physical lines) — not a label. Without these checks,
+ * that fragment gets misclassified as the FOLLOWING row's label: it
+ * truncates the row it actually belongs to mid-word ("Meenu Bh" instead of
+ * "Meenu Bhandari") while injecting an unrelated reference number as the
+ * next row's `note`.
  */
 function looksLikeLabel(line: string): boolean {
-  return !line.includes(",");
+  if (line.includes(",")) return false;
+  if (line.length > 40) return false;
+  if (/\d{6,}/.test(line)) return false;
+  return true;
 }
 
 /**

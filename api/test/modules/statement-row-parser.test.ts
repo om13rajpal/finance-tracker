@@ -236,6 +236,53 @@ describe("parseStatementRows: sbi_statement", () => {
     if (!("error" in rows[1])) expect(rows[1].merchant).toContain("00652 MAIN BRANCH");
   });
 
+  // Reproduces a real bug found against production data: a name wrapped
+  // onto its own continuation line (e.g. the back half of "Meenu Bhandari"
+  // printed as "ANDARI-9876543210-SBIN0001234" on the line right before the
+  // next row starts) used to be misclassified as the NEXT row's label
+  // (nothing about `looksLikeLabel`'s old comma-only check ruled it out),
+  // truncating the row it actually belonged to and injecting an unrelated
+  // reference number as the next row's `note`.
+  it("does not mistake a wrapped name/reference continuation for the next row's label, even with no comma", () => {
+    const pages = onePage([
+      ["WDL TFR"],
+      ["01/08/2026", "01/08/2026", "UPI/DR/111111111111/MEENU", "-", "500.00", "-", "10,000.00"],
+      ["BHANDARI-9876543210-SBIN0001234"],
+      ["02/08/2026", "02/08/2026", "UPI/DR/222222222222/NEXTROW", "-", "20.00", "-", "9,980.00"],
+    ]);
+    const rows = parseStatementRows(pages, "sbi_statement");
+    expect(rows).toHaveLength(2);
+    if (!("error" in rows[0])) expect(rows[0].merchant).toContain("BHANDARI-9876543210-SBIN0001234");
+    expect(rows[1]).toMatchObject({ note: "" });
+  });
+
+  it("still treats a genuinely short, digit-free label as a label even when it directly follows a row with no continuation line", () => {
+    const pages = onePage([
+      ["WDL TFR"],
+      ["01/08/2026", "01/08/2026", "UPI/DR/111111111111/SHORT", "-", "10.00", "-", "990.00"],
+      ["DEP TFR"],
+      ["02/08/2026", "02/08/2026", "UPI/CR/222222222222/OTHER", "-", "-", "20.00", "1,010.00"],
+    ]);
+    const rows = parseStatementRows(pages, "sbi_statement");
+    expect(rows).toHaveLength(2);
+    expect(rows[1]).toMatchObject({ note: "DEP TFR" });
+  });
+
+  // Reproduces a real bug found against production data: a trailing
+  // disclaimer sentence ("...for details of this statement.") wasn't caught
+  // by any boilerplate pattern, so it got absorbed as continuation text
+  // into the last real transaction, corrupting its merchant/note.
+  it("filters a trailing disclaimer sentence mentioning \"this statement\" as boilerplate, not row continuation", () => {
+    const pages = onePage([
+      ["WDL TFR"],
+      ["01/08/2026", "01/08/2026", "UPI/DR/111111111111/LASTROW", "-", "10.00", "-", "990.00"],
+      ["Please refer to the enclosed sheet for full details of this statement."],
+    ]);
+    const rows = parseStatementRows(pages, "sbi_statement");
+    expect(rows).toHaveLength(1);
+    if (!("error" in rows[0])) expect(rows[0].merchant).not.toContain("this statement");
+  });
+
   describe("findStatementClosingBalance", () => {
     it("reads the account's current \"Clear Balance\" off its own layout quirk: value merged onto a DIFFERENT line than its label", () => {
       // Confirmed against a real SBI statement: "Clear Balance" prints as its

@@ -181,7 +181,18 @@ function genericFallback(raw: string): string {
 
   if (!text) return raw.trim().slice(0, 40) || "Unknown";
 
-  if (text.length > 40) text = text.slice(0, 40).trim();
+  // A blind character-count slice cuts mid-word when the boundary lands
+  // inside one (confirmed against real production data: "Om Rajpal Nb
+  // Subscription Hdfc7b7946464feb" sliced at 40 into "...Hdfc7b7946464f",
+  // chopped mid reference-code). Prefer cutting at the last whitespace
+  // within the window instead, so the result always ends on a whole word;
+  // only fall back to the hard cut if there's no space to cut at at all
+  // (e.g. one long unbroken token).
+  if (text.length > 40) {
+    const window = text.slice(0, 40);
+    const lastSpace = window.lastIndexOf(" ");
+    text = (lastSpace > 0 ? window.slice(0, lastSpace) : window).trim();
+  }
   return titleCase(text);
 }
 

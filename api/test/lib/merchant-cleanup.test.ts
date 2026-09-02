@@ -131,6 +131,22 @@ describe("cleanMerchantLabel", () => {
       const longText = "SOME VERY LONG UNRECOGNIZED MERCHANT NARRATION TEXT THAT GOES ON AND ON AND ON FOR A WHILE";
       expect(cleanMerchantLabel(longText).length).toBeLessThanOrEqual(40);
     });
+
+    // Reproduces a real bug found against production data: a blind
+    // 40-character slice cut "Om Rajpal Nb Subscription Hdfc7b7946464feb"
+    // into "...Hdfc7b7946464f" — chopped mid reference-code, unreadable and
+    // not even a real token. The cut must land on a word boundary instead.
+    it("truncates a long result at a word boundary, never mid-word", () => {
+      const longText = "OM RAJPAL NB SUBSCRIPTION HDFC7B7946464FEB CR 50100848501590 OM RAJPAL";
+      const result = cleanMerchantLabel(longText);
+      expect(result.length).toBeLessThanOrEqual(40);
+      expect(result).toBe("Om Rajpal Nb Subscription");
+      // Every word in the result is a WHOLE word, never a partial one:
+      // rules out the old bug regressing in some other input shape.
+      for (const word of result.split(" ")) {
+        expect(longText.toUpperCase()).toMatch(new RegExp(`\\b${word.toUpperCase()}\\b`));
+      }
+    });
   });
 });
 
