@@ -402,6 +402,9 @@ function TransactionRow({
   // name (e.g. "Swiggy" out of "Swiggy Order #48291 Ref/ABC123") is what
   // makes the rule actually apply to the NEXT one, which is the whole point.
   const [matchValue, setMatchValue] = useState(transaction.merchant ?? "");
+  const [makeRecurring, setMakeRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState<"monthly" | "weekly" | "yearly" | "custom">("monthly");
+  const [recurringNextDueDate, setRecurringNextDueDate] = useState(todayInputValue());
   const categorizeButtonRef = useRef<HTMLButtonElement>(null);
 
   const entry = transaction.categoryId ? index.get(transaction.categoryId) : undefined;
@@ -425,22 +428,30 @@ function TransactionRow({
     mutationFn: () =>
       apiFetch(`/transactions/${transaction._id}`, {
         method: "PATCH",
-        // `createRule` and `matchValue` are only honoured together with a
-        // categoryId; sending them as false/empty otherwise would be noise the
-        // server has to ignore. `matchValue` is whatever the person edited it
-        // down to above, never the raw, un-narrowed `transaction.merchant`.
-        body: JSON.stringify(
-          makeRule && trimmedMatchValue
-            ? { categoryId: choice, createRule: true, matchValue: trimmedMatchValue }
-            : { categoryId: choice }
-        ),
+        // `createRule`/`matchValue` and `createRecurring`/`recurringFrequency`/
+        // `recurringNextDueDate` are only honoured together with a categoryId;
+        // sending them as false/empty otherwise would be noise the server has
+        // to ignore. `matchValue` is whatever the person edited it down to
+        // above, never the raw, un-narrowed `transaction.merchant`.
+        body: JSON.stringify({
+          categoryId: choice,
+          ...(makeRule && trimmedMatchValue ? { createRule: true, matchValue: trimmedMatchValue } : {}),
+          ...(makeRecurring && recurringNextDueDate
+            ? { createRecurring: true, recurringFrequency, recurringNextDueDate }
+            : {}),
+        }),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       if (makeRule) queryClient.invalidateQueries({ queryKey: ["categorization-rules"] });
+      if (makeRecurring) {
+        queryClient.invalidateQueries({ queryKey: ["recurring"] });
+        queryClient.invalidateQueries({ queryKey: ["recurring-upcoming"] });
+        queryClient.invalidateQueries({ queryKey: ["recurring-suggestions"] });
+      }
       setEditing(false);
-      showToast("Category updated", "success");
+      showToast(makeRecurring ? "Category updated, marked as recurring" : "Category updated", "success");
     },
     onError: () => showToast("Could not update the category", "error"),
   });
@@ -510,6 +521,9 @@ function TransactionRow({
                   setChoice(transaction.categoryId ?? "");
                   setMatchValue(transaction.merchant ?? "");
                   setMakeRule(false);
+                  setMakeRecurring(false);
+                  setRecurringFrequency("monthly");
+                  setRecurringNextDueDate(todayInputValue());
                   setEditing(true);
                 }}
                 aria-haspopup="dialog"
@@ -581,6 +595,41 @@ function TransactionRow({
               />
             </Field>
           ) : null}
+          <Checkbox
+            id={`tx-recurring-${transaction._id}`}
+            label="Also mark as recurring"
+            helper={
+              choice
+                ? "Tracks this as a repeating commitment, filed into the category above."
+                : "Choose a category above first: a recurring item needs one."
+            }
+            checked={makeRecurring}
+            disabled={!choice}
+            onChange={(e) => setMakeRecurring(e.target.checked)}
+          />
+          {makeRecurring ? (
+            <FieldGrid className="ml-[34px]">
+              <Field id={`tx-recurring-frequency-${transaction._id}`} label="Repeats">
+                <Select
+                  id={`tx-recurring-frequency-${transaction._id}`}
+                  value={recurringFrequency}
+                  onChange={(e) => setRecurringFrequency(e.target.value as typeof recurringFrequency)}
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="yearly">Yearly</option>
+                  <option value="custom">Custom</option>
+                </Select>
+              </Field>
+              <Field id={`tx-recurring-due-${transaction._id}`} label="Next due">
+                <DateInput
+                  id={`tx-recurring-due-${transaction._id}`}
+                  value={recurringNextDueDate}
+                  onChange={(e) => setRecurringNextDueDate(e.target.value)}
+                />
+              </Field>
+            </FieldGrid>
+          ) : null}
           <div className="mt-4 flex flex-wrap items-center justify-between gap-12">
             <button
               type="button"
@@ -595,7 +644,7 @@ function TransactionRow({
             <Button
               size="sm"
               busy={update.isPending}
-              disabled={!choice || (makeRule && !trimmedMatchValue)}
+              disabled={!choice || (makeRule && !trimmedMatchValue) || (makeRecurring && !recurringNextDueDate)}
               onClick={() => update.mutate()}
             >
               Save

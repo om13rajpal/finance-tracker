@@ -5,6 +5,7 @@ import { app } from "../../src/app.js";
 import { CategorizationRule } from "../../src/models/CategorizationRule.js";
 import { Account } from "../../src/models/Account.js";
 import { PendingTransaction } from "../../src/models/PendingTransaction.js";
+import { RecurringTransaction } from "../../src/models/RecurringTransaction.js";
 
 function authCookie(userId = "user-1") {
   const token = jwt.sign({ userId }, process.env.JWT_SECRET as string);
@@ -253,6 +254,70 @@ describe("transactions", () => {
 
     const rule = await CategorizationRule.findOne({ userId: "user-patch-norule", matchValue: "SOME" });
     expect(rule).toBeNull();
+  });
+
+  it("marks a transaction as recurring, creating a RecurringTransaction from its own fields", async () => {
+    const cookie = authCookie("user-patch-recurring");
+    const createRes = await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId: "acc-1", amount: -75, date: "2026-08-28", merchant: "Apple Media Services" });
+
+    const patchRes = await request(app)
+      .patch(`/transactions/${createRes.body._id}`)
+      .set("Cookie", cookie)
+      .send({
+        categoryId: "cat-subscriptions",
+        createRecurring: true,
+        recurringFrequency: "monthly",
+        recurringNextDueDate: "2026-09-28",
+      });
+    expect(patchRes.status).toBe(200);
+
+    const recurring = await RecurringTransaction.findOne({ userId: "user-patch-recurring" });
+    expect(recurring).not.toBeNull();
+    expect(recurring).toMatchObject({
+      name: "Apple Media Services",
+      type: "expense",
+      amount: 75,
+      frequency: "monthly",
+      accountId: "acc-1",
+      categoryId: "cat-subscriptions",
+      status: "active",
+    });
+    expect(recurring!.nextDueDate.toISOString()).toContain("2026-09-28");
+  });
+
+  it("does not create a RecurringTransaction when createRecurring is true but no category ends up set", async () => {
+    const cookie = authCookie("user-patch-recurring-nocat");
+    const createRes = await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId: "acc-1", amount: -75, date: "2026-08-28", merchant: "Uncategorised Merchant" });
+
+    const patchRes = await request(app)
+      .patch(`/transactions/${createRes.body._id}`)
+      .set("Cookie", cookie)
+      .send({ createRecurring: true, recurringFrequency: "monthly", recurringNextDueDate: "2026-09-28" });
+    expect(patchRes.status).toBe(200);
+
+    expect(await RecurringTransaction.countDocuments({ userId: "user-patch-recurring-nocat" })).toBe(0);
+  });
+
+  it("does not create a RecurringTransaction when frequency or next due date is missing", async () => {
+    const cookie = authCookie("user-patch-recurring-incomplete");
+    const createRes = await request(app)
+      .post("/transactions")
+      .set("Cookie", cookie)
+      .send({ accountId: "acc-1", amount: -75, date: "2026-08-28", merchant: "Some Merchant" });
+
+    const patchRes = await request(app)
+      .patch(`/transactions/${createRes.body._id}`)
+      .set("Cookie", cookie)
+      .send({ categoryId: "cat-x", createRecurring: true });
+    expect(patchRes.status).toBe(200);
+
+    expect(await RecurringTransaction.countDocuments({ userId: "user-patch-recurring-incomplete" })).toBe(0);
   });
 
   it("returns 404 when patching a nonexistent or another user's transaction", async () => {

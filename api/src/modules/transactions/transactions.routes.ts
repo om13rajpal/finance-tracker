@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../auth/auth.middleware.js";
 import { Transaction } from "../../models/Transaction.js";
+import { RecurringTransaction } from "../../models/RecurringTransaction.js";
 import { applyCategorizationRules } from "../categorization/categorization.engine.js";
 import { maybeCreateRuleFromCorrection, encodeCursor, decodeCursor } from "./transactions.service.js";
 import { findLikelyDuplicate } from "./duplicate-detection.js";
@@ -104,12 +105,22 @@ const updateSchema = z.object({
   merchant: z.string().optional(),
   createRule: z.boolean().optional(),
   matchValue: z.string().optional(),
+  // A person-initiated "this is recurring" flag, mirroring `createRule`'s
+  // shape: opt-in, bundled into the same save as the rest of the edit,
+  // never inferred automatically (that's what `detectRecurringSuggestions`
+  // is for, over CONFIRMED history). Requires a category, same as
+  // `RecurringTransaction.categoryId` being a required field: there's no
+  // sensible "recurring but uncategorised" commitment to track.
+  createRecurring: z.boolean().optional(),
+  recurringFrequency: z.enum(["monthly", "weekly", "yearly", "custom"]).optional(),
+  recurringNextDueDate: z.string().optional(),
 });
 
 transactionsRouter.patch("/:id", async (req, res, next) => {
   try {
     const data = updateSchema.parse(req.body);
-    const { createRule, matchValue, ...updateFields } = data;
+    const { createRule, matchValue, createRecurring, recurringFrequency, recurringNextDueDate, ...updateFields } =
+      data;
     const userId = (req as any).userId;
 
     const update: Record<string, unknown> = { ...updateFields };
@@ -140,6 +151,19 @@ transactionsRouter.patch("/:id", async (req, res, next) => {
 
     if (createRule && matchValue && data.categoryId) {
       await maybeCreateRuleFromCorrection(userId, matchValue, data.categoryId);
+    }
+
+    if (createRecurring && recurringFrequency && recurringNextDueDate && transaction.categoryId) {
+      await RecurringTransaction.create({
+        userId,
+        name: transaction.merchant || transaction.note || "Recurring payment",
+        type: transaction.amount < 0 ? "expense" : "income",
+        amount: Math.abs(transaction.amount),
+        frequency: recurringFrequency,
+        nextDueDate: new Date(recurringNextDueDate),
+        accountId: transaction.accountId,
+        categoryId: transaction.categoryId,
+      });
     }
 
     await invalidateDashboardCache(userId);
