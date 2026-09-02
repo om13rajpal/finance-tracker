@@ -321,12 +321,22 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
 
       // Raw statement narration ("UPI/DR/103523751353/NETFLIX/HDFC/netflix.bd/
       // Execu...") is technically correct but unreadable: `cleanMerchantLabel`
-      // turns it into a short display name ("Netflix"). The original text is
-      // never discarded: it moves into `note` whenever the parser left that
-      // empty (true for every bank-specific parser today), so nothing is lost,
-      // it's just not what's shown by default. A parser that DOES populate its
-      // own `note` (carrying real information, not narration) keeps it as-is.
+      // turns it into a short display name ("Netflix"). The original text
+      // must never be discarded, so it always ends up in `note` — this used
+      // to be `row.note || row.merchant`, on the (false) assumption that
+      // every parser leaves `row.note` empty and only needs the narration
+      // rescued into it as a fallback. SBI's parser breaks that assumption on
+      // purpose: it deliberately returns a real, non-empty label (e.g. "WDL
+      // TFR") for essentially every transfer row, and since that label is
+      // truthy, the old `||` picked it EVERY time — silently discarding the
+      // narration, the only place any payee-identifying text ever existed,
+      // confirmed against real production data (70 real rows from one SBI
+      // import, every one showing `note: "WDL TFR"` instead of its own
+      // narration, with no way to recover it after the fact). Combining both
+      // (when the label is present and distinct from the narration) loses
+      // nothing either way.
       const cleanedMerchant = await cleanMerchantLabelSmart(row.merchant);
+      const note = row.note && row.note !== row.merchant ? `${row.note} — ${row.merchant}` : row.merchant;
       docsToInsert.push({
         row: rowNumber,
         doc: {
@@ -335,7 +345,7 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
           categoryId: null,
           amount: row.amount,
           date,
-          note: row.note || row.merchant,
+          note,
           merchant: cleanedMerchant || row.merchant,
           source: "pdf_statement_parsed",
         },

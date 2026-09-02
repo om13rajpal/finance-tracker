@@ -43,6 +43,28 @@ export function normalizeForCacheKey(raw: string): string {
   return /[A-Z]/.test(key) ? key : "";
 }
 
+/**
+ * Sanity-checks a Gemini response before it's trusted as a merchant/payee
+ * name and permanently cached. Confirmed against a real production bug: the
+ * model returned `THINK: The input "70.01 0111126TS` for a genuinely opaque
+ * narration — a fragment of its own reasoning, not a name — and nothing
+ * validated the SHAPE of the response before it was accepted and cached
+ * forever under that narration's normalized shape (`MAX_LABEL_LENGTH` alone
+ * didn't catch it: the garbage was only 35 characters). A real merchant/payee
+ * name never contains a colon (this codebase's own tier-2 heuristic labels
+ * use a middot "·" for compound labels, never a colon) or an internal quote
+ * character (a fully quote-WRAPPED response is handled separately, by
+ * stripping the wrapping pair before this check ever runs), and is always a
+ * short phrase, not a sentence.
+ */
+function looksLikePlausibleName(text: string): boolean {
+  if (text.includes(":")) return false;
+  if (text.includes('"') || text.includes("'")) return false;
+  if (/[\r\n]/.test(text)) return false;
+  if (text.split(/\s+/).length > 6) return false;
+  return true;
+}
+
 async function callGemini(raw: string): Promise<string | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -78,7 +100,9 @@ async function callGemini(raw: string): Promise<string | null> {
     const content = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
     if (!content || content.length > MAX_LABEL_LENGTH) return null;
     if (/^UNKNOWN$/i.test(content)) return null;
-    return content.replace(/^["']|["']$/g, "").trim() || null;
+    const stripped = content.replace(/^["']|["']$/g, "").trim();
+    if (!stripped || !looksLikePlausibleName(stripped)) return null;
+    return stripped;
   } catch {
     // Network error, timeout/abort, or malformed JSON - all treated the same:
     // this call didn't help, the caller already has a safe fallback label.

@@ -107,6 +107,53 @@ describe("cleanMerchantLabelWithLlm", () => {
     );
   });
 
+  // Reproduces a real bug found against production data: Gemini returned
+  // `THINK: The input "70.01 0111126TS` for a genuinely opaque narration —
+  // a fragment of the model's own reasoning, not a merchant name — and
+  // nothing validated the shape of the response before accepting and
+  // permanently caching it (confirmed directly in the production
+  // MerchantCleanupCache collection: that exact garbage string, cached
+  // forever under its narration's normalized shape).
+  it("rejects and falls back to the heuristic label when the LLM response doesn't look like a plausible name (contains a colon)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(geminiReply('THINK: The input "70.01 0111126TS')));
+
+    const result = await cleanMerchantLabelWithLlm("SOME OPAQUE ATM NARRATION LINE", "Some Opaque Atm Narration Line");
+
+    expect(result).toBe("Some Opaque Atm Narration Line");
+  });
+
+  it("does not cache a rejected implausible-looking LLM response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(geminiReply('THINK: The input "70.01 0111126TS')));
+
+    await cleanMerchantLabelWithLlm("ANOTHER OPAQUE NARRATION LINE", "fallback");
+
+    expect(await MerchantCleanupCache.countDocuments({})).toBe(0);
+  });
+
+  it("strips a response that's just wrapped in a pair of quotes (not a rejection case)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(geminiReply('"Acme Traders"')));
+
+    const result = await cleanMerchantLabelWithLlm("QUOTE-WRAPPED RESPONSE CASE", "Quote Wrapped Response Case");
+
+    expect(result).toBe("Acme Traders");
+  });
+
+  it("rejects a response with an internal, unbalanced quote character", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(geminiReply('Acme "The Best" Traders')));
+
+    const result = await cleanMerchantLabelWithLlm("INTERNAL QUOTE RESPONSE CASE", "Internal Quote Response Case");
+
+    expect(result).toBe("Internal Quote Response Case");
+  });
+
+  it("still accepts a normal, plausible short merchant name", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(geminiReply("Acme Traders")));
+
+    const result = await cleanMerchantLabelWithLlm("A NORMAL NARRATION LINE", "A Normal Narration Line");
+
+    expect(result).toBe("Acme Traders");
+  });
+
   it("does not persist a cache entry when the LLM call fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 

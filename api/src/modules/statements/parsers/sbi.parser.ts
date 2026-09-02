@@ -102,6 +102,41 @@ function looksLikeLabel(line: string): boolean {
  */
 const MAX_CONTINUATION_LINES = 6;
 
+/**
+ * Joins a row's on-line narration with its continuation lines into the raw
+ * merchant text, WITHOUT inserting a space between the on-line narration and
+ * the FIRST continuation line specifically.
+ *
+ * Confirmed against a real SBI statement (multiple independent examples,
+ * cross-checked against each row's own VPA handle, which never wraps): this
+ * bank's fixed-width column layout wraps a too-long UPI reference string
+ * ("UPI/DR/<ref>/<PAYEE>/<bank>/<vpa>/UPI", which has no internal spaces at
+ * all — "/" is the only field separator) at an arbitrary character position
+ * whenever it overflows the column, not at a word boundary. A row whose
+ * on-line narration ends "...HUNGERB" and whose first continuation line reads
+ * "OX/AIRP/hungerbox./UPI" is genuinely the single unbroken run
+ * "HUNGERBOX/AIRP/hungerbox./UPI": the VPA handle "hungerbox" on that same
+ * continuation line proves it, since a VPA is never itself wrapped. The same
+ * shape was confirmed across half a dozen other real rows (Thesmart+q1,
+ * TRAVEL+ECO, APPLE+ME, MEENU+BH, BHARAT+A, JASVIN+T). Blindly space-joining
+ * that boundary — the previous behaviour — inserted a false space into the
+ * payee name, which corrupts `extractUpiPayee`'s segment extraction in
+ * `merchant-cleanup.ts`. This was masked for well-known merchants
+ * (Swiggy/Zomato/Dominos/Zepto) purely because their tier-1 dictionary match
+ * is a forgiving substring search that doesn't care about an extra space or
+ * trailing garbage — it broke visibly only for names not in that dictionary.
+ *
+ * Every continuation line AFTER the first genuinely starts a new field (a
+ * reference number, a branch address) and keeps its normal space separator —
+ * only the first join point is a real mid-token PDF wrap.
+ */
+function joinNarration(descStart: string[], descParts: string[]): string {
+  const onLine = descStart.join(" ");
+  const merged = descParts.length > 0 ? onLine + descParts[0] : onLine;
+  const rest = descParts.slice(1);
+  return [merged, ...rest].join(" ").replace(/\s+/g, " ").trim();
+}
+
 export function parseSbiStatement(pages: PDFExtractPage[]): StatementRowResult[] {
   const lines = linesFromPages(pages)
     .flat()
@@ -166,7 +201,7 @@ export function parseSbiStatement(pages: PDFExtractPage[]): StatementRowResult[]
     else if (credit != null) amount = credit;
     else return { error: `Could not parse SBI row starting ${row.txnDate}: neither debit nor credit present` };
 
-    const merchant = [...descStart, ...row.descParts].join(" ").replace(/\s+/g, " ").trim();
+    const merchant = joinNarration(descStart, row.descParts);
 
     return {
       date: toIsoDate(row.txnDate),

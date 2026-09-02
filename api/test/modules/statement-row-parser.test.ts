@@ -256,6 +256,41 @@ describe("parseStatementRows: sbi_statement", () => {
     expect(rows[1]).toMatchObject({ note: "" });
   });
 
+  // Reproduces a real bug found against production data: SBI's PDF wraps a
+  // single unbroken UPI reference string ("UPI/DR/<ref>/<PAYEE>/<bank>/<vpa>/
+  // UPI") at a fixed column width with no regard for word boundaries —
+  // confirmed against a real statement where "UPI/DR/622763219941/HUNGERB" on
+  // the anchor line continues as "OX/AIRP/hungerbox./UPI" on the very next
+  // line (the VPA handle "hungerbox" on that same continuation line proves
+  // the true unbroken payee segment is "HUNGERBOX", not "HUNGERB OX"). The
+  // same shape was confirmed across half a dozen other real rows in the same
+  // statement ("Thesmart"+"q1", "TRAVEL"+"ECO", "APPLE"+"ME", etc., each
+  // matching its own VPA handle only when read as one unbroken run). Naively
+  // space-joining the anchor's on-line narration with its first continuation
+  // line inserts a false space right in the middle of the payee name, which
+  // corrupts `extractUpiPayee`'s segment extraction downstream (only masked
+  // for well-known merchants like Swiggy/Zomato, whose tier-1 dictionary
+  // match is a forgiving substring search that doesn't care about the extra
+  // space or trailing garbage).
+  it("does not insert a false space where a too-long UPI narration wraps mid-token across the anchor line and its first continuation line", () => {
+    const pages = onePage([
+      ["WDL TFR"],
+      ["15/08/2026", "15/08/2026", "UPI/DR/622763219941/HUNGERB", "-", "20.00", "-", "765508.92"],
+      ["OX/AIRP/hungerbox./UPI"],
+      ["0097695162091", "AT", "00652", "MAIN"],
+      ["BRANCH", ",", "HISAR"],
+    ]);
+    const rows = parseStatementRows(pages, "sbi_statement");
+    expect(rows).toHaveLength(1);
+    if (!("error" in rows[0])) {
+      expect(rows[0].merchant).toContain("HUNGERBOX");
+      expect(rows[0].merchant).not.toContain("HUNGERB OX");
+      // Every continuation line AFTER the first genuinely starts a new field
+      // (reference number, branch address) and must stay space-separated.
+      expect(rows[0].merchant).toContain("MAIN BRANCH , HISAR");
+    }
+  });
+
   it("still treats a genuinely short, digit-free label as a label even when it directly follows a row with no continuation line", () => {
     const pages = onePage([
       ["WDL TFR"],
