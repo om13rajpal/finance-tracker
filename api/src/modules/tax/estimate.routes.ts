@@ -11,7 +11,7 @@ export const estimateRouter = Router();
 estimateRouter.use(requireAuth);
 
 // Reshapes a TaxSlabConfig mongoose document into the plain SlabConfigShape
-// computeTax expects — mongoose subdocuments type `upTo` as `number | null |
+// computeTax expects: mongoose subdocuments type `upTo` as `number | null |
 // undefined` (vs. the schema's actual `number | null`), so this narrows that back
 // down explicitly rather than casting the whole document with `as any`.
 function toSlabConfigShape(config: {
@@ -71,7 +71,7 @@ estimateRouter.get("/", async (req, res, next) => {
       .filter((s) => s.type === "other")
       .reduce((sum, s) => sum + s.annualAmount, 0);
     // Same STCG/LTCG totalling logic as GET /tax/capital-gains
-    // (capital-gains.routes.ts) — recomputed here rather than imported since that
+    // (capital-gains.routes.ts): recomputed here rather than imported since that
     // route doesn't export a standalone helper, but the shape (filter by
     // classification, sum gainAmount) is identical, so the numbers agree.
     const stcgAmount = sellEvents
@@ -84,7 +84,7 @@ estimateRouter.get("/", async (req, res, next) => {
       .filter((d) => d.section === "80C")
       .reduce((sum, d) => sum + d.amount, 0);
     // KNOWN SIMPLIFICATION, affects the accuracy of the estimate: every non-80C
-    // deduction (80D, 80CCD(1B), 24(b), etc.) is added in FULL, uncapped — this app
+    // deduction (80D, 80CCD(1B), 24(b), etc.) is added in FULL, uncapped: this app
     // doesn't model those sections' real individual limits, so a user could enter an
     // unrealistically large 80D amount and have it accepted wholesale. Treat the
     // estimate as a planning aid, not a filing-grade number, until per-section limits
@@ -93,11 +93,11 @@ estimateRouter.get("/", async (req, res, next) => {
       .filter((d) => d.section !== "80C")
       .reduce((sum, d) => sum + d.amount, 0);
 
-    // HRA exemption (Section 10(13A)) — OLD REGIME ONLY, computed per salary
+    // HRA exemption (Section 10(13A)), OLD REGIME ONLY, computed per salary
     // IncomeSource from its own `breakdown` and summed. `computeHraExemption`
     // returns 0 for a source with no/partial breakdown data, so this is safe to sum
     // unconditionally across every salary source. Subtracted from grossSalary
-    // BEFORE calling computeTax for the old-regime result only, below — the
+    // BEFORE calling computeTax for the old-regime result only, below: the
     // new-regime result uses the un-reduced grossSalary since the new regime
     // doesn't allow this exemption at all. computeTax itself stays unaware of HRA;
     // this mirrors the same route-applies-the-adjustment pattern already used for
@@ -118,7 +118,7 @@ estimateRouter.get("/", async (req, res, next) => {
     const grossSalaryOldRegime = Math.max(0, grossSalary - hraExemptionTotal);
 
     // getCapitalGainsConfig's return value isn't used here (each regime's own
-    // capitalGains block feeds toSlabConfigShape below) — it's called for its
+    // capitalGains block feeds toSlabConfigShape below): it's called for its
     // consistency guard: capital gains rules are regime-independent under Indian
     // law, so if the two regime documents' capitalGains.equity blocks have drifted
     // apart the comparison would report different capital gains tax per regime on
@@ -132,17 +132,17 @@ estimateRouter.get("/", async (req, res, next) => {
     // The 80C cap is applied HERE, per regime, scoped to ONLY section-80C-tagged
     // deductions, not when storing/summing deductions (Task 5's TaxDeduction totals
     // are raw). The new regime's section80CLimit is 0, so 80C deductions contribute
-    // nothing there — matching real tax law.
+    // nothing there, matching real tax law.
     //
     // KNOWN SIMPLIFICATION, affects the accuracy of the estimate: this app only
     // models ONE section limit (80C's, via `section80CLimit`). Every other section
     // (80D, 80CCD(1B), 24(b), etc.) is added in full, uncapped, rather than being
-    // checked against its own real-world limit — so a user could enter an
+    // checked against its own real-world limit, so a user could enter an
     // unrealistically large non-80C deduction and have it accepted wholesale
     // (see the `otherSectionTotal` comment above). This also applies to the NEW
     // regime's calculation below: real law disallows nearly all Chapter VI-A
     // deductions under the new regime, but this app doesn't track which sections are
-    // allowed under which regime, so `otherSectionTotal` passes through there too —
+    // allowed under which regime, so `otherSectionTotal` passes through there too,
     // arguably wrong under real law, a deliberate scope limit rather than a fixed
     // bug. Modelling either of these properly needs a per-section, per-regime limit
     // table in TaxSlabConfig; until then, treat the estimate as a planning aid, not
@@ -168,7 +168,7 @@ estimateRouter.get("/", async (req, res, next) => {
       old: oldResult,
       new: newResult,
       // Tie-break: on an exact tie, "old" wins. Arbitrary but deterministic and
-      // reasonable — there's no tax-law reason to prefer one on a true tie.
+      // reasonable: there's no tax-law reason to prefer one on a true tie.
       recommendation: oldResult.totalTax <= newResult.totalTax ? "old" : "new",
     });
   } catch (err) {

@@ -59,7 +59,7 @@ describe("price snapshot retention", () => {
   });
 
   it("does not group snapshots across a UTC calendar-day boundary even if they are only minutes apart", async () => {
-    // 23:55 UTC on one old day, and 00:05 UTC the next day (still > 7 days old) — must NOT collapse to one.
+    // 23:55 UTC on one old day, and 00:05 UTC the next day (still > 7 days old): must NOT collapse to one.
     const base = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
     const lateNight = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth(), base.getUTCDate(), 23, 55, 0, 0));
     const earlyNextDay = new Date(lateNight.getTime() + 10 * 60 * 1000); // +10 minutes, crosses midnight UTC

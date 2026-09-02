@@ -52,7 +52,7 @@ export interface Transaction {
   status?: "confirmed" | "pending_review";
 }
 
-/** Cursor pagination. `nextCursor` is null on the last page — never undefined. */
+/** Cursor pagination. `nextCursor` is null on the last page: never undefined. */
 export interface TransactionsPage {
   items: Transaction[];
   nextCursor: string | null;
@@ -62,10 +62,10 @@ export interface TransactionsPage {
  * A transaction the Gmail parser or a PDF statement import produced, waiting
  * to be confirmed. `accountId` is nullable because an email (and, for the
  * automatic Gmail-attachment path, a PDF too) says what was spent but not
- * always from where — which is why confirming one can require picking an
+ * always from where: which is why confirming one can require picking an
  * account first. A PDF uploaded manually through Transactions always knows
  * its account up front, so `pdf_statement_parsed` rows from that path DO
- * carry an `accountId` — it is only the automatic Gmail-attachment path that
+ * carry an `accountId`: it is only the automatic Gmail-attachment path that
  * leaves it null, same reasoning as `email_parsed`.
  */
 export interface PendingTransaction {
@@ -79,7 +79,7 @@ export interface PendingTransaction {
   source: "email_parsed" | "pdf_statement_parsed";
   /**
    * True when a confirmed Transaction already exists on the same account,
-   * for the same amount, within 2 days of this row's date — the same check
+   * for the same amount, within 2 days of this row's date: the same check
    * `POST /:id/confirm` and `/bulk-confirm` apply before filing anything,
    * surfaced here up front so the review queue itself can show it instead of
    * the person only discovering it via a skip/409 after trying to confirm.
@@ -99,7 +99,7 @@ export interface ImportBatchResult {
   /**
    * Async lifecycle. Every source except `pdf_statement` is created already
    * `"completed"` (they still build their `ImportBatch` in one synchronous
-   * shot) — only a PDF-statement upload starts `"processing"` and is polled
+   * shot): only a PDF-statement upload starts `"processing"` and is polled
    * via `GET /transactions/import-pdf/:batchId` until it reaches a terminal
    * state.
    */
@@ -108,14 +108,14 @@ export interface ImportBatchResult {
   /**
    * Non-blocking heads-up: this statement's own date range overlaps an
    * already-imported statement on the same account (a common, ordinary
-   * scenario — re-downloading one, or downloading a newer one that covers
+   * scenario: re-downloading one, or downloading a newer one that covers
    * some of the same days). `null` when no overlap was found, or for a
    * source other than `pdf_statement`.
    */
   overlapWarning?: string | null;
 }
 
-/** The immediate response from `POST /transactions/import-pdf` — enqueues a
+/** The immediate response from `POST /transactions/import-pdf`: enqueues a
  * background job and returns before any row has been processed. */
 export interface ImportPdfEnqueuedResult {
   batchId: string;
@@ -145,7 +145,7 @@ export interface BulkConfirmBatchResult {
 // ── statement passwords ────────────────────────────────────────────────────
 
 /**
- * Never carries the password in any form — `label` is the user's own note
+ * Never carries the password in any form: `label` is the user's own note
  * only, never used to pick which password to try against a given file. Every
  * stored password is attempted, in no particular order, until one unlocks
  * the PDF.
@@ -175,7 +175,7 @@ export interface CategorizationRule {
  * A merchant that keeps showing up without a category (3+ times, across the
  * pending queue and/or already-confirmed transactions) and has no existing
  * rule that would already match it. `pendingIds`/`transactionIds` are the
- * EXACT items behind `count` — accepting a suggestion (`POST
+ * EXACT items behind `count`: accepting a suggestion (`POST
  * /categorization-rules` with `applyToPendingIds`/`applyToTransactionIds`)
  * categorizes only these specific items, never a broader retroactive sweep.
  */
@@ -189,7 +189,7 @@ export interface CategorizationSuggestion {
 
 /**
  * A (account, merchant) pair that repeats at a regular interval in confirmed
- * transaction history and isn't already tracked as a `RecurringItem` — see
+ * transaction history and isn't already tracked as a `RecurringItem`: see
  * `GET /recurring/suggestions`. Nothing persists this; accepting one just
  * means calling `POST /recurring` with these fields pre-filled.
  */
@@ -278,7 +278,7 @@ export interface HoldingLot {
 
 /**
  * Response from `POST /holdings` (manual buy). `transaction` is null unless an
- * `accountId` was supplied on the request — a buy with no funding account
+ * `accountId` was supplied on the request: a buy with no funding account
  * creates only the `HoldingLot`, matching the CSV import path's shape (no
  * account context available), and never touches any account's balance.
  */

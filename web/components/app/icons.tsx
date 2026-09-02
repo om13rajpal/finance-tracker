@@ -6,27 +6,27 @@ import { cn } from "@/lib/utils";
  * Sorted · icons
  *
  * Every glyph is authored on a 24×24 grid at a 2px stroke, which lands at
- * ~1.42px once drawn at the chip's 17px — the weight the system is tuned to.
+ * ~1.42px once drawn at the chip's 17px: the weight the system is tuned to.
  *
  * WHY THESE ARE INLINE PATHS AND NOT A `<use href>` SPRITE.
  *
  * The locked icon rule in the brand kit says every `<svg>` wrapping a `<use>`
  * MUST carry `viewBox="0 0 24 24"`, because the sprite's symbols are `<g>`
  * elements and a `<g>` carries no intrinsic viewBox for the `<use>` to inherit.
- * Miss it once and the icon draws at native size and clips to the top-left —
+ * Miss it once and the icon draws at native size and clips to the top-left,
  * which reads as "the icon isn't centred" rather than as a markup bug, so it
  * hides in plain sight. It shipped 42 times before it was caught.
  *
  * A single React component with the viewBox baked in makes that failure
  * unrepresentable: there is no call site that can forget it. This satisfies the
- * rule's intent rather than routing around it — the grep guard
+ * rule's intent rather than routing around it: the grep guard
  * (`<svg><use` must return zero) still passes trivially, because there are no
  * `<use>` elements left in the authenticated app at all.
  */
 
 const PATHS = {
   // ── navigation ───────────────────────────────────────────────────────────
-  // A route is not a category, so these are ink strokes with no fill — drawn
+  // A route is not a category, so these are ink strokes with no fill, drawn
   // in the chip's circular form but never wearing a bucket colour.
   overview: (
     <>
@@ -95,7 +95,7 @@ const PATHS = {
 
   // ── the four buckets ─────────────────────────────────────────────────────
   // Unlike the retired six-chip set the glyph is REINFORCING rather than
-  // load-bearing (all four colours separate on hue alone, tightest gap 65°) —
+  // load-bearing (all four colours separate on hue alone, tightest gap 65°),
   // but it is never omitted. A chip with no icon is a bug, not a variant.
   "b-fixed": (
     <>
@@ -149,7 +149,7 @@ const PATHS = {
 
   // ── account types ────────────────────────────────────────────────────────
   // An account type is NOT a bucket, so these are ink strokes in the chip's
-  // circular form with no fill — the same rule the nav rail follows. Filling
+  // circular form with no fill: the same rule the nav rail follows. Filling
   // one would say "this account is a spending destination", which is a lie the
   // colour system must not tell.
   card: (
@@ -286,7 +286,7 @@ export function Icon({ name, size = 17, title, className, ...props }: IconProps)
 /**
  * THE TETHER · a static provenance mark, never an event.
  *
- * The identical stroke to the login constellation's connectors — 1.6px ink,
+ * The identical stroke to the login constellation's connectors: 1.6px ink,
  * dash `4 6`, round caps. It marks a row the Gmail parser filed by itself,
  * which makes the product's most unusual capability visible in the one place
  * it actually happened.

@@ -45,9 +45,9 @@ const buySchema = z.object({
   units: z.number().positive(),
   isElss: z.boolean().optional(),
   // OPTIONAL, deliberately: existing callers (Zerodha/Groww CSV import) have no
-  // account context available at import time at all — a historical trade
+  // account context available at import time at all (a historical trade
   // statement says nothing about which of this app's own bank accounts funded
-  // it — and must keep working exactly as before, without gaining the
+  // it) and must keep working exactly as before, without gaining the
   // linked-transaction behavior below. Only when a caller (this manual "add
   // holding" route, used going forward) actually knows and supplies one does a
   // purchase get wired into the transaction/balance system, closing the
@@ -57,7 +57,7 @@ const buySchema = z.object({
 
 /**
  * Manually records a BUY: always creates a `HoldingLot` (unconditionally, same
- * as the CSV import path), and — ONLY when `accountId` is supplied — ALSO
+ * as the CSV import path), and (ONLY when `accountId` is supplied) ALSO
  * creates a real linked expense `Transaction` (so the cash outflow is visible
  * in transaction history and budget calculations, not just a silent balance
  * adjustment) and applies its cost as a balance delta to that account, exactly
@@ -69,14 +69,14 @@ const buySchema = z.object({
  * holding's value. With the funding account wired up, the account's own
  * `currentBalance` now genuinely drops by the purchase cost, so
  * `computeFullNetWorth` (accounts total + holdings value) sums to the correct
- * figure with no special-casing needed there at all — the fix is in the data,
+ * figure with no special-casing needed there at all: the fix is in the data,
  * not the aggregate math.
  */
 investmentsRouter.post("/holdings", async (req, res, next) => {
   try {
     const userId = (req as any).userId;
     const data = buySchema.parse(req.body);
-    // Upper-cased, matching the CSV import parsers' own normalization — `symbol`
+    // Upper-cased, matching the CSV import parsers' own normalization: `symbol`
     // is the join key for FIFO sell-matching, the holdings rollup, and price
     // lookups, so a case variant here would silently fork a position in two.
     const symbol = data.symbol.trim().toUpperCase();
@@ -125,21 +125,21 @@ const sellSchema = z.object({
   sellDate: z.string(),
   sellPrice: z.number().positive(),
   unitsSold: z.number().positive(),
-  // Same reasoning as `buySchema.accountId` above — optional, and only wires up
+  // Same reasoning as `buySchema.accountId` above: optional, and only wires up
   // a linked Transaction when actually supplied.
   accountId: z.string().optional(),
 });
 
 /**
  * Manually records a SELL: always runs the existing FIFO/capital-gains
- * pipeline (`recordSale` — same one the CSV import path already uses,
- * untouched here), and — ONLY when `accountId` is supplied — ALSO creates a
+ * pipeline (`recordSale`, the same one the CSV import path already uses,
+ * untouched here), and (ONLY when `accountId` is supplied) ALSO creates a
  * real linked INCOME `Transaction` for the sale proceeds and credits that
  * account, symmetric with the buy route above.
  *
  * `recordSale` (via `applySellFifo`) guarantees a failed sell (asking for more
  * units than are held) leaves every `HoldingLot` completely untouched before
- * it ever throws — caught here and reported as a clean 400, never a partial
+ * it ever throws. Caught here and reported as a clean 400, never a partial
  * lot mutation with no linked Transaction to match it.
  */
 investmentsRouter.post("/holdings/sell", async (req, res, next) => {
@@ -183,7 +183,7 @@ investmentsRouter.post("/holdings/sell", async (req, res, next) => {
     res.status(201).json({
       events,
       transaction,
-      // See `usedDefaultCapitalGainsConfig` on SellEvent — surfaced here too
+      // See `usedDefaultCapitalGainsConfig` on SellEvent, surfaced here too
       // so the UI can flag it immediately, not only on a later Tax-page visit.
       usedDefaultConfig: events.some((e) => e.usedDefaultCapitalGainsConfig),
     });
@@ -194,13 +194,13 @@ investmentsRouter.post("/holdings/sell", async (req, res, next) => {
 
 /**
  * Deletes a HoldingLot the user never should have created (a mis-entered
- * Buy) — and, if it was bought with a funding account, its linked expense
+ * Buy), and also, if it was bought with a funding account, its linked expense
  * `Transaction` too, reversing that account's balance the same way a plain
  * transaction delete does.
  *
  * Only allowed while the lot is completely untouched by any sale
  * (`remainingUnits === units`): once FIFO has matched units from it, one or
- * more `SellEvent`s reference its `lotId` for capital-gains reporting —
+ * more `SellEvent`s reference its `lotId` for capital-gains reporting;
  * deleting it out from under those would leave orphaned/unexplainable
  * records. There's no supported way to undo a sell in this app today, so a
  * (partially) sold lot simply can't be deleted; only a completely unsold one.
@@ -213,7 +213,7 @@ investmentsRouter.delete("/holding-lots/:id", async (req, res, next) => {
 
     if (lot.remainingUnits !== lot.units) {
       return res.status(400).json({
-        error: "This holding has been sold (in full or in part) and can't be deleted — it has capital-gains history linked to it.",
+        error: "This holding has been sold (in full or in part) and can't be deleted: it has capital-gains history linked to it.",
       });
     }
 
@@ -267,7 +267,7 @@ investmentsRouter.post("/investments/import", upload.single("file"), async (req,
             userId,
             symbol: row.symbol,
             platform,
-            // The Zerodha/Groww trade-history CSV export covers equities only —
+            // The Zerodha/Groww trade-history CSV export covers equities only:
             // it has no instrument-type column, so buy rows are always "stock".
             // Mutual fund SIP/lump-sum imports are a separate format, out of
             // scope for this parser.
@@ -282,7 +282,7 @@ investmentsRouter.post("/investments/import", upload.single("file"), async (req,
         } else {
           // recordSale internally calls applySellFifo, which throws (without
           // mutating anything) if unitsSold exceeds total remainingUnits for the
-          // symbol — that's caught here and recorded as a failed row, consistent
+          // symbol; that's caught here and recorded as a failed row, consistent
           // with the CSV import per-row error isolation pattern, rather than
           // letting it silently go negative or abort the batch. recordSale then
           // classifies each FIFO-matched lot as STCG/LTCG and persists a SellEvent
@@ -291,7 +291,7 @@ investmentsRouter.post("/investments/import", upload.single("file"), async (req,
           await recordSale(userId, {
             symbol: row.symbol,
             // The Zerodha/Groww trade-history CSV export covers equities only (see
-            // the buy-row note above) — sell rows are always "stock" too.
+            // the buy-row note above); sell rows are always "stock" too.
             instrumentType: "stock",
             sellDate: new Date(row.date),
             sellPrice: row.price,

@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import { config as loadEnv } from "dotenv";
 import { resolve } from "node:path";
 
-// Same login-bypass technique as golden-path.spec.ts — see that file's comment
+// Same login-bypass technique as golden-path.spec.ts: see that file's comment
 // for why this reads api/.env rather than assuming a debug endpoint exists.
 loadEnv({ path: resolve(__dirname, "../../api/.env") });
 
@@ -97,15 +97,15 @@ test.describe("recurring · merchant logos", () => {
     await page.locator("#rec-category").selectOption({ label: "Logo Test Category" });
     await page.getByRole("button", { name: "Add" }).click();
 
-    // Scoped to `div.py-12` — the exact wrapper class RecurringRow renders
-    // for one row (see recurring/page.tsx) — rather than a bare `div` filter,
+    // Scoped to `div.py-12`, the exact wrapper class RecurringRow renders
+    // for one row (see recurring/page.tsx), rather than a bare `div` filter,
     // which would just as happily match a large ancestor container (e.g. the
     // whole page body) whose FIRST descendant <img>/<svg> has nothing to do
     // with this specific row.
     const netflixRow = page.locator("div.py-12", { hasText: "Netflix" }).first();
     await expect(netflixRow.locator("img")).toBeVisible();
 
-    // A name nothing in the table matches — the plain bucket glyph (svg icon,
+    // A name nothing in the table matches: the plain bucket glyph (svg icon,
     // no <img>) must still render, never a broken image.
     await page.getByLabel("Name").fill("Some Totally Unknown Merchant Co");
     await page.getByLabel("Amount", { exact: false }).fill("199");

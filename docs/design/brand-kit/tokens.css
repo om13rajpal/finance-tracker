@@ -11,7 +11,7 @@ artifact_role: tokens
 exports: [colors, chips, typography, type-scale, spacing, stroke, radius, motion]
 palette: [#FAF5F2, #1A1A1A, #E2D8D0, #7D7169, #6B5F57, #F9ACCE, #F1A007, #23B471, #5483D3, #8A4BD1, #C43C63, #14199C, #A61B2B, #FCE4CA, #F1E8E2]
 fonts: [Bricolage Grotesque 800, Geist 400/500/600, Geist Mono 500]
-summary: Sorted production CSS custom properties — 15 colours (6 of them the chip taxonomy), 12 type levels, 14 spacing rungs, 7 stroke weights, 7 radii, 3 easings, 7 durations. Every ratio in the comments was computed, not estimated.
+summary: Sorted production CSS custom properties: 15 colours (6 of them the chip taxonomy), 12 type levels, 14 spacing rungs, 7 stroke weights, 7 radii, 3 easings, 7 durations. Every ratio in the comments was computed, not estimated.
 */
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -19,7 +19,7 @@ summary: Sorted production CSS custom properties — 15 colours (6 of them the c
    Drop this file in once, above everything else. Nothing in the product
    should contain a hex value, a cubic-bezier, or a bare pixel radius.
    Contrast ratios in the comments are measured (WCAG 2.1 relative
-   luminance) — see docs/design/brand-kit/README.md for the full matrix.
+   luminance); see docs/design/brand-kit/README.md for the full matrix.
    ══════════════════════════════════════════════════════════════════════ */
 
 @font-face { font-family: 'Bricolage Grotesque'; font-display: swap; src: local('Bricolage Grotesque'); }
@@ -31,9 +31,9 @@ summary: Sorted production CSS custom properties — 15 colours (6 of them the c
      explicit anti-pattern for this product. */
   --bg:        #FAF5F2;  /* the canvas. Every screen starts here.            */
   --ink:       #1A1A1A;  /* text, borders, the one fill. 16.08:1 on --bg     */
-  --rule:      #E2D8D0;  /* 1px row dividers. 1.30:1 — decorative only,      */
+  --rule:      #E2D8D0;  /* 1px row dividers. 1.30:1, decorative only,       */
                          /* never a component boundary, never carries state. */
-  --ink-wash:  #F1E8E2;  /* nav row hover/active fill. 1.12:1 on --bg —      */
+  --ink-wash:  #F1E8E2;  /* nav row hover/active fill. 1.12:1 on --bg,       */
                          /* a whisper, not a surface. Ink on it: 14.40:1     */
   --hero-field:#FCE4CA;  /* the login hero panel only. Ink on it: 14.16:1    */
 
@@ -60,13 +60,13 @@ summary: Sorted production CSS custom properties — 15 colours (6 of them the c
   /* ── the four-bucket taxonomy ───────────────────────────────────────
      Colour is for the CLOSED set; language is for the unbounded one.
      These are the four literal values of CategoryNode.bucket. They are
-     fixed in the API type, so a chip can always be assigned honestly —
+     fixed in the API type, so a chip can always be assigned honestly,
      never guessed. Category NAMES are user-defined, unbounded and of
      arbitrary depth, so they carry in text, never in colour.
 
      All 6 pairs satisfy the separation rule (>=45deg hue OR >=25pt L),
      and every pair passes on HUE ALONE. Tightest gap is 65deg.
-     Every bucket is textSafe (>=4.5:1) — the retired six-chip set was
+     Every bucket is textSafe (>=4.5:1); the retired six-chip set was
      not, which is why its icons were load-bearing. Here the icon
      reinforces rather than rescues, but it is still always present.
 
@@ -117,7 +117,7 @@ summary: Sorted production CSS custom properties — 15 colours (6 of them the c
   --type-caption:  13.5px;  /* ui · notice body, helper copy                       */
   --type-body-s:   14.5px;  /* ui · row names, nav labels                          */
   --type-body:       15px;  /* ui · default paragraph                              */
-  --type-input:      16px;  /* ui · form fields. Never below 16 — iOS zooms.       */
+  --type-input:      16px;  /* ui · form fields. Never below 16: iOS zooms.        */
   --type-h3:         22px;  /* disp · panel titles                                 */
   --type-h2:         26px;  /* disp · dashboard date, module headings              */
   --type-h1:         40px;  /* disp · page titles, wordmark at small lockup        */
@@ -182,7 +182,7 @@ summary: Sorted production CSS custom properties — 15 colours (6 of them the c
      no ambient occlusion, nothing that fakes light. The one exception
      is the stamp: a hard 2px ink offset with zero blur and zero spread,
      permitted ONLY on the primary pill CTA. It is not a lift. It is a
-     stamp — the button sits on the paper and can be pressed into it.
+     stamp: the button sits on the paper and can be pressed into it.
      Read --dur-press and the press rule below before you use it. */
   --stamp:          0 2px 0 var(--ink);
   --stamp-pressed:  0 0 0 var(--ink);
@@ -198,7 +198,7 @@ summary: Sorted production CSS custom properties — 15 colours (6 of them the c
   --focus-offset: 3px;
 
   /* ── motion ─────────────────────────────────────────────────────────
-     Three curves. No fourth. No springs, no bounce, no overshoot — the
+     Three curves. No fourth. No springs, no bounce, no overshoot: the
      register is playful-premium, and the playfulness lives in the colour
      taxonomy, not in the timing function. A financial figure that
      overshoots its final value has lied to the user for 80ms. */
@@ -233,7 +233,7 @@ summary: Sorted production CSS custom properties — 15 colours (6 of them the c
        of a shared curve, translate + offset = 2px, so the shadow's lower
        edge stays pinned exactly where it started and the button descends
        into it. Transition transform alone and the shadow snaps to zero on
-       frame 1 — the silhouette jumps 2px shorter, then the button drifts
+       frame 1: the silhouette jumps 2px shorter, then the button drifts
        down to meet nothing. That is the flicker. This is the settled
        answer to the open question, and it ships here.
    ══════════════════════════════════════════════════════════════════════ */
@@ -252,8 +252,8 @@ summary: Sorted production CSS custom properties — 15 colours (6 of them the c
 /* ── reduced motion ───────────────────────────────────────────────────
    Reduced motion means fewer and gentler, not zero. Colour and opacity
    transitions survive because they aid comprehension. Movement does not.
-   The stamp press keeps its shadow collapse — the state change is still
-   legible — and drops the translate. */
+   The stamp press keeps its shadow collapse (the state change is still
+   legible) and drops the translate. */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dur-press: 1ms; --dur-tooltip: 1ms; --dur-dropdown: 1ms;

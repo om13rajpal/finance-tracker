@@ -13,7 +13,7 @@ export interface CategoryNode {
 export async function getCategoryTree(userId: string): Promise<CategoryNode[]> {
   const all = await Category.find({ userId }).lean();
   // Nodes keep every stored field (clients rely on `parentCategoryId`, `icon`, …), so
-  // they're the lean document plus a stringified `_id` and a `children` array —
+  // they're the lean document plus a stringified `_id` and a `children` array,
   // structurally a superset of `CategoryNode`, which is why the pushes below assert to
   // `CategoryNode` rather than the `any` this used to reach for.
   const byId = new Map(

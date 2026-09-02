@@ -74,7 +74,7 @@ function messageWithAttachment(opts: {
   };
 }
 
-describe("Gmail worker — PDF statement attachment handling", () => {
+describe("Gmail worker: PDF statement attachment handling", () => {
   it("never fetches an attachment from an untrusted (unregistered) sender", async () => {
     const userId = "user-pdf-untrusted";
     await GmailConnection.create({ userId, refreshTokenEncrypted: encrypt("t"), status: "connected", historyId: "1" });
@@ -99,7 +99,7 @@ describe("Gmail worker — PDF statement attachment handling", () => {
       userId,
       senderPattern: "estatements@sbi.co.in",
       institution: "Test Bank",
-      parserKey: "hdfc_debit_alert", // unrelated to the statement parser key — email-body parser namespace
+      parserKey: "hdfc_debit_alert", // unrelated to the statement parser key: email-body parser namespace
     });
 
     historyListMock.mockResolvedValue({ data: { history: [{ messagesAdded: [{ message: { id: "trusted-1" } }] }] } });
@@ -197,14 +197,14 @@ describe("Gmail worker — PDF statement attachment handling", () => {
     getMessageMock.mockResolvedValue(
       messageWithAttachment({ id: "unlockfail-1", from: "estatements@sbi.co.in", attachmentId: "att-unlockfail-1" })
     );
-    // Garbage bytes — not a valid PDF at all.
+    // Garbage bytes, not a valid PDF at all.
     getAttachmentMock.mockResolvedValue({ data: { data: Buffer.from("not a real pdf").toString("base64url") } });
 
     const { processGmailNotification } = await import("../../src/jobs/workers/gmailEmailParse.worker.js");
     await expect(processGmailNotification({ userId, historyId: "2" })).resolves.not.toThrow();
 
     expect(await PendingTransaction.countDocuments({ userId })).toBe(0);
-    // The Gmail connection's historyId should still advance — the sync isn't blocked.
+    // The Gmail connection's historyId should still advance: the sync isn't blocked.
     const connection = await GmailConnection.findOne({ userId });
     expect(connection!.historyId).toBe("2");
   });

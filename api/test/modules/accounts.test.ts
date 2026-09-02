@@ -88,7 +88,7 @@ describe("accounts", () => {
     expect(historyRes.body[0].delta).toBe(500);
   });
 
-  // A manual correction is the person looking at their real bank app right now —
+  // A manual correction is the person looking at their real bank app right now:
   // it must always win, unconditionally, over anything automated (no staleness
   // guard the way `reconcileBalance` has), AND must bump `balanceAsOf` so a LATER
   // automated reconciliation describing an EARLIER point in time (an old statement
@@ -205,7 +205,7 @@ describe("accounts", () => {
 
   // The Accounts page's balance-update field is a plain freeform number input with
   // no sign coercion (web/app/accounts/page.tsx) and displays a credit card's stored
-  // currentBalance as-is with a red "Liability" label — nothing in the UI tells a
+  // currentBalance as-is with a red "Liability" label. Nothing in the UI tells a
   // user which sign to type. A user who naturally types a negative number for a
   // credit card balance (matching how the UI then displays it back) must still get
   // a net worth that's REDUCED by the debt, not inflated by it.

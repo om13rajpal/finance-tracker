@@ -10,7 +10,7 @@ import { Providers } from "./providers";
  * The typefaces, actually loaded.
  *
  * tokens.css declares `@font-face { src: local('Bricolage Grotesque') }` and
- * nothing else — which resolves only if the font happens to be installed on the
+ * nothing else, which resolves only if the font happens to be installed on the
  * machine, and silently falls back to a system grotesk everywhere else. Geist
  * and Geist Mono had no @font-face at all. So until now the product had been
  * rendering in fallbacks, not in its own type.
@@ -18,7 +18,7 @@ import { Providers } from "./providers";
  * These are self-hosted at build time: no runtime request, no layout shift, and
  * `display: swap` so text is never invisible while loading.
  *
- * Geist comes from Vercel's own `geist` package rather than next/font/google —
+ * Geist comes from Vercel's own `geist` package rather than next/font/google.
  * Next 14.2's bundled Google Fonts manifest predates Geist's arrival there, so
  * `next/font/google` rejects it as an unknown font.
  */
@@ -30,9 +30,9 @@ const display = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
-  title: "Sorted — every rupee in one of four buckets",
+  title: "Sorted: every rupee in one of four buckets",
   description:
-    "A private finance tracker for one person. Net worth, investments with FIFO cost basis, budgets, goals and tax — and it reads your bank emails so you don't have to type anything in.",
+    "A private finance tracker for one person. Net worth, investments with FIFO cost basis, budgets, goals and tax. It reads your bank emails so you don't have to type anything in.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

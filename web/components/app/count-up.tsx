@@ -14,7 +14,7 @@ import { formatInr } from "@/lib/format";
  *
  * THIS IS THE SOLE CARVE-OUT, and it is narrow on purpose:
  *
- *   · Net Worth ONLY. Guilt-Free Money never animates — that is the number you
+ *   · Net Worth ONLY. Guilt-Free Money never animates: that is the number you
  *     act on. Net Worth is the number you admire.
  *   · 600ms hard cap.
  *   · ONCE PER SESSION. Returning to the dashboard from another route does not
@@ -24,7 +24,7 @@ import { formatInr } from "@/lib/format";
  *     slow paint, or under reduced motion the correct number is simply there.
  *
  * WHY rAF AND NOT GSAP. GSAP is already a dependency, but only on the login
- * route — importing it here would put ~70KB of animation engine into the
+ * route: importing it here would put ~70KB of animation engine into the
  * bundle of the most-opened screen in the product to move one number once. The
  * curve below is the system's own `--ease-out`, cubic-bezier(.23, 1, .32, 1),
  * sampled directly.
@@ -63,7 +63,7 @@ const SESSION_KEY = "sorted:networth-counted";
  * A LAYOUT effect, so the reset to zero happens BEFORE paint.
  *
  * With a plain `useEffect` the true figure painted for one frame, jumped to
- * ₹0, and only then counted up — a visible flash of the right answer followed
+ * ₹0, and only then counted up: a visible flash of the right answer followed
  * by the wrong one, which is the exact opposite of what the carve-out is for.
  * `useLayoutEffect` warns during server rendering, hence the swap; this
  * component only ever mounts on the client, after a query has resolved.
@@ -132,7 +132,7 @@ export function CountUpInr({
          * Mode: in development every effect is invoked, cleaned up and invoked
          * again, so run one claimed the flag and was cancelled, and run two
          * read "already played" and bailed. The figure snapped straight to its
-         * final value and the animation silently never existed — in the one
+         * final value and the animation silently never existed, in the one
          * environment where anyone would notice it missing.
          *
          * Claiming it here means an interrupted run (a navigation mid-count)
@@ -142,7 +142,7 @@ export function CountUpInr({
         try {
           window.sessionStorage.setItem(SESSION_KEY, "1");
         } catch {
-          /* private mode — see the note above */
+          /* private mode: see the note above */
         }
       }
     };

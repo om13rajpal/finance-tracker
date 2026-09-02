@@ -19,7 +19,7 @@ const mockedFetchStockPrice = vi.mocked(fetchStockPrice);
 const mockedFetchMutualFundNav = vi.mocked(fetchMutualFundNav);
 
 // Real Redis is used here (same convention as test/jobs/queue.test.ts) rather than a
-// mock — but unlike Mongo (auto-cleared per test by test/setup.ts's afterEach), Redis
+// mock, but unlike Mongo (auto-cleared per test by test/setup.ts's afterEach), Redis
 // keys survive across test runs since they're not part of the Mongo cleanup. Track and
 // delete every key this file touches so a leftover cached price from a previous run
 // can never make a test pass (or fail) for the wrong reason.
@@ -85,7 +85,7 @@ describe("market data", () => {
         "Yahoo Finance request failed: 503"
       );
 
-      // Old data must survive untouched — no partial/corrupted write.
+      // Old data must survive untouched: no partial/corrupted write.
       const snapshots = await PriceSnapshot.find({ symbol: "EXISTING" });
       expect(snapshots).toHaveLength(1);
       expect(snapshots[0].price).toBe(999);
@@ -148,7 +148,7 @@ describe("market data", () => {
       expect(result?.stale).toBe(true);
     });
 
-    it("uses the MUTUAL FUND threshold (2 days), not the stock threshold, for a mutual_fund symbol — a 3h-old snapshot is NOT stale for a fund", async () => {
+    it("uses the MUTUAL FUND threshold (2 days), not the stock threshold, for a mutual_fund symbol: a 3h-old snapshot is NOT stale for a fund", async () => {
       await PriceSnapshot.create({
         symbol: "MFTHRESHOLD",
         instrumentType: "mutual_fund",

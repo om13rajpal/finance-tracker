@@ -10,7 +10,7 @@ import {
  * Builds a fake `PDFExtractPage` from a plain array of "physical lines", each
  * itself an array of word/column strings. Words are spread out on the x-axis
  * in order and lines are spread out on the y-axis, so the real line-builder
- * (y-clustering + x-sort) reconstructs exactly the line order given here —
+ * (y-clustering + x-sort) reconstructs exactly the line order given here:
  * this is what lets these tests stay pure-function, no real PDF involved.
  */
 function mkPage(lines: string[][]): PDFExtractPage {
@@ -55,7 +55,7 @@ function onePage(lines: string[][]): PDFExtractPage[] {
   return mkPages([lines]);
 }
 
-describe("parseStatementRows — generic fallback (no parserKey / unknown key)", () => {
+describe("parseStatementRows: generic fallback (no parserKey / unknown key)", () => {
   it("parses a simple single-line date + trailing amount row", () => {
     const pages = onePage([["15/08/2026", "SOME", "MERCHANT", "199.00"]]);
     const rows = parseStatementRows(pages);
@@ -86,7 +86,7 @@ describe("parseStatementRows — generic fallback (no parserKey / unknown key)",
   });
 });
 
-describe("parseStatementRows — sbi_statement", () => {
+describe("parseStatementRows: sbi_statement", () => {
   it("parses a standard debit row: narration label above, multi-line description below, debit column", () => {
     const pages = onePage([
       ["WDL TFR"],
@@ -199,7 +199,7 @@ describe("parseStatementRows — sbi_statement", () => {
 
   // Reproduces a real bug found against an actual 118-page SBI statement: a
   // CASH DEPOSIT row's trailing branch-address continuation ("MAIN BRANCH ,
-  // HISAR") sat immediately before an INTEREST CREDIT row — which, unlike a
+  // HISAR") sat immediately before an INTEREST CREDIT row, which, unlike a
   // WDL TFR / DEP TFR row, carries its description inline and has no
   // separate label line of its own. The single-lookahead rule mistook that
   // trailing continuation for INTEREST CREDIT's "label", losing it from the
@@ -210,7 +210,7 @@ describe("parseStatementRows — sbi_statement", () => {
       ["CASH DEPOSIT SELF AT 00652"],
       ["16/03/2022", "16/03/2022", "-", "-", "40,000.00", "43,102.00"],
       ["MAIN", "BRANCH", ",", "HISAR"],
-      // No label line here — INTEREST CREDIT's description is already
+      // No label line here: INTEREST CREDIT's description is already
       // inline on its own row-start line, exactly like the real statement.
       ["25/03/2022", "25/03/2022", "INTEREST", "CREDIT", "-", "-", "50.00", "43,152.00"],
     ]);
@@ -237,10 +237,10 @@ describe("parseStatementRows — sbi_statement", () => {
   });
 
   describe("findStatementClosingBalance", () => {
-    it("reads the account's current \"Clear Balance\" off its own layout quirk — value merged onto a DIFFERENT line than its label", () => {
+    it("reads the account's current \"Clear Balance\" off its own layout quirk: value merged onto a DIFFERENT line than its label", () => {
       // Confirmed against a real SBI statement: "Clear Balance" prints as its
       // own standalone line, while its value lands on a different line that
-      // starts with a bare ":" — merged with an unrelated field from the
+      // starts with a bare ":", merged with an unrelated field from the
       // page's other column ("Branch Phone", here) that happens to sit at a
       // similar height in the two-column Account Summary layout.
       const pages = onePage([
@@ -262,7 +262,7 @@ describe("parseStatementRows — sbi_statement", () => {
       expect(findStatementClosingBalance(pages, "sbi_statement")).toBeNull();
     });
 
-    it("is NOT the same figure as the trailing Statement Summary's Closing Balance — the account summary's Clear Balance wins", () => {
+    it("is NOT the same figure as the trailing Statement Summary's Closing Balance: the account summary's Clear Balance wins", () => {
       // Confirmed against a real 118-page SBI export: its printed
       // transaction rows stopped over a year before the statement's own
       // generation date, so the trailing summary's "Closing Balance" (which
@@ -282,7 +282,7 @@ describe("parseStatementRows — sbi_statement", () => {
   });
 });
 
-describe("parseStatementRows — hdfc_statement", () => {
+describe("parseStatementRows: hdfc_statement", () => {
   const HEADER_ROW = [
     "Date",
     "Narration",
@@ -385,7 +385,7 @@ describe("parseStatementRows — hdfc_statement", () => {
 
   // Some real HDFC statement exports (confirmed against an actual HDFC PPF
   // e-statement, not committed anywhere) omit the empty side of
-  // Withdrawal/Deposit from the row entirely instead of zero-padding it —
+  // Withdrawal/Deposit from the row entirely instead of zero-padding it:
   // only ONE trailing amount token is printed, not the two every fixture
   // above uses. These tests cover that shape directly.
   const SUMMARY_LINES = (openingBalance: string, crCount: number, credits: string, closingBal: string) => [
@@ -415,7 +415,7 @@ describe("parseStatementRows — hdfc_statement", () => {
       HEADER_ROW,
       // Row 1: ordinary two-amount-column row, establishes balance = 40,000.
       ["01/08/2026", "NB", "Subscription", "-", "01/08/2026", "0.00", "40,000.00", "40,000.00"],
-      // Row 2: single-amount-column row where the balance goes DOWN — must
+      // Row 2: single-amount-column row where the balance goes DOWN: must
       // resolve as a withdrawal (negative), not a deposit.
       ["05/08/2026", "Some", "Debit", "-", "05/08/2026", "15,000.00", "25,000.00"],
     ]);
@@ -455,7 +455,7 @@ describe("parseStatementRows — hdfc_statement", () => {
   // later date range than the PPF statement above, same underlying
   // account): its transaction AND value-date columns print `DD/MM/YY`
   // (2-digit year, e.g. `31/05/26`) instead of `DD/MM/YYYY`. Before this was
-  // fixed, `ANCHOR_RE` never matched a single row of that real file — it
+  // fixed, `ANCHOR_RE` never matched a single row of that real file: it
   // silently parsed ZERO of its ~117 real transactions. These tests cover
   // that date shape directly; 4-digit-year rows are covered by every test
   // above, unchanged.
@@ -477,8 +477,8 @@ describe("parseStatementRows — hdfc_statement", () => {
       ]);
       const rows = parseStatementRows(pages, "hdfc_statement");
       expect(rows).toHaveLength(1);
-      // No reference balance available (no prior row, no summary block), so
-      // — same as the 4-digit-year case above — this is correctly reported
+      // No reference balance available (no prior row, no summary block), so,
+      // same as the 4-digit-year case above, this is correctly reported
       // as unresolvable rather than a silent wrong guess.
       expect("error" in rows[0]).toBe(true);
     });
@@ -501,7 +501,7 @@ describe("parseStatementRows — hdfc_statement", () => {
       expect(rows.map((r) => ("error" in r ? r.error : r.amount))).toEqual([-649, 2500, -180]);
       // The real bug being regression-tested: this must be the statement's
       // actual CLOSING balance (251901.40), never its opening balance
-      // (250230.40) — those two are deliberately different in this fixture
+      // (250230.40): those two are deliberately different in this fixture
       // so a test reading the wrong one would fail loudly.
       expect(findStatementClosingBalance(pages, "hdfc_statement")).toBe(251901.4);
     });
@@ -540,10 +540,10 @@ describe("parseStatementRows — hdfc_statement", () => {
     // transaction rows are parsed off a document that DOES have real
     // transactions (as this one's own Dr/Cr counts and Debits/Credits say),
     // the fallback must read the summary block's own explicitly-labeled
-    // "Closing Bal" — never its "Opening Balance", which is only the same
+    // "Closing Bal", never its "Opening Balance", which is only the same
     // number by coincidence for a GENUINELY empty statement. Opening and
     // closing are deliberately different here so a fallback that grabbed the
-    // wrong column (as the buggy code did — see `ANCHOR_RE`'s doc comment)
+    // wrong column (as the buggy code did, see `ANCHOR_RE`'s doc comment)
     // would fail this test loudly instead of silently passing.
     it("reads the summary's own Closing Bal specifically (not Opening Balance) when zero rows parse from an otherwise non-empty statement", () => {
       const pages = onePage([HEADER_ROW, ...SUMMARY_LINES("2,50,230.40", 16, "9,11,293.91", "3,55,901.34")]);

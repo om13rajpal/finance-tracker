@@ -39,8 +39,8 @@ import { useToast } from "@/components/ui/Toast";
  *
  * Two things worth their own screen, and one download.
  *
- * THE GMAIL CONNECTION IS THE POINT. It is what produces the tether — the
- * dotted mark on every row the parser filed by itself — so this panel is where
+ * THE GMAIL CONNECTION IS THE POINT. It is what produces the tether: the
+ * dotted mark on every row the parser filed by itself. So this panel is where
  * that mark is explained, drawn at the size it appears elsewhere, next to the
  * switch that turns it on.
  *
@@ -131,7 +131,7 @@ function RulesPanel() {
         meta={rows.length > 0 ? `${rows.length} · first match wins` : undefined}
       />
       <Helper className="-mt-8 mb-18 max-w-[60ch]">
-        Applied to anything that arrives without a category — a manual entry left on auto, a
+        Applied to anything that arrives without a category: a manual entry left on auto, a
         statement row, an email the parser read. Rules run in priority order and the first one that
         matches wins.
       </Helper>
@@ -238,7 +238,7 @@ function RulesPanel() {
         <Field
           id="rule-match"
           label="Text"
-          helper="Case does not matter — Swiggy and SWIGGY match the same rows."
+          helper="Case does not matter: Swiggy and SWIGGY match the same rows."
         >
           <Input
             id="rule-match"
@@ -256,7 +256,7 @@ function RulesPanel() {
             <option value="">Select a category</option>
             {flat.map(({ node, depth }) => (
               <option key={node._id} value={node._id}>
-                {"— ".repeat(depth)}
+                {"– ".repeat(depth)}
                 {node.name}
               </option>
             ))}
@@ -282,7 +282,7 @@ function RulesPanel() {
  *
  * IT LIVES IN ITS OWN COMPONENT BEHIND <Suspense> ON PURPOSE. `useSearchParams`
  * opts the whole route out of static prerendering, and Next 14 fails the BUILD
- * outright ("should be wrapped in a suspense boundary") rather than warning —
+ * outright ("should be wrapped in a suspense boundary") rather than warning,
  * so calling it at the top of the page took the entire /settings route down.
  * Scoped here, only this one line de-opts.
  */
@@ -404,9 +404,9 @@ function GmailPanel() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * A flat, unordered list of passwords Sorted tries against any statement PDF
- * — uploaded manually on Transactions, or arriving automatically as a Gmail
- * attachment from an already-trusted sender. There is deliberately no
+ * A flat, unordered list of passwords Sorted tries against any statement PDF,
+ * whether uploaded manually on Transactions or arriving automatically as a
+ * Gmail attachment from an already-trusted sender. There is deliberately no
  * bank↔password mapping to configure: every stored password is tried, in no
  * particular order, until one unlocks the file.
  */

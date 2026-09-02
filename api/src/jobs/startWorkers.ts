@@ -29,7 +29,7 @@ import { startBulkConfirmPendingWorker } from "./workers/bulkConfirmPending.work
  * `startBackgroundWorkers` actually need. BullMQ's `Worker<T>` is invariant
  * in `T` (its methods both accept and return `T`), so the 8
  * differently-typed workers started below have no common non-`any`
- * supertype — but every one of them satisfies this narrower, `T`-free
+ * supertype. But every one of them satisfies this narrower, `T`-free
  * shape, which is all a caller (this app's shutdown path, or a test closing
  * everything it started) needs: the ability to close it and know it's
  * running.
@@ -44,11 +44,11 @@ export interface ManagedWorker {
  * schedule, both wrapped in a single try/catch. A synchronous throw from
  * `start()` (constructing the BullMQ `Worker`) or a rejection from
  * `schedule()` (registering the repeatable job) is logged and swallowed
- * here — this runs during app startup, before Express begins listening, so
+ * here: this runs during app startup, before Express begins listening, so
  * one bad worker must never prevent the HTTP server (or the other workers)
  * from coming up. Job-processing failures once a worker is running have
  * their own retry/backoff (BullMQ's `defaultJobOptions` in `queue.ts`) and
- * are not this function's concern — this is just a simple startup guard,
+ * are not this function's concern. This is just a simple startup guard,
  * not a retry system.
  */
 async function startOne<T>(
@@ -81,7 +81,7 @@ async function startOne<T>(
  * single place in the running app that actually calls them.
  *
  * Returns the workers that started successfully (omitting any that failed),
- * so a caller — this app's `main()`, or a test — can close them.
+ * so a caller (this app's `main()`, or a test) can close them.
  */
 export async function startBackgroundWorkers(): Promise<ManagedWorker[]> {
   const workers = await Promise.all([

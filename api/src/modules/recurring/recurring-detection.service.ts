@@ -3,7 +3,7 @@ import { RecurringTransaction } from "../../models/RecurringTransaction.js";
 import { advanceNextDueDate } from "./recurring.service.js";
 
 export type RecurringSuggestion = {
-  /** Not a real id — nothing persists a suggestion. A stable string the
+  /** Not a real id: nothing persists a suggestion. A stable string the
    * frontend can use as a React `key` and echo back verbatim in the
    * "create from this suggestion" request. */
   key: string;
@@ -30,7 +30,7 @@ const MIN_OCCURRENCES = 3;
  * intervals is a coincidence, not a subscription).
  *
  * "Consistent" means every gap sits within a tolerance band of the median
- * gap — `max(3 days, 30% of the median)`, loose enough to absorb a bill
+ * gap, `max(3 days, 30% of the median)`, loose enough to absorb a bill
  * landing on a weekend, a subscription's billing date drifting by a day or
  * two, or a statement being read on slightly different days each month,
  * without being so loose that genuinely unrelated repeat purchases (e.g.
@@ -38,7 +38,7 @@ const MIN_OCCURRENCES = 3;
  * random one two months later) get called recurring.
  *
  * A median outside the three fixed bands (weekly/monthly/yearly) but still
- * internally consistent is reported as `"custom"` — this app's
+ * internally consistent is reported as `"custom"`. This app's
  * `RecurringTransaction.frequency` already has that enum value for exactly
  * this case (e.g. a genuinely bimonthly or 45-day biller), and `"custom"`
  * items advance by the calendar-month logic in `advanceNextDueDate` when
@@ -65,7 +65,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /**
  * Scans this user's CONFIRMED transaction history for (account, merchant)
  * pairs that repeat at a regular interval and aren't already tracked as a
- * `RecurringTransaction`, and proposes each as a suggestion — this app has
+ * `RecurringTransaction`, and proposes each as a suggestion. This app has
  * no automatic detection today; every `RecurringTransaction` is currently
  * hand-entered (see `recurring.routes.ts`), even though real statement data
  * routinely contains obvious, unnoticed patterns (a subscription billed
@@ -73,7 +73,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * quarterly bank interest).
  *
  * Grouped by `merchant` (expected to already be the cleaned label from
- * `cleanMerchantLabel` for statement/CSV-derived transactions — matching
+ * `cleanMerchantLabel` for statement/CSV-derived transactions, matching
  * against raw, ID-laden bank narration would never find a stable group at
  * all) + `accountId`, since the same subscription paid from two different
  * accounts is two separate, separately-trackable commitments, not one.
@@ -81,7 +81,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * Deliberately suggests, never auto-creates: turning a detected pattern
  * into a real `RecurringTransaction` (optionally with `autoCreate: true`,
  * which would start creating real future transactions on its own) is a
- * decision only the person should make — see `recurring.routes.ts`'s
+ * decision only the person should make. See `recurring.routes.ts`'s
  * `POST /` for the endpoint the frontend calls once they accept one.
  */
 export async function detectRecurringSuggestions(userId: string): Promise<RecurringSuggestion[]> {
@@ -126,7 +126,7 @@ export async function detectRecurringSuggestions(userId: string): Promise<Recurr
 
     // A merchant that's sometimes a debit and sometimes a credit on the same
     // account (a purchase AND its refund, say) isn't one coherent recurring
-    // commitment — skip rather than guess which sign is "the real pattern".
+    // commitment, so skip rather than guess which sign is "the real pattern".
     const allExpense = occurrences.every((o) => o.amount < 0);
     const allIncome = occurrences.every((o) => o.amount > 0);
     if (!allExpense && !allIncome) continue;
@@ -161,7 +161,7 @@ export async function detectRecurringSuggestions(userId: string): Promise<Recurr
     });
   }
 
-  // Most-established pattern (most occurrences) first — the strongest
+  // Most-established pattern (most occurrences) first: the strongest
   // signal belongs at the top of whatever list the frontend renders.
   suggestions.sort((a, b) => b.occurrenceCount - a.occurrenceCount);
   return suggestions;

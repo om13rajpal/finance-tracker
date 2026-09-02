@@ -36,10 +36,10 @@ describe("processBulkConfirm", () => {
   });
 
   // Regression-shaped: mirrors `statementProcess.worker.ts`'s resume-not-restart
-  // guarantee for the same reason — a BullMQ retry after a mid-batch failure
+  // guarantee for the same reason: a BullMQ retry after a mid-batch failure
   // (a transient DB error, a crash) re-invokes this function with the SAME
   // full `ids` array. Without resuming from `results.length`, a retry would
-  // re-confirm items a prior attempt already finished — impossible here since
+  // re-confirm items a prior attempt already finished. That's impossible here since
   // a confirmed item's `PendingTransaction` is already gone (so it'd just log
   // "not_found" instead), but it WOULD append duplicate result entries and
   // silently corrupt the batch's own accounting of what happened.
@@ -53,7 +53,7 @@ describe("processBulkConfirm", () => {
       merchant: "A",
       source: "email_parsed",
     });
-    // Confirmed by a simulated PRIOR partial attempt — its PendingTransaction
+    // Confirmed by a simulated PRIOR partial attempt: its PendingTransaction
     // is already gone and a matching result already recorded on the batch.
     const alreadyConfirmedTransaction = await Transaction.create({
       userId,
@@ -89,14 +89,14 @@ describe("processBulkConfirm", () => {
     });
 
     const finished = await BulkConfirmBatch.findById(batch._id);
-    // Exactly 2 results total, not 3 — "prior-item-id" was NOT reprocessed.
+    // Exactly 2 results total, not 3: "prior-item-id" was NOT reprocessed.
     expect(finished!.results).toHaveLength(2);
     expect(finished!.results[0].id).toBe("prior-item-id");
     expect(finished!.results[1].id).toBe(stillPending._id.toString());
     expect(finished!.results[1].status).toBe("success");
     expect(finished!.status).toBe("completed");
 
-    // `a` was never part of this batch's ids at all — untouched.
+    // `a` was never part of this batch's ids at all: untouched.
     expect(await PendingTransaction.findById(a._id)).not.toBeNull();
     expect(await PendingTransaction.findById(stillPending._id)).toBeNull();
   });

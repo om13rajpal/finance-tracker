@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
  * twelve-row sort, a flickering board, a custom cursor and magnetic hover.
  *
  * These tests exist so that budget can never quietly become a dependency. Every
- * one of them asserts the same thing from a different angle — the page is a
+ * one of them asserts the same thing from a different angle: the page is a
  * finished, readable, navigable document before a single tween runs.
  */
 
@@ -31,7 +31,7 @@ test.describe("landing", () => {
       await expect(page.getByText(copy, { exact: false }).first()).toBeVisible();
     }
 
-    // Real amounts, real merchants, en-IN grouping — present in the HTML, not
+    // Real amounts, real merchants, en-IN grouping: present in the HTML, not
     // fetched and not animated into existence.
     await expect(page.getByText("Parag Parikh Flexi Cap").first()).toBeVisible();
     await expect(page.getByText("₹18,240").first()).toBeVisible();
@@ -41,7 +41,7 @@ test.describe("landing", () => {
     // the sort. Promise, then proof.
     //
     // What the original version of this assertion was really guarding was not
-    // the count — it was CO-VISIBILITY. The rail's guilt-free room used to
+    // the count: it was CO-VISIBILITY. The rail's guilt-free room used to
     // print it a few hundred pixels above the payoff, so on a phone both sat in
     // one viewport and, the payoff being mid-scramble at that moment, the two
     // disagreed by a rupee. That is what read as a bug. So the rule is stated
@@ -62,7 +62,7 @@ test.describe("landing", () => {
     const body = await page.locator("body").innerText();
 
     // The rooms and the sort lanes label themselves with `BucketMeta.name`.
-    // `BucketMeta.key` is the API's enum value and renders as one — `GUILT_FREE`,
+    // `BucketMeta.key` is the API's enum value and renders as one: `GUILT_FREE`,
     // underscore and all. Two of the four survive the mistake as single words,
     // so assert on the two that do not.
     expect(body).toContain("FIXED COSTS");
@@ -80,7 +80,7 @@ test.describe("landing", () => {
     //
     // SCOPED TO THE EYEBROWS, not the whole body. The first version matched
     // /THE DOOR/i anywhere on the page and started failing the moment a section
-    // was legitimately headlined "It splits at the door" — the test was
+    // was legitimately headlined "It splits at the door": the test was
     // policing an English phrase when what it cares about is a LABEL SHAPE.
     expect(body).toContain("§");
     const eyebrows = await page.evaluate(() =>
@@ -99,7 +99,7 @@ test.describe("landing", () => {
     const body = await page.locator("body").innerText();
 
     // The head carried "Sorted · personal finance, India" and the foot carried
-    // "Sorted · private personal finance, India" — near-identical strips of
+    // "Sorted · private personal finance, India": near-identical strips of
     // mono micro-type at opposite ends, which is what made the two read as
     // duplicates of each other. The giant SORTED. is the wordmark; a caption
     // for it is noise at either end.
@@ -144,7 +144,7 @@ test.describe("landing", () => {
     const page = await ctx.newPage();
     await page.goto("/");
 
-    // Four ribbons, four vessels, four levels — all in the markup at their
+    // Four ribbons, four vessels, four levels: all in the markup at their
     // final values, so with no JS the diagram is simply already poured.
     await expect(page.locator(".l-rib")).toHaveCount(4);
     await expect(page.locator(".l-lvl")).toHaveCount(4);
@@ -154,7 +154,7 @@ test.describe("landing", () => {
     }
 
     // DRAWN TO SCALE is the section's whole claim, and a ribbon is geometry
-    // rather than a box — so assert it on the path data. Each ribbon starts at
+    // rather than a box, so assert it on the path data. Each ribbon starts at
     // its share's x-offset along the incoming bar; fixed costs takes 44.56% of
     // 1000 units and investments starts exactly there.
     const starts = await page.evaluate(() =>
@@ -209,7 +209,7 @@ test.describe("landing", () => {
         ".l-cap",
         // The capability titles are revealed out of their own clip rather than
         // faded, so a broken reveal would leave them at full opacity but
-        // translated out of the mask. Opacity alone cannot catch that — the
+        // translated out of the mask. Opacity alone cannot catch that; the
         // visibility check below is what guards it.
         ".cap-title",
         ".l-close-word",
@@ -239,7 +239,7 @@ test.describe("landing", () => {
   });
 
   test("the hero board renders in full without JavaScript", async ({ browser }) => {
-    // The board is the hero's ground and it is REAL DATA — every glyph is a
+    // The board is the hero's ground and it is REAL DATA: every glyph is a
     // character of a bank alert. It ships in the markup, so with no JS the grid
     // renders complete and simply holds still.
     const ctx = await browser.newContext({ javaScriptEnabled: false });
@@ -266,7 +266,7 @@ test.describe("landing", () => {
   });
 
   test("the board does flicker when motion is allowed", async ({ page }) => {
-    // The positive control for the test above — otherwise a board that never
+    // The positive control for the test above: otherwise a board that never
     // animated at all would pass it silently.
     await page.goto("/", { waitUntil: "networkidle" });
     const read = () =>
@@ -280,7 +280,7 @@ test.describe("landing", () => {
 
   test("a reload starts at the top, not wherever you left off", async ({ page }) => {
     // Browsers restore the previous scroll offset on reload. Here that dropped
-    // the visitor into the middle of the pinned sort section — and worse, the
+    // the visitor into the middle of the pinned sort section, and worse, the
     // restore lands BEFORE ScrollTrigger builds its pins, so every pin then
     // measures against an already-scrolled document.
     await page.goto("/", { waitUntil: "networkidle" });

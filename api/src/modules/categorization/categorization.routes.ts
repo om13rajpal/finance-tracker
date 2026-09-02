@@ -20,7 +20,7 @@ categorizationRouter.get("/", async (req, res, next) => {
 });
 
 // Mounted above the (parameterless-collision-free but still worth keeping
-// convention with) rest of this router's static routes — see
+// convention with) rest of this router's static routes: see
 // `getCategorizationSuggestions`'s own doc comment for what this surfaces
 // and why it never touches data on its own.
 categorizationRouter.get("/suggestions", async (req, res, next) => {
@@ -39,7 +39,7 @@ const createSchema = z.object({
   categoryId: z.string().min(1),
   priority: z.number().optional(),
   // Optional, and ONLY ever populated by the frontend's "accept this
-  // suggestion" action (see `getCategorizationSuggestions`) — a deliberate,
+  // suggestion" action (see `getCategorizationSuggestions`): a deliberate,
   // person-initiated, narrowly-scoped exception to this app's general "never
   // backfill existing data when a rule is created" rule: it applies the new
   // rule's `categoryId` ONLY to these specific already-known ids (exactly the

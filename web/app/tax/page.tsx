@@ -59,8 +59,8 @@ import { useToast } from "@/components/ui/Toast";
  * Sorted · Tax
  *
  * The densest screen in the product, and the only one whose top-line number is
- * a COMPARISON rather than a figure. Everything else here — gains, deductions,
- * income — exists to move that comparison, so it is stated first and the
+ * a COMPARISON rather than a figure. Everything else here (gains, deductions,
+ * income) exists to move that comparison, so it is stated first and the
  * evidence follows.
  *
  * THE RECOMMENDED REGIME IS NOT GREEN. It is marked with a tick, the word
@@ -69,7 +69,7 @@ import { useToast } from "@/components/ui/Toast";
  * only colour rule the product has.
  *
  * THE 80C BAR IS A REFERENCE, NOT THE TRUTH. Its denominator is the statutory
- * ₹1,50,000 and its numerator is EVERY section on file, not only 80C — which
+ * ₹1,50,000 and its numerator is EVERY section on file, not only 80C, which
  * is exactly what `GET /tax/estimate` does when it pools sections against the
  * same limit. It is drawn as a reference so the two never quietly disagree,
  * and the label says so.
@@ -472,7 +472,7 @@ function Deductions({ fy }: { fy: string }) {
             </Amount>
           </div>
           {/* The ink wall means the same thing here as it does on a budget
-              row — the fill is clamped and cannot show how far past the line
+              row: the fill is clamped and cannot show how far past the line
               this went. It is NOT a warning: being past the 80C reference is a
               good place to be, so the note beside it is --dim, not --alert. */}
           <Bar
@@ -745,7 +745,7 @@ function IncomeSources({ fy }: { fy: string }) {
               breakdown[key] = value;
             }
             // isMetro only changes the HRA exemption, which needs rent to be
-            // computed at all — sending it alone would be noise.
+            // computed at all: sending it alone would be noise.
             if (breakdown.rentPaidAnnual !== undefined) breakdown.isMetro = form.isMetro;
             if (Object.keys(breakdown).length > 0) payload.breakdown = breakdown;
           }
@@ -866,7 +866,7 @@ function emptyForm(fy: string): SlabConfigForm {
 
 // Slab and capital-gains rates are stored server-side as fractions (0.2 = 20%,
 // matching the seed script and the rest of this codebase) but entered here as
-// plain percentages — nobody thinks in fractions when reading a Budget
+// plain percentages: nobody thinks in fractions when reading a Budget
 // notification. Converted at the form/API boundary in both directions, never
 // stored as a percentage anywhere.
 function bucketToForm(bucket: CapitalGainsBucket): CapitalGainsBucketForm {
@@ -901,7 +901,7 @@ function bucketToPayload(bucket: CapitalGainsBucketForm) {
   };
 }
 
-/** `null` (not a thrown error) when any required field doesn't parse — the
+/** `null` (not a thrown error) when any required field doesn't parse: the
  * caller shows one toast naming the problem rather than this function trying
  * to enumerate every possible mistake itself. */
 function buildPayload(form: SlabConfigForm): { payload: Record<string, unknown>; error?: string } {
@@ -962,7 +962,7 @@ function SlabConfigPanel({ defaultFy }: { defaultFy: string }) {
     onSuccess: (saved) => {
       queryClient.invalidateQueries({ queryKey: ["tax-slab-configs"] });
       // This config might be exactly what the comparison at the top of this
-      // page was missing — refetch it rather than leave the "no slabs on
+      // page was missing. Refetch it rather than leave the "no slabs on
       // file" notice sitting there stale.
       queryClient.invalidateQueries({ queryKey: ["estimate", saved.financialYear] });
       setForm(emptyForm(defaultFy));
@@ -992,7 +992,7 @@ function SlabConfigPanel({ defaultFy }: { defaultFy: string }) {
     <Panel id="tax-slab-config">
       <PanelHeader title="§ Tax slab configuration" meta={rows.length > 0 ? `${rows.length}` : undefined} />
       <Helper className="-mt-8 mb-18 max-w-[56ch]">
-        Every figure the comparison and estimates on this screen are computed from — income slabs,
+        Every figure the comparison and estimates on this screen are computed from: income slabs,
         rebate limits, capital-gains rules. These change with the Union Budget, so verify against
         the actual notification for the year before saving; nothing here is guessed.
       </Helper>
@@ -1008,7 +1008,7 @@ function SlabConfigPanel({ defaultFy }: { defaultFy: string }) {
       ) : rows.length === 0 ? (
         <EmptyState
           title="No configurations on file."
-          body="Add one below for each regime you want the comparison to cover — both old and new are needed."
+          body="Add one below for each regime you want the comparison to cover: both old and new are needed."
         />
       ) : (
         <div>
@@ -1054,7 +1054,7 @@ function SlabConfigPanel({ defaultFy }: { defaultFy: string }) {
         {editingId ? (
           <Helper className="-mt-8">
             Saving under a different financial year adds a NEW configuration rather than
-            overwriting this one — the quickest way to carry a year&rsquo;s figures forward.
+            overwriting this one: the quickest way to carry a year&rsquo;s figures forward.
           </Helper>
         ) : null}
 
@@ -1098,14 +1098,14 @@ function SlabConfigPanel({ defaultFy }: { defaultFy: string }) {
         </FieldGrid>
 
         <FieldGrid>
-          <Field id="slab-87a-limit" label="87A rebate — income up to">
+          <Field id="slab-87a-limit" label="87A rebate: income up to">
             <MoneyInput
               id="slab-87a-limit"
               value={form.section87ARebateLimit}
               onChange={(e) => setForm({ ...form, section87ARebateLimit: e.target.value })}
             />
           </Field>
-          <Field id="slab-87a-max" label="87A rebate — max tax">
+          <Field id="slab-87a-max" label="87A rebate: max tax">
             <MoneyInput
               id="slab-87a-max"
               value={form.section87ARebateMaxTax}
@@ -1126,7 +1126,7 @@ function SlabConfigPanel({ defaultFy }: { defaultFy: string }) {
             </button>
           </div>
           <Helper className="mt-4 mb-10">
-            Ordered lowest first. Leave &ldquo;Up to&rdquo; blank on the top slab — no upper bound.
+            Ordered lowest first. Leave &ldquo;Up to&rdquo; blank on the top slab: no upper bound.
           </Helper>
           <div className="flex flex-col gap-10">
             {form.slabs.map((slab, i) => (
@@ -1151,7 +1151,7 @@ function SlabConfigPanel({ defaultFy }: { defaultFy: string }) {
 
         {(["equity", "debt"] as const).map((asset) => (
           <div key={asset}>
-            <SectionLabel>§ Capital gains — {asset === "equity" ? "Equity" : "Debt"}</SectionLabel>
+            <SectionLabel>§ Capital gains: {asset === "equity" ? "Equity" : "Debt"}</SectionLabel>
             <FieldGrid cols={3} className="mt-10">
               <Field id={`slab-${asset}-days`} label="STCG up to (days)">
                 <MoneyInput

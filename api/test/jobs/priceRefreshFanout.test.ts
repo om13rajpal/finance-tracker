@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterAll } from "vitest";
 import { HoldingLot } from "../../src/models/HoldingLot.js";
 
 // The fan-out consults the existing price cache/snapshot lookup to decide whether a
-// symbol actually needs refreshing — mock it so these tests control freshness without
+// symbol actually needs refreshing: mock it so these tests control freshness without
 // touching Redis' cache keys or the network clients behind the real refresh job.
 vi.mock("../../src/modules/market-data/price-cache.service.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../src/modules/market-data/price-cache.service.js")>();

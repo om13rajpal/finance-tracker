@@ -82,7 +82,7 @@ describe("gmail watch service", () => {
   // Regression: `$lte` alone against a null watchExpiration does not match in
   // this query, so a connection whose watch was never registered (e.g. the
   // OAuth callback's own registration attempt failed) sat forever without a
-  // working watch — the one job meant to rescue it silently skipped it.
+  // working watch: the one job meant to rescue it silently skipped it.
   it("also re-registers a connection whose watch was never registered at all (watchExpiration still null)", async () => {
     await GmailConnection.create({
       userId: "user-never-registered",

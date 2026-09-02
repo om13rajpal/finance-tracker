@@ -49,29 +49,29 @@ function computeSlabTax(taxableIncome: number, slabs: SlabConfigShape["slabs"]):
 }
 
 /**
- * Pure tax computation — no DB access, no async, no hidden state. Task 8's route
+ * Pure tax computation: no DB access, no async, no hidden state. Task 8's route
  * calls this once per regime (old/new) after fetching that regime's slabConfig and
  * computing HRA exemption itself (HRA exemption only applies under the old regime;
- * this function has no opinion on HRA — the caller folds any HRA exemption into
+ * this function has no opinion on HRA: the caller folds any HRA exemption into
  * totalDeductions before calling, so this function stays regime-agnostic).
  *
  * Two income streams are taxed completely separately and only combined at the very
  * end:
- *  1. Slab (ordinary) income — grossSalary + otherIncome, less standard deduction
+ *  1. Slab (ordinary) income: grossSalary + otherIncome, less standard deduction
  *     and totalDeductions, taxed via the marginal slabs.
- *  2. Capital gains — stcgAmount and ltcgAmount, taxed at flat rates from
+ *  2. Capital gains: stcgAmount and ltcgAmount, taxed at flat rates from
  *     slabConfig.capitalGains.equity, with the LTCG exemption limit subtracted from
  *     the LTCG amount BEFORE the LTCG rate is applied (not applied as a flat
  *     discount off tax computed on the full amount). Capital gains never enter the
  *     slab computation and slab income never enters the capital-gains computation.
  *
  * Section 87A rebate: applies ONLY to tax on slab income, never to capital gains
- * tax — a real, non-obvious rule under current Indian tax law. Eligibility is
+ * tax: a real, non-obvious rule under current Indian tax law. Eligibility is
  * decided by comparing `taxableIncome` (slab income only, excluding capital gains)
  * against `section87ARebateLimit`. The rebate amount is capped at
  * `section87ARebateMaxTax` and can never exceed `taxOnSlabIncome` itself (so it
  * cannot go negative or "spill over" into reducing capital gains tax). It is
- * subtracted only from `taxOnSlabIncome`'s contribution to the total — structurally,
+ * subtracted only from `taxOnSlabIncome`'s contribution to the total: structurally,
  * `rebateApplied` is computed from and bounded by `taxOnSlabIncome` alone, and
  * `taxOnCapitalGains` never appears in that computation.
  */
@@ -114,7 +114,7 @@ export interface HraExemptionInput {
 }
 
 /**
- * Computes the HRA (House Rent Allowance) exemption under Section 10(13A) —
+ * Computes the HRA (House Rent Allowance) exemption under Section 10(13A),
  * OLD REGIME ONLY. The new regime does not allow this exemption at all; this
  * function has no opinion on regime, it's the caller's job (estimate.routes.ts)
  * to only fold the result into `totalDeductions`-equivalent income reduction for
@@ -122,7 +122,7 @@ export interface HraExemptionInput {
  * pattern as the 80C cap: applied by the route before calling `computeTax`, not
  * inside it.
  *
- * Standard formula — the exemption is the MINIMUM of:
+ * Standard formula: the exemption is the MINIMUM of:
  *   1. Actual HRA received.
  *   2. Rent paid annually, minus 10% of basic salary.
  *   3. 50% of basic salary if the employee is in a metro city, else 40%.
@@ -133,7 +133,7 @@ export interface HraExemptionInput {
  * formula technically uses basic + Dearness Allowance (DA), but this app doesn't
  * separately track DA, so `basic` stands in for "basic + DA" here.
  *
- * Returns 0 (never throws) if `basic`, `hra`, or `rentPaidAnnual` is missing — a
+ * Returns 0 (never throws) if `basic`, `hra`, or `rentPaidAnnual` is missing: a
  * salary IncomeSource without full breakdown data simply gets no HRA exemption
  * rather than crashing the estimate.
  */

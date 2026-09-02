@@ -6,7 +6,7 @@ import { gmailWatchRenewalQueue, scheduleGmailWatchRenewal } from "../../src/job
 import { monthlyRollupQueue, scheduleMonthlyRollup } from "../../src/jobs/workers/monthlyRollup.worker.js";
 import { priceRetentionQueue, schedulePriceRetention } from "../../src/jobs/workers/priceRetention.worker.js";
 
-// Mirrors scheduleWatchdog.ts's own SCHEDULES table — this is the test's
+// Mirrors scheduleWatchdog.ts's own SCHEDULES table: this is the test's
 // independent source of truth for which queue/job-name/schedule-fn triple
 // each of the 5 labels maps to, so a bug that silently drops one of them
 // from the real table would still be caught here.
@@ -31,7 +31,7 @@ async function countRepeatables(queue: (typeof ALL)[number]["queue"]): Promise<n
   return (await queue.getRepeatableJobs()).length;
 }
 
-/** Polls `fn` until it returns truthy or `timeoutMs` elapses — same pattern
+/** Polls `fn` until it returns truthy or `timeoutMs` elapses, same pattern
  * `startWorkers.test.ts` uses for a real, timer-driven async condition. */
 async function waitFor(fn: () => Promise<boolean>, timeoutMs = 2000, intervalMs = 20): Promise<void> {
   const deadline = Date.now() + timeoutMs;
@@ -74,7 +74,7 @@ describe("reregisterMissingSchedules", () => {
 
     expect(healed).toEqual(["recurring-due"]);
     expect(await countRepeatables(target.queue)).toBe(1);
-    // Every other schedule was untouched — still exactly one entry each,
+    // Every other schedule was untouched: still exactly one entry each,
     // not zero (wrongly removed) and not two (wrongly duplicated).
     for (const { label, queue } of ALL) {
       if (label === "recurring-due") continue;
@@ -83,7 +83,7 @@ describe("reregisterMissingSchedules", () => {
   });
 
   it("re-registers all 5 when none exist yet (a freshly provisioned or fully wiped Redis)", async () => {
-    // Nothing seeded at all — the scenario right after swapping to a brand
+    // Nothing seeded at all: the scenario right after swapping to a brand
     // new Redis instance, before the API process has ever booted against it.
     const healed = await reregisterMissingSchedules();
 
@@ -126,7 +126,7 @@ describe("startScheduleWatchdog", () => {
       watchdog.stop();
     }
 
-    // Wipe it again, now that the watchdog is stopped — it must NOT come
+    // Wipe it again, now that the watchdog is stopped: it must NOT come
     // back on its own, proving `.stop()` actually cancelled the interval
     // rather than merely being a no-op.
     const [job2] = await target.queue.getRepeatableJobs();

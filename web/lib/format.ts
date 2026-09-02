@@ -3,7 +3,7 @@
  *
  * One place for every rupee figure and every date the product prints.
  *
- * Rupees are Indian-grouped (lakh/crore), zero decimals — a personal tracker
+ * Rupees are Indian-grouped (lakh/crore), zero decimals: a personal tracker
  * reasons in whole rupees, and paise in a dense ledger is noise that costs two
  * characters of column width on every single row.
  *
@@ -18,7 +18,7 @@ const INR = new Intl.NumberFormat("en-IN", {
   maximumFractionDigits: 0,
 });
 
-/** ₹42,18,650 — the house format. Negative amounts keep their minus. */
+/** ₹42,18,650: the house format. Negative amounts keep their minus. */
 export function formatInr(amount: number): string {
   return INR.format(amount);
 }
@@ -39,12 +39,12 @@ export function formatSignedInr(amount: number): string {
   return `+${magnitude}`;
 }
 
-/** 1,240.5 — units, not money. Trims trailing zeros. */
+/** 1,240.5: units, not money. Trims trailing zeros. */
 export function formatUnits(units: number): string {
   return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 4 }).format(units);
 }
 
-/** ₹1,842.55 — a per-unit price, where paise genuinely matter. */
+/** ₹1,842.55: a per-unit price, where paise genuinely matter. */
 export function formatPrice(amount: number): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
@@ -57,7 +57,7 @@ export function formatPrice(amount: number): string {
 /** 30 Aug 2026 */
 export function formatDate(value: string | Date): string {
   const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return new Intl.DateTimeFormat("en-IN", {
     day: "numeric",
     month: "short",
@@ -65,10 +65,10 @@ export function formatDate(value: string | Date): string {
   }).format(d);
 }
 
-/** Sun 30 Aug — for dense rows where the year is implied by context. */
+/** Sun 30 Aug: for dense rows where the year is implied by context. */
 export function formatDayMonth(value: string | Date): string {
   const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return new Intl.DateTimeFormat("en-IN", {
     weekday: "short",
     day: "numeric",
@@ -76,17 +76,17 @@ export function formatDayMonth(value: string | Date): string {
   }).format(d);
 }
 
-/** 4 Sept — no weekday, no year. For a dense row where context supplies both. */
+/** 4 Sept: no weekday, no year. For a dense row where context supplies both. */
 export function formatDayMonthShort(value: string | Date): string {
   const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" }).format(d);
 }
 
-/** Sunday, 30 August — the dashboard's own headline. */
+/** Sunday, 30 August: the dashboard's own headline. */
 export function formatLongDate(value: string | Date): string {
   const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   return new Intl.DateTimeFormat("en-IN", {
     weekday: "long",
     day: "numeric",
@@ -94,7 +94,7 @@ export function formatLongDate(value: string | Date): string {
   }).format(d);
 }
 
-/** `2026-08-30` — the value an `<input type="date">` wants. */
+/** `2026-08-30`: the value an `<input type="date">` wants. */
 export function toDateInputValue(value: string | Date): string {
   const d = typeof value === "string" ? new Date(value) : value;
   if (Number.isNaN(d.getTime())) return "";
@@ -115,7 +115,7 @@ export function todayInputValue(): string {
  */
 export function relativeDays(value: string | Date): string {
   const d = typeof value === "string" ? new Date(value) : value;
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return "-";
   const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const days = Math.round((startOf(d) - startOf(new Date())) / 86_400_000);
   if (days === 0) return "today";
@@ -128,7 +128,7 @@ export function relativeDays(value: string | Date): string {
 /**
  * The Indian financial year containing `date`, as `2026-27`.
  *
- * Mirrors api/src/lib/financialYear.ts exactly — April 1 to March 31, computed
+ * Mirrors api/src/lib/financialYear.ts exactly: April 1 to March 31, computed
  * on UTC parts, so the FY this pre-fills always matches what the backend would
  * compute for the same instant.
  */
@@ -151,8 +151,8 @@ export function recentFinancialYears(count = 5): string[] {
 /**
  * THE MONTH THE SERVER MEANS BY "this month".
  *
- * `GET /dashboard` computes its window from `new Date().toISOString().slice(0,7)`
- * — a UTC month, with UTC boundaries. In IST (UTC+5:30) that diverges from the
+ * `GET /dashboard` computes its window from `new Date().toISOString().slice(0,7)`:
+ * a UTC month, with UTC boundaries. In IST (UTC+5:30) that diverges from the
  * local month for five and a half hours at every month end: at 04:35 IST on
  * 1 September the server is still reporting August.
  *
@@ -165,7 +165,7 @@ export function apiMonth(now = new Date()): { year: number; month: number } {
   return { year: now.getUTCFullYear(), month: now.getUTCMonth() };
 }
 
-/** `August 2026` — the month the dashboard's figures actually cover. */
+/** `August 2026`: the month the dashboard's figures actually cover. */
 export function apiMonthLabel(now = new Date()): string {
   const { year, month } = apiMonth(now);
   return new Intl.DateTimeFormat("en-IN", { month: "long", year: "numeric", timeZone: "UTC" }).format(

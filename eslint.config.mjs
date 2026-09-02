@@ -76,7 +76,7 @@ export default tseslint.config(
     },
   },
 
-  // web package (Next.js) — Next's own recommended rules, scoped to web/.
+  // web package (Next.js): Next's own recommended rules, scoped to web/.
   ...compat.extends("next/core-web-vitals").map((config) => ({
     ...config,
     files: ["web/**/*.ts", "web/**/*.tsx", "web/**/*.js", "web/**/*.jsx"],

@@ -22,7 +22,7 @@ const ALL_QUEUE_NAMES = [
 
 // The 5 of those 9 whose worker file also registers a repeatable schedule
 // (price-refresh, gmail-email-parse, statement-process, and
-// bulk-confirm-pending don't — their jobs are enqueued by the fan-out
+// bulk-confirm-pending don't: their jobs are enqueued by the fan-out
 // producer / by the webhook route / by the PDF upload route / by the
 // bulk-confirm route instead, not on a timer).
 const SCHEDULED_QUEUES = [
@@ -36,7 +36,7 @@ const SCHEDULED_QUEUES = [
 /**
  * Polls `fn` until it resolves truthy or `timeoutMs` elapses. Needed because
  * a freshly-constructed BullMQ `Worker`'s `isRunning()` flips true
- * synchronously (see `run()` in bullmq's Worker class — `this.running = true`
+ * synchronously (see `run()` in bullmq's Worker class: `this.running = true`
  * is the first statement, before any `await`), but the *Redis-visible*
  * signal this test also checks (`Queue#getWorkersCount`, via `CLIENT LIST`)
  * depends on the worker's blocking connection finishing its own async
@@ -55,7 +55,7 @@ async function waitFor(fn: () => Promise<boolean>, timeoutMs = 5000, intervalMs 
 
 describe("startBackgroundWorkers", () => {
   // The 5 workers above register an idempotent repeatable schedule every time
-  // they start (that's the point — safe on every server restart), so this
+  // they start (that's the point: safe on every server restart), so this
   // test leaves one behind in the shared local Redis on every run unless it
   // cleans up after itself, same as each worker's own dedicated test file
   // (e.g. test/modules/recurring.test.ts) already does for its one queue.

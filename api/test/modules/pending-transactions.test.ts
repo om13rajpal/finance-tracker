@@ -10,7 +10,7 @@ import { processBulkConfirm } from "../../src/jobs/workers/bulkConfirmPending.wo
 
 /**
  * `POST /bulk-confirm` only enqueues a job (see that route's own doc comment
- * for why) — no worker runs during tests, so this drives the SAME
+ * for why): no worker runs during tests, so this drives the SAME
  * `processBulkConfirm` the real "bulk-confirm-pending" BullMQ worker calls,
  * directly, exactly the pattern `statementProcess.worker.reconciliation.test.ts`
  * already uses for the equivalent PDF-import worker. Returns the finished
@@ -84,7 +84,7 @@ describe("pending transactions", () => {
       merchant: "Zepto",
       source: "pdf_statement_parsed",
     });
-    // No accountId yet — must never be flagged (nothing to check it against).
+    // No accountId yet: must never be flagged (nothing to check it against).
     await PendingTransaction.create({
       userId,
       accountId: null,
@@ -251,7 +251,7 @@ describe("pending transactions", () => {
     expect(res.status).toBe(409);
 
     // The seeded transaction above was created directly against the model (not
-    // through a route), so it never applied its own delta — the balance must
+    // through a route), so it never applied its own delta: the balance must
     // still be exactly 1000, proving the duplicate-rejected confirm applied NO
     // delta for the transaction that was never actually created.
     const updated = await Account.findById(account._id);
@@ -303,7 +303,7 @@ describe("pending transactions", () => {
       .send({});
     expect(res.status).toBe(404);
 
-    // untouched — still pending, owned by the original user
+    // untouched: still pending, owned by the original user
     const stillPending = await PendingTransaction.findById(pending._id);
     expect(stillPending).not.toBeNull();
   });
@@ -366,7 +366,7 @@ describe("pending transactions", () => {
     expect(res.status).toBe(409);
     expect(res.body.note).toBe("possible_duplicate");
 
-    // Pending transaction must be untouched — still there for the user to reconsider.
+    // Pending transaction must be untouched: still there for the user to reconsider.
     const stillPending = await PendingTransaction.findById(pending._id);
     expect(stillPending).not.toBeNull();
 
@@ -571,7 +571,7 @@ describe("pending transactions", () => {
       expect(res.status).toBe(202);
       expect(res.body.batchId).toBeTruthy();
       expect(res.body.status).toBe("processing");
-      // Not yet touched — enqueueing does not itself process anything.
+      // Not yet touched: enqueueing does not itself process anything.
       expect(await PendingTransaction.findById(pending._id)).not.toBeNull();
     });
 
@@ -628,7 +628,7 @@ describe("pending transactions", () => {
 
       expect(await PendingTransaction.findById(mine1._id)).toBeNull();
       expect(await PendingTransaction.findById(mine2._id)).toBeNull();
-      // Untouched — not this user's to delete.
+      // Untouched: not this user's to delete.
       expect(await PendingTransaction.findById(someoneElses._id)).not.toBeNull();
     });
 
@@ -720,7 +720,7 @@ describe("pending transactions", () => {
       expect(updated!.currentBalance).toBe(430);
     });
 
-    it("skips (not fails) a row that still needs an account, a likely duplicate, and an id that isn't this user's — reporting why for each", async () => {
+    it("skips (not fails) a row that still needs an account, a likely duplicate, and an id that isn't this user's, reporting why for each", async () => {
       const userId = "user-bulk-skip";
       const cookie = authCookie(userId);
 
@@ -785,7 +785,7 @@ describe("pending transactions", () => {
       expect(skippedByReason[duplicate._id.toString()]).toBe("possible_duplicate");
       expect(skippedByReason[notMine._id.toString()]).toBe("not_found");
 
-      // The skipped ones are untouched — still pending (or, for `notMine`, still
+      // The skipped ones are untouched: still pending (or, for `notMine`, still
       // owned by its real owner).
       expect(await PendingTransaction.findById(needsAccount._id)).not.toBeNull();
       expect(await PendingTransaction.findById(duplicate._id)).not.toBeNull();

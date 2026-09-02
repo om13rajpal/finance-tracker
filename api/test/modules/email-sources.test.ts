@@ -34,7 +34,7 @@ describe("email sources routes", () => {
 
   // Regression-shaped: SBI has no registered email-BODY parser
   // (parsers/registry.ts only has hdfc_debit_alert today), but that must
-  // never block trusting the sender at all — PDF-statement attachment
+  // never block trusting the sender at all: PDF-statement attachment
   // processing reads `institution` directly and isn't gated by parserKey.
   it("still creates a source for an institution with no registered email-body parser", async () => {
     const res = await request(app)

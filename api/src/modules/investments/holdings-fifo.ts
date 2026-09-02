@@ -5,11 +5,11 @@ import { HoldingLot } from "../../models/HoldingLot.js";
  *
  * Correctness properties this relies on and preserves:
  * - Ordering is strictly by buyDate ascending (with _id as a tiebreaker for lots sharing
- *   the same buyDate) — never by insertion/backfill order, which can differ from
+ *   the same buyDate), never by insertion/backfill order, which can differ from
  *   chronological order when lots are imported or entered out of sequence.
  * - Availability is checked BEFORE any lot is mutated. If unitsSold exceeds the total
  *   remainingUnits held for the symbol, this throws and leaves every lot completely
- *   untouched — no partial deduction happens first. This matters for the CSV import
+ *   untouched: no partial deduction happens first. This matters for the CSV import
  *   flow: a caller that catches the error and records the row as "failed" must be able
  *   to trust that a failed sell had zero side effects, not a half-applied one.
  * - Each lot is deducted by at most its own remainingUnits (Math.min), so no lot's

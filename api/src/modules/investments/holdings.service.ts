@@ -14,15 +14,15 @@ export interface HoldingRollup {
 /**
  * Rolls open (partially or fully unsold) lots up per symbol, merging in the latest
  * known market price for each symbol.
- * - Lots with remainingUnits === 0 (fully sold) are excluded entirely — a symbol
+ * - Lots with remainingUnits === 0 (fully sold) are excluded entirely: a symbol
  *   whose every lot is fully sold does not appear in the result at all.
  * - avgCost is the weighted average cost across the symbol's *remaining* units
  *   (sum(remainingUnits * buyPrice) / sum(remainingUnits)), not a naive average
- *   of buyPrice across lots — a naive average would ignore quantity and be wrong
+ *   of buyPrice across lots: a naive average would ignore quantity and be wrong
  *   whenever lots differ in size or how much of them has been sold.
  * - currentPrice/currentValue/priceStale come from `getLatestPrice`. When a symbol
  *   has NEVER been fetched (no cache entry, no PriceSnapshot at all), `getLatestPrice`
- *   returns null — this does not throw or abort the whole rollup; that symbol's row
+ *   returns null. This does not throw or abort the whole rollup; that symbol's row
  *   simply reports `currentPrice: null`, `currentValue: null`, `priceStale: true`
  *   (no price to trust, so treat it as maximally stale rather than silently 0/false).
  */

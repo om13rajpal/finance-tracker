@@ -10,7 +10,7 @@
  * Browsers restore the previous scroll offset on reload. On an ordinary
  * document that is a courtesy. On this one it is a bug with teeth: reloading
  * anywhere past the first viewport dropped the visitor into the middle of the
- * pinned sort section — reported as "instead of going to the header it loads at
+ * pinned sort section: reported as "instead of going to the header it loads at
  * the watch-it-work page".
  *
  * It is worse than landing in the wrong place. The restore happens BEFORE
@@ -21,7 +21,7 @@
  * also felt jumpy.
  *
  * So: `history.scrollRestoration = "manual"` and an explicit scroll to the top,
- * in a LAYOUT effect — before paint, and before the section effects create a
+ * in a LAYOUT effect: before paint, and before the section effects create a
  * single ScrollTrigger. A `useEffect` here would be too late; the restore would
  * already have been painted and the pins already measured.
  *

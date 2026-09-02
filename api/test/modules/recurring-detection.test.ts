@@ -7,7 +7,7 @@ const userId = "user-recurring-detect";
 const accountId = "acc-1";
 
 function monthlyDate(monthOffset: number, day = 23): Date {
-  // Base month: Jan 2026, UTC midnight — matches how dates are stored
+  // Base month: Jan 2026, UTC midnight, matches how dates are stored
   // everywhere else in this codebase.
   return new Date(Date.UTC(2026, monthOffset, day));
 }

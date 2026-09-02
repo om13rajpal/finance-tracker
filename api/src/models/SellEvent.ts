@@ -17,7 +17,7 @@ const sellEventSchema = new Schema({
   // tax-slab.service.ts) because no `TaxSlabConfig` existed for
   // `financialYear` at sell time, rather than a config someone explicitly
   // confirmed via POST /tax/slab-config. Worth surfacing wherever capital
-  // gains are reported — the classification is very likely still correct
+  // gains are reported: the classification is very likely still correct
   // (the holding-period rule is stable law), but hasn't been confirmed.
   usedDefaultCapitalGainsConfig: { type: Boolean, default: false },
 });

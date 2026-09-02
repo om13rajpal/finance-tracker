@@ -38,7 +38,7 @@ import { useToast } from "@/components/ui/Toast";
  *
  * ACCOUNT TYPE IS NOT A BUCKET. The four bucket fills mean "this is where money
  * GOES"; an account is where money SITS. So account rows carry ink-stroke
- * glyphs in the chip's circular form with no fill — the same vocabulary the
+ * glyphs in the chip's circular form with no fill, the same vocabulary the
  * nav rail uses for routes, for the same reason. Reusing a bucket colour here
  * would be the colour system telling a lie.
  *
@@ -66,7 +66,7 @@ export default function AccountsPage() {
     queryFn: () => apiFetch<Account[]>("/accounts"),
   });
 
-  // Memoised for identity: see the note in budgets/page.tsx — a fresh `[]`
+  // Memoised for identity: see the note in budgets/page.tsx. A fresh `[]`
   // each render silently defeats the grouping memo below.
   const list = useMemo(() => accounts.data ?? [], [accounts.data]);
   const grouped = useMemo(() => {
@@ -130,13 +130,13 @@ export default function AccountsPage() {
             <Panel>
               <EmptyState
                 title="No accounts yet."
-                body="Add the first one on the right — a bank account, a card, your PPF, or the cash in your wallet. Net worth starts counting from there."
+                body="Add the first one on the right: a bank account, a card, your PPF, or the cash in your wallet. Net worth starts counting from there."
               />
             </Panel>
           ) : (
             /* ONE panel, with the type groups as headings inside it.
                Four separate panels for five accounts put three 1.5px frames
-               and three footnotes around a total of five rows — the chrome
+               and three footnotes around a total of five rows: the chrome
                outweighed the ledger. This reads as one list that happens to be
                grouped, which is what it is. */
             <Panel>
@@ -211,7 +211,7 @@ function AccountRow({ account, icon }: { account: Account; icon: IconName }) {
       }),
     onSuccess: () => {
       // One POST both updates `currentBalance` AND appends a BalanceSnapshot,
-      // so both caches have to be invalidated from this single mutation — plus
+      // so both caches have to be invalidated from this single mutation, plus
       // the dashboard, whose net worth just moved.
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["balance-history", account._id] });
@@ -305,7 +305,7 @@ function AccountRow({ account, icon }: { account: Account; icon: IconName }) {
 
           <Helper>
             {isCard
-              ? "Enter what you owe as a positive number — it is subtracted from net worth either way."
+              ? "Enter what you owe as a positive number: it is subtracted from net worth either way."
               : "Each update is kept, so the line below is your real balance history."}
           </Helper>
 

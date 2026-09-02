@@ -20,7 +20,7 @@ describe("auth OTP flow", () => {
     const stored = await OtpCode.findOne({ email: "test@example.com" });
     expect(stored).not.toBeNull();
 
-    // The service stores a hash, not the raw code — verify via the raw code the route returns in test/dev mode is not exposed in prod,
+    // The service stores a hash, not the raw code: verify via the raw code the route returns in test/dev mode is not exposed in prod,
     // so for this test we re-derive from the service's exported hashOtp() to simulate "the code the user received by email".
     // Since we can't recover the raw code from the hash, instead assert verify fails for a wrong code
     // and passes for the code captured via a stubbed sender (see next test).

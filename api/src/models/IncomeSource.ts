@@ -10,7 +10,7 @@ const incomeSourceSchema = new Schema({
     hra: { type: Number, default: null },
     allowances: { type: Number, default: null },
     // Used only for the old-regime HRA exemption calculation (computeHraExemption
-    // in tax-compute.service.ts) — never read by the new regime, which doesn't
+    // in tax-compute.service.ts). Never read by the new regime, which doesn't
     // allow the exemption at all. isMetro defaults to false (non-metro is the
     // lower-exemption, more conservative assumption when unspecified).
     rentPaidAnnual: { type: Number, default: null },

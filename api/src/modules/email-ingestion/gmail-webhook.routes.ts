@@ -11,11 +11,11 @@ export const gmailEmailParseQueue = makeQueue<{ userId: string; historyId: strin
 /**
  * Pub/Sub push receiver for Gmail's `users.watch()` notifications.
  *
- * NOT behind `requireAuth` — Pub/Sub calls this directly, with no Finance
+ * NOT behind `requireAuth`: Pub/Sub calls this directly, with no Finance
  * Tracker session. Instead it's verified with a shared-secret query param
  * (`GMAIL_WEBHOOK_SECRET`, configured as part of the Pub/Sub push
  * subscription's endpoint URL). A plain `!==` comparison is used rather than
- * a constant-time compare — this app has a single user and the secret isn't
+ * a constant-time compare, since this app has a single user and the secret isn't
  * guessable from timing differences on a personal deployment, so the added
  * complexity isn't worth it here. What matters is that it's a full-value
  * equality check, not `startsWith`/`includes`, so a partially-correct guess
@@ -23,7 +23,7 @@ export const gmailEmailParseQueue = makeQueue<{ userId: string; historyId: strin
  *
  * Does the ABSOLUTE MINIMUM before responding: validate the secret, extract
  * the notification's payload, enqueue a job, and return 204. No Gmail API
- * call and no parsing happens here — Pub/Sub retries (with backoff, then
+ * call and no parsing happens here. Pub/Sub retries (with backoff, then
  * eventually gives up) if this endpoint is slow or errors, so keeping this
  * handler fast and simple is the whole point of doing the real work in
  * `processGmailNotification` via a queued job instead.

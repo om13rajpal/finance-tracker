@@ -16,12 +16,12 @@
  *
  * It is revealed by scaling the SVG from `transform-origin: left`. It is NEVER
  * revealed by animating `strokeDashoffset` against a path-length
- * `strokeDasharray` — that substitution replaces `4 6` with one dash as long as
+ * `strokeDasharray`: that substitution replaces `4 6` with one dash as long as
  * the path, and the tether arrives SOLID. A solid line is not the tether. This
  * is a real shipped-and-fixed defect (`landing-tether-lost-its-dots`), recorded
  * in state, and it is trivially easy to reintroduce.
  *
- * Focus on ink is re-pointed at cream by the `on-ink` scope — recoloured, never
+ * Focus on ink is re-pointed at cream by the `on-ink` scope: recoloured, never
  * removed. See globals.css.
  */
 
@@ -62,7 +62,7 @@ export function Parser() {
       ref={rootRef}
       className="on-ink relative w-full bg-ink px-22 py-96 text-bg lg:px-44"
       style={{
-        // A cut, not a rule. Static — clip-path is never animated here.
+        // A cut, not a rule. Static: clip-path is never animated here.
         // The negative margins MUST equal the cut depth exactly: the polygon's
         // left edge starts 3.2vw down, so anything less pulls the section up by
         // less than it clips off and a sliver of page ground shows through
@@ -75,7 +75,7 @@ export function Parser() {
     >
       <div className="l-parser-say">
         <p className="font-num text-meta uppercase tracking-label ink-micro">
-          <span style={{ color: "var(--bucket-fixed)" }}>§</span> 04 — where the rows come from
+          <span style={{ color: "var(--bucket-fixed)" }}>§</span> 04: where the rows come from
         </p>
         <h2
           className="mt-14 max-w-[16ch] font-disp uppercase"
@@ -89,7 +89,7 @@ export function Parser() {
         >
           Connect Gmail once. Sorted reads the alerts your bank and your broker already
           send you, pulls out the merchant, the amount and the account, and files the row.
-          Anything it cannot place honestly is left uncategorised for you to answer —
+          Anything it cannot place honestly is left uncategorised for you to answer:
           never guessed.
         </p>
       </div>

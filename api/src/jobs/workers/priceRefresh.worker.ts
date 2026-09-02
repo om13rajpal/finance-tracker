@@ -14,11 +14,11 @@ export interface PriceRefreshJobData {
 /**
  * The worker's testable core logic. On success: writes a `PriceSnapshot` AND updates
  * the Redis cache. On failure (after the client's internal `withRetry` exhausts its
- * attempts), this simply rejects — nothing is written, so any existing cached/stored
+ * attempts), this simply rejects: nothing is written, so any existing cached/stored
  * price for the symbol is left completely untouched (still queryable via
  * `getLatestPrice`). The rejection propagates to the BullMQ job processor, which marks
  * the job failed and lets BullMQ's own queue-level retry/backoff (configured in
- * `makeQueue`'s `defaultJobOptions`) take over — it does not crash the worker process.
+ * `makeQueue`'s `defaultJobOptions`) take over. It does not crash the worker process.
  */
 export async function processPriceRefreshJob(data: PriceRefreshJobData): Promise<void> {
   const price =
@@ -34,7 +34,7 @@ export async function processPriceRefreshJob(data: PriceRefreshJobData): Promise
 /**
  * Constructs the BullMQ Worker for the "price-refresh" queue. Deliberately NOT
  * instantiated at module load time (unlike a naive top-level `export const worker =
- * new Worker(...)`) — that would open a real Redis connection and start listening for
+ * new Worker(...)`): that would open a real Redis connection and start listening for
  * jobs as a side effect of simply importing this file, including in unit tests that
  * only want `processPriceRefreshJob`. Call this explicitly from wherever the app wires
  * up its background workers.

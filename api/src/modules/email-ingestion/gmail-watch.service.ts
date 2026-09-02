@@ -13,7 +13,7 @@ import { isTokenRevokedError } from "./token-errors.js";
  * If the stored refresh token has been revoked, the connection is marked
  * `disconnected` (per spec: "if Google reports the token revoked/invalid,
  * GmailConnection is marked disconnected... rather than failing silently on
- * every subsequent job run") instead of throwing — any other error is
+ * every subsequent job run") instead of throwing; any other error is
  * rethrown so the caller (e.g. the renewal worker) can decide how to handle
  * an unexpected failure.
  */

@@ -55,7 +55,7 @@ import { useToast } from "@/components/ui/Toast";
  * Sorted · Recurring
  *
  * What happens to the money whether or not you look. Rent, SIPs, salary,
- * subscriptions — the items that produce the dashboard's Upcoming rail and,
+ * subscriptions: the items that produce the dashboard's Upcoming rail and,
  * more importantly, the `planned` half of Guilt-Free Money.
  *
  * WHY THE COMMITMENT FIGURE IS "NEXT 30 DAYS" AND NOT "PER MONTH". Frequencies
@@ -65,7 +65,7 @@ import { useToast } from "@/components/ui/Toast";
  * window the server already computes, so that is what is shown.
  *
  * STATUS IS A SHAPE, NOT A COLOUR. Active, paused and cancelled are told apart
- * by which actions a row offers and by an ink label — not by a green/amber/grey
+ * by which actions a row offers and by an ink label, not by a green/amber/grey
  * badge set, which would put three more colours into a product whose entire
  * colour system is four buckets.
  */
@@ -158,18 +158,18 @@ export default function RecurringPage() {
                 meta={upcoming.isSuccess ? `${due.length} due` : undefined}
               />
               {/* A dash, not a zero. `?? []` would report "nothing going out"
-                  when the real answer is that the window could not be read —
+                  when the real answer is that the window could not be read,
                   and those are opposite facts. */}
               <div className="grid gap-22 sm:grid-cols-3">
                 <Readout
                   label="Going out"
-                  value={!upcoming.isSuccess ? "—" : dueOut > 0 ? `−${formatInr(dueOut)}` : formatInr(0)}
+                  value={!upcoming.isSuccess ? "–" : dueOut > 0 ? `−${formatInr(dueOut)}` : formatInr(0)}
                 />
                 <Readout
                   label="Coming in"
-                  value={!upcoming.isSuccess ? "—" : dueIn > 0 ? `+${formatInr(dueIn)}` : formatInr(0)}
+                  value={!upcoming.isSuccess ? "–" : dueIn > 0 ? `+${formatInr(dueIn)}` : formatInr(0)}
                 />
-                <Readout label="Net" value={upcoming.isSuccess ? dueIn - dueOut : "—"} />
+                <Readout label="Net" value={upcoming.isSuccess ? dueIn - dueOut : "–"} />
               </div>
               <PanelFooter>
                 Active items only. Paused and cancelled ones are not counted.
@@ -200,7 +200,7 @@ export default function RecurringPage() {
             <Panel>
               <EmptyState
                 title="Nothing recurring yet."
-                body="Rent, SIPs, salary, subscriptions — anything that happens on a schedule. Adding them is what makes Guilt-Free Money mean something, because it is what the plan is subtracted from."
+                body="Rent, SIPs, salary, subscriptions: anything that happens on a schedule. Adding them is what makes Guilt-Free Money mean something, because it is what the plan is subtracted from."
               />
             </Panel>
           ) : (
@@ -285,7 +285,7 @@ function RecurringRow({
       className={cn(
         "flex flex-wrap items-center gap-14 border-b border-rule py-12 last:border-b-0",
         // Cancelled rows are dimmed as a WHOLE, so nothing inside them has to be
-        // recoloured — and the figures stay tabular and legible rather than
+        // recoloured, and the figures stay tabular and legible rather than
         // being greyed into illegibility one element at a time.
         item.status === "cancelled" && "opacity-[.6]"
       )}
@@ -352,16 +352,16 @@ function RecurringRow({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Suggested — detected from real transaction history, never auto-created
+// Suggested: detected from real transaction history, never auto-created
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * This app never auto-detected a recurring pattern before — every item on
+ * This app never auto-detected a recurring pattern before: every item on
  * this whole page used to require someone to notice the pattern themselves
  * and fill in the form on the right by hand. `GET /recurring/suggestions`
  * scans confirmed transaction history for (account, merchant) pairs that
  * repeat at a regular interval and aren't already tracked, and this panel
- * is the "want to track this?" nudge for what it finds — accepting one is
+ * is the "want to track this?" nudge for what it finds; accepting one is
  * just today's `POST /recurring`, pre-filled; nothing here is auto-created
  * on its own.
  */
@@ -440,7 +440,7 @@ function RecurringSuggestionsPanel({
                   <option value="">Category…</option>
                   {categories.map(({ node, depth }) => (
                     <option key={node._id} value={node._id}>
-                      {"— ".repeat(depth)}
+                      {"– ".repeat(depth)}
                       {node.name}
                     </option>
                   ))}
@@ -478,7 +478,7 @@ function RecurringSuggestionsPanel({
         );
       })}
       <PanelFooter>
-        Detected from your transaction history — nothing is tracked until you add it.
+        Detected from your transaction history, nothing is tracked until you add it.
       </PanelFooter>
     </Panel>
   );
@@ -646,7 +646,7 @@ function AddRecurringPanel({
             <option value="">Select a category</option>
             {categories.map(({ node, depth }) => (
               <option key={node._id} value={node._id}>
-                {"— ".repeat(depth)}
+                {"– ".repeat(depth)}
                 {node.name}
               </option>
             ))}

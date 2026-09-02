@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  * live here and must not be edited away:
  *
  * 1. THE STAMP PRESS. The primary button carries `shadow-stamp`
- *    (`0 2px 0 var(--ink)`) — the single permitted shadow in the whole
+ *    (`0 2px 0 var(--ink)`): the single permitted shadow in the whole
  *    system. Pressing translates it down by exactly the shadow offset and
  *    collapses the shadow to zero, with BOTH properties transitioned over one
  *    duration and one curve so the shadow's lower edge stays pinned and the
@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
  * 2. FOCUS RINGS ARE DRAWN OUTWARD. `--focus` on `--ink` measures 1.37:1, so
  *    an inset ring on the ink-filled primary is invisible. The ring is an
  *    `outline` with `outline-offset`, landing on cream at 11.77:1. Note that
- *    stock shadcn uses `ring-offset-background`, which assumes a white page —
+ *    stock shadcn uses `ring-offset-background`, which assumes a white page:
  *    that is why this component does not use it.
  *
  * 3. THE BUSY STATE NEVER DIMS. See `busy` below.
@@ -73,8 +73,8 @@ export interface ButtonProps
    *
    * The house `opacity:.55` would drop cream-on-ink from 16.08:1 to roughly
    * 4:1 at the exact moment the user most needs to read the label. Instead the
-   * button holds itself pressed — translated down by the full stamp offset
-   * with the shadow collapsed — reusing the press vocabulary the user just
+   * button holds itself pressed (translated down by the full stamp offset
+   * with the shadow collapsed), reusing the press vocabulary the user just
    * triggered. It reads as "still held", which is what is actually happening.
    *
    * It is also `aria-busy` and `disabled`, so the double-submit guard is
@@ -93,7 +93,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         // `||`, never `??`. With `disabled ?? busy` a caller passing an
         // explicit `disabled={false}` (which every form here does, to gate on
         // an empty field) short-circuits the nullish check and the busy state
-        // never reaches the DOM — leaving the button clickable mid-flight and
+        // never reaches the DOM: leaving the button clickable mid-flight and
         // the double-submit guard resting entirely on the React ref.
         disabled={Boolean(disabled) || busy}
         data-busy={busy ? "" : undefined}
@@ -101,7 +101,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           buttonVariants({ variant, size }),
           // Held-pressed, not dimmed. Contrast is preserved at 16.08:1.
           busy && "translate-y-2 shadow-stamp-pressed",
-          // A genuinely disabled control (not busy) may dim — nothing is
+          // A genuinely disabled control (not busy) may dim: nothing is
           // being read from it.
           !busy && "disabled:opacity-[.55] disabled:shadow-stamp-pressed disabled:translate-y-2",
           className,

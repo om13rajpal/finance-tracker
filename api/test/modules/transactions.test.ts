@@ -376,12 +376,12 @@ describe("transactions", () => {
   });
 
   // Regression: a statement import reconciles the account balance ONCE, from
-  // the statement's own printed closing balance — confirming an individual
+  // the statement's own printed closing balance: confirming an individual
   // row from that import deliberately does NOT also apply its amount as a
   // delta (see `balanceReconciledAtImport` on PendingTransaction and
   // `applyConfirmedTransactionBalanceEffect`), to avoid double-counting.
   // DELETE and the amount-PATCH used to be unaware of this and would
-  // unconditionally reverse/adjust by the transaction's amount anyway —
+  // unconditionally reverse/adjust by the transaction's amount anyway,
   // wrongly un-applying a delta that was never applied in the first place,
   // and moving the balance in the WRONG direction. Verified live against
   // production: bulk-deleting statement-derived transactions pushed one
@@ -406,7 +406,7 @@ describe("transactions", () => {
       .set("Cookie", cookie)
       .send({});
     expect(confirmRes.status).toBe(200);
-    // Confirming must not touch the balance — it was already reconciled at import.
+    // Confirming must not touch the balance: it was already reconciled at import.
     expect((await Account.findById(accountId))!.currentBalance).toBe(1000);
 
     const delRes = await request(app)

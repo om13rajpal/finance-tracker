@@ -1,6 +1,6 @@
 /**
  * Turns raw bank-statement narration into a short, human-readable merchant
- * label — e.g.
+ * label, e.g.
  *   "UPI/DR/103523751353/NETFLIX/HDFC/netflix.bd/Execu 0097691162095 AT
  *    00652 MAIN BRANCH , HISAR"
  * becomes "Netflix".
@@ -8,19 +8,19 @@
  * Real UPI/NEFT/ATM narration buries the one useful fact (who this money
  * went to or came from) inside a pile of reference numbers, VPA handles,
  * IFSC-shaped bank codes, and branch addresses that mean nothing to a
- * person reviewing their own spending — see the real narrations exercised
+ * person reviewing their own spending: see the real narrations exercised
  * in `merchant-cleanup.test.ts` for the actual shapes this handles.
  *
- * This is a best-effort heuristic, not a merchant-identification service —
+ * This is a best-effort heuristic, not a merchant-identification service:
  * it never invents a merchant that isn't legible in the source text. Three
  * tiers, first match wins:
  *
  *  1. A small dictionary of very common merchants/billers (`KNOWN_MERCHANTS`)
- *     matched anywhere in the uppercased text — highest confidence, and
+ *     matched anywhere in the uppercased text: highest confidence, and
  *     covers the cases that matter most for categorization/recurring
  *     detection (subscriptions, food delivery, big retail).
  *  2. Structural transaction-type patterns (UPI, NEFT/IMPS/RTGS, ATM
- *     withdrawal, cheque deposit, common fee/interest lines) — reliable
+ *     withdrawal, cheque deposit, common fee/interest lines): reliable
  *     because they key off the bank's own fixed vocabulary, not off
  *     guessing an unknown merchant's name.
  *  3. A generic noise-stripping fallback for anything that matches neither:
@@ -30,7 +30,7 @@
  *
  * The caller is responsible for keeping the original raw text around (this
  * codebase's convention is to put it in the transaction's `note` field when
- * that's otherwise empty) — cleanup here is lossy by design.
+ * that's otherwise empty); cleanup here is lossy by design.
  */
 
 import { cleanMerchantLabelWithLlm } from "./merchant-llm-cleanup.js";
@@ -101,7 +101,7 @@ const BOILERPLATE_TOKENS = new Set([
   "BRANCH",
 ]);
 
-/** True for a token that's mostly a reference number/masked card (e.g. "617123446765", "531209XXXXXX8884") — never a merchant name. */
+/** True for a token that's mostly a reference number/masked card (e.g. "617123446765", "531209XXXXXX8884"); never a merchant name. */
 function looksLikeReferenceOrMasked(token: string): boolean {
   const digits = (token.match(/\d/g) ?? []).length;
   const xs = (token.match(/X/gi) ?? []).length;
@@ -187,7 +187,7 @@ function genericFallback(raw: string): string {
 
 /**
  * Same three-tier logic as `cleanMerchantLabel`, but also reports which tier
- * produced the result — tier 3 (generic fallback) is the only case worth
+ * produced the result: tier 3 (generic fallback) is the only case worth
  * spending an LLM call on upgrading, since tiers 1 and 2 are already
  * high-confidence. Kept internal; `cleanMerchantLabel` and
  * `cleanMerchantLabelSmart` are the two public entry points.

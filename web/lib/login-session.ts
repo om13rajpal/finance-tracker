@@ -4,14 +4,14 @@
  * The previous implementation held `stage` and `email` in component state
  * only, so a reload or a back-navigation between "Send code" and "Verify"
  * dropped the user back to an empty email field while a perfectly valid code
- * sat in their inbox. They had to request a second code — which, because
+ * sat in their inbox. They had to request a second code, which, because
  * `requestOtp` deletes every prior code for the address, silently invalidated
  * the one they had just been emailed.
  *
  * So we persist the minimum needed to resume: the address, and when the code
  * was issued. Never the code itself.
  *
- * `sessionStorage`, not `localStorage`, deliberately — a pending sign-in
+ * `sessionStorage`, not `localStorage`, deliberately: a pending sign-in
  * should not outlive the tab. And the record is only honoured while it could
  * still be true: the server sets `expiresAt` to issue + 10 minutes
  * (auth.service.ts), so a record older than that is discarded on read rather
@@ -19,12 +19,12 @@
  */
 const KEY = "sorted.login.pending";
 
-/** api/src/modules/auth/auth.service.ts — `Date.now() + 10 * 60 * 1000`. */
+/** api/src/modules/auth/auth.service.ts: `Date.now() + 10 * 60 * 1000`. */
 export const OTP_TTL_MS = 10 * 60 * 1000;
 
 /**
- * How long to wait before offering a resend. Resending is destructive — it
- * deletes the code already sitting in the inbox — so it is not offered while
+ * How long to wait before offering a resend. Resending is destructive (it
+ * deletes the code already sitting in the inbox), so it is not offered while
  * the email is plausibly still in flight.
  */
 export const RESEND_COOLDOWN_MS = 60 * 1000;
@@ -58,7 +58,7 @@ export function readPending(): PendingLogin | null {
     }
 
     // Expired, or a clock that has moved backwards. Either way the code it
-    // refers to cannot be verified any more — do not resume into a dead stage.
+    // refers to cannot be verified any more: do not resume into a dead stage.
     const age = Date.now() - parsed.issuedAt;
     if (age < 0 || age >= OTP_TTL_MS) {
       window.sessionStorage.removeItem(KEY);
@@ -77,7 +77,7 @@ export function writePending(email: string): PendingLogin {
     try {
       window.sessionStorage.setItem(KEY, JSON.stringify(record));
     } catch {
-      /* quota or private mode — recovery is a nicety, not a requirement */
+      /* quota or private mode: recovery is a nicety, not a requirement */
     }
   }
   return record;

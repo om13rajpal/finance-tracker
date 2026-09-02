@@ -1,18 +1,18 @@
 "use client";
 
 /**
- * Sorted · hero — THE BOARD
+ * Sorted · hero: THE BOARD
  *
  * A departure board for money. The whole viewport is a grid of mono cells
  * flickering through real merchants and real amounts; the wordmark sits on top
  * of it, and under the wordmark is the one number the product exists to
  * produce. Chosen over two alternatives (a live sorting machine, and four
  * full-height bucket panels) because it is the only one of the three that
- * leads with the NUMBER rather than the mechanism — and the number is the
+ * leads with the NUMBER rather than the mechanism; the number is the
  * reason anyone would use this.
  *
  * WHY THE BOARD IS NOT DECORATION. Every glyph in the grid is a character of a
- * real bank alert — a merchant that actually bills Indian accounts, or the
+ * real bank alert: a merchant that actually bills Indian accounts, or the
  * amount it billed. The colour accents land on the first letter of a merchant
  * name, never at random. It reads as ambient texture at a glance and survives
  * being looked at closely, which is the difference between atmosphere and
@@ -27,8 +27,8 @@
  *
  * RULE 12. No rupee figure animates behind the login, because a counting
  * number shows the owner a briefly-wrong balance and they act on balances.
- * This figure is illustrative — it is nobody's balance and nobody will act on
- * it — so the rule's reason does not reach it. It scrambles in once, then
+ * This figure is illustrative (it is nobody's balance and nobody will act on
+ * it), so the rule's reason does not reach it. It scrambles in once, then
  * holds. It does NOT tick perpetually: an unsettled number is exactly the
  * anxiety this product is built to remove.
  *
@@ -37,7 +37,7 @@
  * hero moves, on purpose.
  *
  * FOCUS AND THE STAMP ON INK. `--focus` is 1.37:1 against ink, so `.on-ink`
- * re-points the ring at cream (16.08:1) — recoloured, never removed. The
+ * re-points the ring at cream (16.08:1): recoloured, never removed. The
  * stamp `0 2px 0 var(--ink)` is invisible on an ink ground, so the CTA draws
  * the stamp in guilt-free pink instead; the press rule is untouched
  * (translateY exactly the 2px offset, shadow collapsed, both on one 110ms
@@ -106,12 +106,12 @@ export function Hero() {
       const flick = gsap.utils.random(0, cells.length - 1, 1, true);
       const glyph = gsap.utils.random(BOARD_GLYPHS.split(""), true);
 
-      // NO TWEEN PER CELL — and that is what pays for the board being BUSY.
+      // NO TWEEN PER CELL: that is what pays for the board being BUSY.
       //
       // The first version called `gsap.fromTo` on seven cells every 140ms:
       // fifty tween objects a second, allocated, ticked and discarded, forever,
       // for a background texture. Cutting the rate to four cells every 190ms
-      // made it cheap and also made it dead — reviewed as "it's now simple".
+      // made it cheap and also made it dead, reviewed as "it's now simple".
       // That was the wrong lever. The cost was never the number of flips, it
       // was the machinery around each one.
       //
@@ -121,11 +121,11 @@ export function Hero() {
       // every 110ms. Roughly two hundred flips a second, and still 60fps.
       //
       // The run is what makes it read as a mechanical board rather than
-      // random noise — real split-flap boards update a whole row at once, so a
+      // random noise: real split-flap boards update a whole row at once, so a
       // sweep of adjacent cells is the gesture the eye is looking for.
       const RUN = 9;
       // `const`, not `let`: the array is mutated in place (`push`, then
-      // `.length = 0`) and never reassigned, which is deliberate — reallocating
+      // `.length = 0`) and never reassigned, which is deliberate: reallocating
       // it every 110ms is exactly the per-frame garbage this pass removed.
       const previous: HTMLElement[] = [];
 
@@ -153,7 +153,7 @@ export function Hero() {
       // A delayedCall is a zero-duration tween: `repeat` replays that zero
       // duration, not the delay, so the callback fires once and the board sits
       // frozen forever. It looks correct in the source and does nothing on
-      // screen — caught only because the reduced-motion test ships with a
+      // screen: caught only because the reduced-motion test ships with a
       // positive control asserting the board DOES move otherwise.
       const loop = gsap.timeline({ repeat: -1 });
       loop.call(tick).to({}, { duration: 0.11 });
@@ -192,7 +192,7 @@ export function Hero() {
         ))}
       </div>
 
-      {/* The ground the plate stands on. A background layer, not a shadow —
+      {/* The ground the plate stands on. A background layer, not a shadow:
           see the note at the top of this file. */}
       <div aria-hidden="true" className="l-vignette pointer-events-none absolute inset-0 z-10" />
 

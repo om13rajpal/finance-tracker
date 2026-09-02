@@ -26,7 +26,7 @@ type Stage = "email" | "code";
 /**
  * `useLayoutEffect` on the client, `useEffect` on the server.
  *
- * The resume check reads sessionStorage, so it can only run on the client —
+ * The resume check reads sessionStorage, so it can only run on the client,
  * but it must run BEFORE paint. With a plain `useEffect` a returning user sees
  * the email field for one frame and then watches it swap to the code entry.
  * React warns about `useLayoutEffect` during SSR, hence the swap.
@@ -44,7 +44,7 @@ const REQUEST_TIMEOUT_MS = 20_000;
 /**
  * The server compares the address with `===` against ALLOWED_LOGIN_EMAIL
  * (auth.service.ts), so " Me@Example.com " never matches. Normalise once, here,
- * and use the SAME normalised value for both stages — the previous version
+ * and use the SAME normalised value for both stages: the previous version
  * trimmed on request but sent the raw state on verify, so a stray space made
  * step one succeed and step two fail with a misleading "invalid code".
  */
@@ -67,7 +67,7 @@ export default function LoginPage() {
    *
    * State alone is not enough: two clicks inside the same React batch both read
    * the old `busy === false` and both fire. That matters more here than in most
-   * forms, because `requestOtp` deletes every prior code for the address — so a
+   * forms, because `requestOtp` deletes every prior code for the address, so a
    * duplicate request silently invalidates the code already sitting in the
    * user's inbox, and the app looks like it emailed them a broken code.
    */
@@ -77,7 +77,7 @@ export default function LoginPage() {
   /**
    * Resume a code entry that is still alive. See lib/login-session.ts.
    *
-   * The email stage is what renders on the server — it is the correct default
+   * The email stage is what renders on the server: it is the correct default
    * and the overwhelmingly common case, so the page ships real content rather
    * than a skeleton. This runs before paint, so a resumed session lands
    * straight on the code entry with no flash of the email field.
@@ -94,7 +94,7 @@ export default function LoginPage() {
   /**
    * Already signed in? Leave.
    *
-   * The session is an httpOnly cookie, so it cannot be read from JS — the only
+   * The session is an httpOnly cookie, so it cannot be read from JS: the only
    * way to know is to ask. `/auth/me` answers 401 when unauthenticated, which
    * is the overwhelmingly common case here, so the form renders immediately
    * and this only ever redirects the rare visitor who still has a live session.
@@ -122,7 +122,7 @@ export default function LoginPage() {
    * Move focus to the error when one appears.
    *
    * `role="alert"` announces it, but a keyboard or screen-reader user still has
-   * to hunt for it — especially a terminal error, where the fix is not "retry"
+   * to hunt for it, especially a terminal error, where the fix is not "retry"
    * but "read this". The notice is programmatically focusable for exactly this.
    */
   const noticeRef = useRef<HTMLDivElement>(null);
@@ -318,7 +318,7 @@ export default function LoginPage() {
                 <Button
                   type="submit"
                   size="block"
-                  /* On expiry the primary action is no longer "Verify" — the code
+                  /* On expiry the primary action is no longer "Verify": the code
                      in hand cannot work. Verify steps down to ghost and the
                      resend takes over as primary. */
                   variant={expired ? "ghost" : "primary"}
@@ -329,7 +329,7 @@ export default function LoginPage() {
 
                 {/* ── the resend affordance ──────────────────────────────
                     Before the cooldown elapses this is NOT a button. It is a
-                    mono clock with no border, no fill and no stamp — you cannot
+                    mono clock with no border, no fill and no stamp: you cannot
                     double-submit an affordance that was never drawn. Resending
                     is destructive: it deletes the code already in the inbox. */}
                 <div id="code-help" className="flex flex-col gap-8">

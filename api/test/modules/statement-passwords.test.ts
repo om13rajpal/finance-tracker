@@ -52,7 +52,7 @@ describe("statement passwords routes", () => {
     expect(res.status).toBe(400);
   });
 
-  it("lists only {_id, label, createdAt} — never leaks the password in any form", async () => {
+  it("lists only {_id, label, createdAt}, never leaks the password in any form", async () => {
     const userId = "user-sp-list";
     const cookie = authCookie(userId);
     await request(app)
@@ -85,7 +85,7 @@ describe("statement passwords routes", () => {
     expect(res.body).toHaveLength(0);
   });
 
-  it("deletes a password, scoped to the owner — 404s for another user's password", async () => {
+  it("deletes a password, scoped to the owner: 404s for another user's password", async () => {
     const ownerCookie = authCookie("user-sp-delete-owner");
     const createRes = await request(app)
       .post("/statement-passwords")

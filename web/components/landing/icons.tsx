@@ -5,8 +5,8 @@
  * from a `<defs>` sprite. That is deliberate: the LOCKED icon rule says every
  * `<svg>` wrapping a `<use href="#id">` must carry `viewBox="0 0 24 24"`,
  * because the sprite's icons are `<g>` elements and a `<g>` has no intrinsic
- * viewBox to inherit. Inlining sidesteps the whole class of bug — there is no
- * `<use>` on this page at all — and it also means the marks ship inside the
+ * viewBox to inherit. Inlining sidesteps the whole class of bug (there is no
+ * `<use>` on this page at all) and it also means the marks ship inside the
  * server-rendered HTML, so they are present with JavaScript disabled.
  *
  * Everything here is stroke-only on a 24-unit grid, so a single mark scales
@@ -82,7 +82,7 @@ export function BucketGlyph({
 /**
  * The 30px taxonomy chip, exactly as the authenticated app draws it: flat
  * bucket fill, 1.5px ink border, the glyph at 56% of the diameter so a 2-unit
- * stroke on the 24-grid lands at ~1.42px — the locked `--stroke-icon` maths.
+ * stroke on the 24-grid lands at ~1.42px: the locked `--stroke-icon` maths.
  */
 export function BucketChip({ id, size = 30 }: { id: BucketId; size?: number }) {
   return (
@@ -107,7 +107,7 @@ export function BucketDisc({
   style,
 }: {
   id: BucketId;
-  /** A CSS length — usually a clamp(), so a 420px disc on a desktop is a
+  /** A CSS length: usually a clamp(), so a 420px disc on a desktop is a
    *  160px disc on a phone instead of swallowing the copy. */
   size: string;
   className?: string;
@@ -125,7 +125,7 @@ export function BucketDisc({
 }
 
 /**
- * The rupee core. Cream stroke on ink — the login constellation's centre,
+ * The rupee core. Cream stroke on ink: the login constellation's centre,
  * blown up to fill a hero. Hollow, so the wordmark in front of it never loses
  * contrast: cream type over a 22%-cream stroke on ink still measures ~9.9:1.
  */
@@ -159,7 +159,7 @@ export function RupeeCore({
         run in one resolved family, so if the display face has no U+20B9 the
         glyph falls apart; HTML does per-character font fallback and simply
         borrows the rupee from the next family in the stack. Outlined rather
-        than filled — hairline thinking, at 280px.
+        than filled: hairline thinking, at 280px.
       */}
       <span
         className="relative font-disp leading-none"
@@ -178,12 +178,12 @@ export function RupeeCore({
 
 /**
  * The tether: the dotted lead-in that marks a row the Gmail parser filed
- * itself. LOCKED stroke — 1.6px, `dasharray 4 6`, round caps.
+ * itself. LOCKED stroke: 1.6px, `dasharray 4 6`, round caps.
  *
  * It is revealed by scaling this SVG from its left edge, NEVER by animating
  * `strokeDashoffset` against a path-length `strokeDasharray`. Doing that
  * replaces the `4 6` pattern with one enormous dash and the tether arrives
- * SOLID — a documented, shipped-and-fixed defect (`landing-tether-lost-its-dots`).
+ * SOLID: a documented, shipped-and-fixed defect (`landing-tether-lost-its-dots`).
  * A solid line is simply not the tether.
  */
 export function Tether({

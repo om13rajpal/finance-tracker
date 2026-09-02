@@ -8,7 +8,7 @@ interface MfApiLatestResponse {
  * Fetches the latest NAV for a mutual fund scheme from mfapi.in.
  *
  * mfapi.in returns `nav` as a STRING (e.g. `"45.5000"`), so it's explicitly coerced
- * to a number here — a silent string/number bug would make downstream `currentValue`
+ * to a number here: a silent string/number bug would make downstream `currentValue`
  * calculations wrong or NaN without ever throwing.
  *
  * Any malformed/unexpected response shape (missing `data`, missing `nav`, non-numeric

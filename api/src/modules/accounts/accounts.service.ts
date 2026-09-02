@@ -15,7 +15,7 @@ import { Account } from "../../models/Account.js";
  * always stored as a positive "amount owed": the Accounts page's balance
  * fields are plain freeform number inputs with no sign coercion, and a
  * credit card's balance is displayed back to the user as a negative number
- * (red "Liability" text) — nothing in the UI tells a user which sign to
+ * (red "Liability" text); nothing in the UI tells a user which sign to
  * type. Negating a value a user may have entered as already-negative would
  * double-negate it and ADD the debt to net worth instead of subtracting it,
  * which is exactly backwards. `Math.abs` makes this correct regardless of

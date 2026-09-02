@@ -5,21 +5,21 @@ Branch: `lint-setup` (worktree: `finance-tracker-lint-setup`, forked from `finan
 ## Files added / modified
 
 **New files:**
-- `.prettierrc` — shared Prettier config for the whole monorepo
-- `.prettierignore` — node_modules, dist, .next, coverage, lockfile, log files, AppleDouble `._*` files
-- `eslint.config.mjs` — single shared flat-config ESLint setup covering `api/`, `web/`, and `shared/`
+- `.prettierrc`: shared Prettier config for the whole monorepo
+- `.prettierignore`: node_modules, dist, .next, coverage, lockfile, log files, AppleDouble `._*` files
+- `eslint.config.mjs`: single shared flat-config ESLint setup covering `api/`, `web/`, and `shared/`
 
 **Modified files:**
-- `package.json` (root) — added `lint`, `format`, `format:check` scripts; added devDependencies (see below)
-- `pnpm-lock.yaml` — updated by `pnpm add`
-- `pnpm-workspace.yaml` — see "Side-fix" note below
+- `package.json` (root): added `lint`, `format`, `format:check` scripts; added devDependencies (see below)
+- `pnpm-lock.yaml`: updated by `pnpm add`
+- `pnpm-workspace.yaml`: see "Side-fix" note below
 
 **Root devDependencies added:**
 ```
 @eslint/eslintrc     ^3.3.6
-@eslint/js           ^8.57.0   (pinned to match eslint 8.57.1 — the npm-latest @eslint/js is v10.x,
+@eslint/js           ^8.57.0   (pinned to match eslint 8.57.1: the npm-latest @eslint/js is v10.x,
                                  which declares a peer on eslint ^10 and would create an unmet-peer warning)
-eslint               8.57.1    (pinned — see "Why ESLint 8, not 9" below)
+eslint               8.57.1    (pinned: see "Why ESLint 8, not 9" below)
 eslint-config-next   14.2.5    (matches the installed next version in web/package.json)
 eslint-config-prettier ^10.1.8
 globals              ^17.11.0
@@ -27,7 +27,7 @@ prettier             ^3.9.6
 typescript-eslint    ^8.68.0
 ```
 
-No new dependencies were added to `api/package.json` or `web/package.json` — ESLint and Prettier
+No new dependencies were added to `api/package.json` or `web/package.json`: ESLint and Prettier
 are root-level, shared across the whole pnpm workspace, and `eslint.config.mjs` scopes rules to
 each package via file globs (`api/src/**/*.ts`, `web/**/*.ts`, `web/**/*.tsx`) rather than
 duplicating config per package.
@@ -37,7 +37,7 @@ duplicating config per package.
 The task asked for flat config (`eslint.config.js`/`.mjs`), which is supported since ESLint 8.57
 (auto-detected without an env var, confirmed empirically here) and is the default in ESLint 9.
 `eslint-config-next@14.2.5` (matching the Next 14.2.5 already in `web/package.json`) declares a
-peer dependency of `eslint": "^7.23.0 || ^8.0.0"` — it does not support ESLint 9. Using ESLint 9
+peer dependency of `eslint": "^7.23.0 || ^8.0.0"`: it does not support ESLint 9. Using ESLint 9
 would have meant either fighting a peer-dependency conflict or falling back to a hand-rolled
 React/TS ruleset for `web/`. Pinning to ESLint `8.57.1` (the last 8.x release) gets flat config
 *and* a clean, conflict-free composition of Next's own config, confirmed by `pnpm peers check`
@@ -66,19 +66,19 @@ with single-quote occurrences, the latter mostly apostrophes inside string liter
 }
 ```
 
-- `semi: true`, `singleQuote: false`, `tabWidth: 2` — directly match every sampled file.
-- `trailingComma: "es5"` — matches the existing pattern of trailing commas in multi-line object/array
+- `semi: true`, `singleQuote: false`, `tabWidth: 2`: directly match every sampled file.
+- `trailingComma: "es5"`: matches the existing pattern of trailing commas in multi-line object/array
   literals (e.g. `accounts.routes.ts`'s `createSchema`) but *no* trailing comma after the last
   argument in multi-line function calls (e.g. `Account.findOneAndUpdate(..., { new: true }\n)`),
   which is exactly Prettier's `es5` behavior (not `all`, Prettier 3's default).
-- `printWidth: 100` — the codebase isn't Prettier-formatted yet so there's no ground truth here;
+- `printWidth: 100`: the codebase isn't Prettier-formatted yet so there's no ground truth here;
   100 is a reasonable middle ground given several existing lines already run 110-124 chars
   (`categories.service.ts`, `recurring.routes.ts`, `investments.routes.ts`). Flagged as a judgment
-  call, not a measured convention — easy to change before the reformat follow-up if the team wants 80.
+  call, not a measured convention: easy to change before the reformat follow-up if the team wants 80.
 
 ## ESLint rule design
 
-- Base: `@eslint/js` recommended + `typescript-eslint` recommended (non-type-checked — deliberately
+- Base: `@eslint/js` recommended + `typescript-eslint` recommended (non-type-checked: deliberately
   not `recommendedTypeChecked`/`strictTypeChecked`, to avoid requiring `parserOptions.project`
   wiring across three tsconfigs and to avoid a much larger, noisier first-run finding set).
 - `eslint-config-prettier` applied last, disabling all ESLint stylistic rules that could conflict
@@ -87,7 +87,7 @@ with single-quote occurrences, the latter mostly apostrophes inside string liter
 - **`(req as any).userId` / `(err as any).status` pattern**: `@typescript-eslint/no-explicit-any`
   is turned off, but *only* for the specific files where this established, already-reviewed pattern
   lives:
-  - `api/src/**/*.routes.ts` (all route files — this is where nearly all 16 occurrences are)
+  - `api/src/**/*.routes.ts` (all route files: this is where nearly all 16 occurrences are)
   - `api/src/modules/auth/auth.middleware.ts`
   - `api/src/modules/auth/auth.service.ts`
   - `api/src/lib/errorHandler.ts`
@@ -95,7 +95,7 @@ with single-quote occurrences, the latter mostly apostrophes inside string liter
   This is a targeted, file-scoped allowance, not a blanket `no-explicit-any: off` for all of
   `api/`. Confirmed by running `pnpm lint`: zero findings in any `*.routes.ts` file, in
   `auth.middleware.ts`, `auth.service.ts`, or `errorHandler.ts`. `no-explicit-any` is still an
-  **error** everywhere else in `api/` — it correctly still flags `categories.service.ts` (a
+  **error** everywhere else in `api/`: it correctly still flags `categories.service.ts` (a
   different, unrelated `any` usage: `cat as any` when building a category tree, not the req/err
   pattern) and several `any` usages in test files.
 - `@typescript-eslint/no-unused-vars` is set to `warn` (not the recommended default `error`) with
@@ -144,29 +144,29 @@ configure with the `no-html-link-for-pages` rule in your eslint config file.
 ✖ 14 problems (12 errors, 2 warnings)
 ```
 
-Exit code 1 (as expected — real findings exist). ESLint scanned 89 files total (79 in `api/`,
-8 in `web/`, plus root config files) — confirmed via `eslint . --format json` file count; `web/`
+Exit code 1 (as expected: real findings exist). ESLint scanned 89 files total (79 in `api/`,
+8 in `web/`, plus root config files): confirmed via `eslint . --format json` file count; `web/`
 came back with **zero** findings across all 6 real source files
 (`layout.tsx`, `page.tsx`, `login/page.tsx`, `lib/api-client.ts`, `next-env.d.ts`,
 `tailwind.config.ts`), plus its config files (`next.config.mjs`, `postcss.config.mjs`).
 
 **Note on the "Pages directory cannot be found" line**: this is an informational message printed
 by `eslint-config-next`'s `no-html-link-for-pages` rule detection (it looks for a legacy Pages
-Router directory that doesn't exist in this App Router project) — not a lint error, and expected
+Router directory that doesn't exist in this App Router project): not a lint error, and expected
 for an App Router-only Next project.
 
 **Summary of finding types (for the follow-up cleanup task):**
-- 10× `@typescript-eslint/no-explicit-any` (error) — genuine, pre-existing `any` usage *outside*
+- 10× `@typescript-eslint/no-explicit-any` (error): genuine, pre-existing `any` usage *outside*
   the reviewed req/err pattern: 3 in `categories.service.ts` (building a category tree), 1 in
   `duplicate-detection.ts`, 6 across test files (mostly casting mocked Mongoose documents/mocks).
   These are real code-quality findings, not formatting noise.
-- 1× `@typescript-eslint/no-require-imports` (error) — a single `require()` in
+- 1× `@typescript-eslint/no-require-imports` (error): a single `require()` in
   `api/test/modules/auth.middleware.test.ts` instead of an ES import.
-- 2× `@typescript-eslint/no-unused-vars` (warning) — unused `beforeEach` import and unused
+- 2× `@typescript-eslint/no-unused-vars` (warning): unused `beforeEach` import and unused
   `hashOtp` in `api/test/modules/auth.test.ts`.
 
 Total: **14 findings across the entire ~89-file scanned codebase**, all in `api/test/` or a
-handful of `api/src/` files — this is a small, easily triageable list, not an overwhelming wall of
+handful of `api/src/` files: this is a small, easily triageable list, not an overwhelming wall of
 noise. None of it will block or complicate the planned formatting-only follow-up pass.
 
 ### `pnpm format:check` (real output)
@@ -218,8 +218,8 @@ Checking formatting...
 Code style issues found in 41 files. Run Prettier with --write to fix.
 ```
 
-Exit code 1 (expected — nothing has been formatted yet). 41 files flagged, entirely within
-`api/` and 3 markdown files under `docs/superpowers/`. **No files were reformatted** — this
+Exit code 1 (expected: nothing has been formatted yet). 41 files flagged, entirely within
+`api/` and 3 markdown files under `docs/superpowers/`. **No files were reformatted**: this
 command is `--check` only (non-mutating), no `--write`/`--fix` was run against the codebase.
 `web/` and `shared/` reported no formatting issues (their few existing files already happen to
 match the chosen style).
@@ -244,7 +244,7 @@ $ cd web && npx tsc --noEmit
 (no output, exit 0)
 ```
 
-Both pass cleanly, before and after the lint/format tooling was added — confirming the new
+Both pass cleanly, before and after the lint/format tooling was added: confirming the new
 config doesn't affect type-checking at all (ESLint and `tsc` are independent tools here; no
 `tsconfig.json` files were modified).
 
@@ -289,15 +289,15 @@ allowBuilds:
 
 This is a minimal, mechanical fix to a pre-existing broken placeholder (not a reformat, not a
 logic change) and was necessary for `pnpm lint` / `pnpm format:check` / `pnpm --filter ... exec`
-to run at all, for anyone, in this environment — not just for verifying this task.
+to run at all, for anyone, in this environment: not just for verifying this task.
 
 ## Self-review checklist
 
 - [x] `.prettierrc` style choices verified against `api/src/config/env.ts`,
-      `api/src/modules/accounts/accounts.routes.ts`, and `web/app/layout.tsx` — double quotes,
+      `api/src/modules/accounts/accounts.routes.ts`, and `web/app/layout.tsx`: double quotes,
       semicolons, 2-space indent, es5 trailing commas all confirmed as prevailing style.
 - [x] `pnpm lint` produces a **small, triageable** finding set (14 total: 12 errors, 2 warnings,
-      across ~89 scanned files) — not an overwhelming wall of noise. Breakdown by type given above
+      across ~89 scanned files): not an overwhelming wall of noise. Breakdown by type given above
       for the follow-up cleanup task.
 - [x] The `(req as any).userId` pattern is confirmed **not** flagged: zero ESLint findings in any
       `api/src/**/*.routes.ts` file, `auth.middleware.ts`, `auth.service.ts`, or

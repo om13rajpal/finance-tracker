@@ -11,13 +11,13 @@ export interface ParsedTradeRow {
 export type ParsedTradeRowResult = ParsedTradeRow | { error: string };
 
 // Zerodha and Groww trade-history CSV exports share the same column shape:
-// Symbol, Trade Date, Trade Type, Quantity, Price — Trade Date as DD/MM/YYYY.
+// Symbol, Trade Date, Trade Type, Quantity, Price, with Trade Date as DD/MM/YYYY.
 // Shared here (rather than duplicated per-platform) so date/validation logic
 // can't silently drift between the two parsers.
 //
 // Per-row error isolation (matches the Task 13 generic bank-statement parser
 // convention): a malformed row never throws out of this function and never
-// aborts parsing of the rest of the file — it comes back as `{ error }` so the
+// aborts parsing of the rest of the file: it comes back as `{ error }` so the
 // caller can record just that row as failed and continue the batch.
 export function parseTradeCsv(csvText: string): ParsedTradeRowResult[] {
   const records: Record<string, string>[] = parse(csvText, { columns: true, skip_empty_lines: true, trim: true });
@@ -41,7 +41,7 @@ export function parseTradeCsv(csvText: string): ParsedTradeRowResult[] {
     const isoDate = `${yyyy}-${mmStr}-${ddStr}`;
 
     // Upper-cased, not just trimmed: `symbol` is the join key for everything
-    // downstream — FIFO sell matching (`applySellFifo` queries lots by exact symbol),
+    // downstream: FIFO sell matching (`applySellFifo` queries lots by exact symbol),
     // the per-symbol holdings rollup, and price lookup/caching. A single case variant
     // between two rows (or two exports) would otherwise silently fork one position
     // into two half-holdings whose sells can no longer find their own buys. NSE/BSE

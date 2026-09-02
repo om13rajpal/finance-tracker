@@ -89,7 +89,7 @@ describe("getCategorizationSuggestions", () => {
       status: "confirmed",
     });
     await seedUncategorizedConfirmed("Zepto", 2);
-    // Only 2 genuinely uncategorized — below threshold.
+    // Only 2 genuinely uncategorized: below threshold.
     expect(await getCategorizationSuggestions(userId)).toHaveLength(0);
   });
 

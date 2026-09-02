@@ -34,13 +34,13 @@ import { useToast } from "@/components/ui/Toast";
  * Sorted · Goals
  *
  * A goal is money set aside for something named, which is precisely the
- * `savings` bucket — so every bar on this screen is savings blue. That is not a
+ * `savings` bucket, so every bar on this screen is savings blue. That is not a
  * decorative choice: it is the one place in the product where a bucket colour
  * means "this is what that bucket is FOR", and it makes the Budgets screen's
  * savings row and this screen visibly the same idea.
  *
  * A REACHED GOAL IS NOT AN ERROR. The bar clamps at 100% and the row says
- * "reached" in words. Over-funding is fine and common — you do not get warned
+ * "reached" in words. Over-funding is fine and common: you do not get warned
  * for saving too much.
  */
 
@@ -82,7 +82,7 @@ export default function GoalsPage() {
                 />
               </div>
               <PanelFooter>
-                Goals are tracked by hand — nothing here moves on its own
+                Goals are tracked by hand, nothing here moves on its own
               </PanelFooter>
             </Panel>
           ) : null}
@@ -197,7 +197,7 @@ function GoalRow({ goal }: { goal: Goal }) {
           </span>
           {/* The editor is BEHIND a toggle, matching the Accounts row.
               Four goals meant four permanently-open text inputs and eight
-              buttons on a screen whose actual job is to show four bars — the
+              buttons on a screen whose actual job is to show four bars: the
               controls outweighed the content, and a goal is something you top
               up once a month, not something you edit while reading. */}
           {!editing ? (
@@ -341,7 +341,7 @@ function AddGoalPanel() {
         </Field>
 
         <Helper>
-          Progress is yours to move. Nothing on this screen is deducted from an account — a goal is
+          Progress is yours to move. Nothing on this screen is deducted from an account: a goal is
           a promise you are keeping track of, not a transfer.
         </Helper>
 

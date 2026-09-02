@@ -24,9 +24,9 @@ export function parseStatementRows(pages: PDFExtractPage[], parserKey?: string):
 /**
  * The statement's own closing balance, if the parser for this `parserKey`
  * knows how to find one (see `STATEMENT_CLOSING_BALANCE_REGISTRY`'s doc
- * comment — not every bank layout has this written yet). `null` for no
+ * comment: not every bank layout has this written yet). `null` for no
  * `parserKey`, an unregistered one, or a registered one that genuinely
- * couldn't find a balance in this particular document — all three are
+ * couldn't find a balance in this particular document. All three are
  * "nothing to reconcile with," not an error.
  */
 export function findStatementClosingBalance(pages: PDFExtractPage[], parserKey?: string): number | null {
@@ -36,10 +36,10 @@ export function findStatementClosingBalance(pages: PDFExtractPage[], parserKey?:
 
 /**
  * The statement's own printed opening balance, when a finder is registered for
- * this `parserKey` (HDFC only today — see `STATEMENT_OPENING_BALANCE_REGISTRY`'s
+ * this `parserKey` (HDFC only today, see `STATEMENT_OPENING_BALANCE_REGISTRY`'s
  * doc comment for why SBI is deliberately excluded). `null` for no `parserKey`,
  * an unregistered one, or a registered one that couldn't find one in this
- * document — used only as a data-quality cross-check against the closing
+ * document. Used only as a data-quality cross-check against the closing
  * balance, never to reconcile the account directly.
  */
 export function findStatementOpeningBalance(pages: PDFExtractPage[], parserKey?: string): number | null {

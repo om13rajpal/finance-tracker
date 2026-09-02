@@ -23,14 +23,14 @@ export type StatementProcessJob = {
   /**
    * Path to the uploaded PDF's bytes on local disk, written by the route
    * handler before enqueueing. Deliberately a path, not the file's bytes
-   * (base64 or otherwise) — this app's other 7 workers all carry small,
+   * (base64 or otherwise): this app's other 7 workers all carry small,
    * cheap-to-serialize job payloads (e.g. gmail-email-parse's `{userId,
    * historyId}`), and Redis/BullMQ is coordination infrastructure, not blob
    * storage. A multi-MB statement belongs on disk, referenced by a short
    * string, not duplicated into a Redis-serialized copy of an Express
    * request body that's already sitting in memory. Safe only because this
    * app runs `connectDB()` -> `startBackgroundWorkers()` -> `app.listen()`
-   * in one single process/container (confirmed via `render.yaml`) — the
+   * in one single process/container (confirmed via `render.yaml`). The
    * worker reading this path is the same machine, often the same process,
    * that wrote it.
    */
@@ -40,7 +40,7 @@ export type StatementProcessJob = {
 type RowResult = { row: number; status: "success" | "failed"; reason?: string; transactionId?: string };
 
 // Roughly what ~20 real-world statement pages produce at the observed
-// ~12 rows/page density. The point isn't hitting this figure exactly — it's
+// ~12 rows/page density. The point isn't hitting this figure exactly: it's
 // bounding how much synchronous work (a DB read + a DB write per row) runs
 // before this worker yields back to the event loop, so one huge statement
 // can't monopolize the single Node process this app runs everything else
@@ -57,14 +57,14 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 /**
- * The latest date among this statement's own successfully-parsed rows — used as
+ * The latest date among this statement's own successfully-parsed rows, used as
  * the closing balance's "as of" point for `reconcileBalance`'s staleness guard.
  * `null` when there are no dateable rows at all (a statement whose only balance
- * signal is its Opening Balance, with zero transaction rows — see
+ * signal is its Opening Balance, with zero transaction rows; see
  * `findHdfcClosingBalance`'s own doc comment), in which case `reconcileBalance`
  * applies unconditionally rather than refusing to reconcile at all.
  *
- * Deliberately the max across every row, not just the last one in array order —
+ * Deliberately the max across every row, not just the last one in array order:
  * correct regardless of whether a parser's rows happen to already be
  * chronologically sorted.
  */
@@ -97,7 +97,7 @@ function rowDateRange(rows: StatementRowResult[]): { start: Date; end: Date } | 
 
 /**
  * Looks for a previously-imported, still-existing `pdf_statement` batch on
- * the SAME account whose own `dateRange` overlaps `range` — a genuinely
+ * the SAME account whose own `dateRange` overlaps `range`, a genuinely
  * common scenario (re-downloading a statement, or downloading a fresh one
  * that covers some of the same days as one already imported), and one that
  * used to be an unhandled blind spot: the person would only discover the
@@ -107,7 +107,7 @@ function rowDateRange(rows: StatementRowResult[]): { start: Date; end: Date } | 
  * Deliberately excludes `currentBatchId` (a retry of THIS job re-parses the
  * same bytes and would otherwise "overlap" its own prior partial attempt)
  * and any batch with no stored `dateRange` (predates this field, or itself
- * had no dateable rows — nothing to compare against, not a reason to warn).
+ * had no dateable rows: nothing to compare against, not a reason to warn).
  * Picks the LARGEST overlap when more than one prior batch qualifies, since
  * that's the one most worth calling out.
  */
@@ -142,7 +142,7 @@ async function findOverlapWarning(
 
   if (!best) return null;
   const dayWord = best.overlapDays === 1 ? "day" : "days";
-  return `Overlaps about ${best.overlapDays} ${dayWord} with an already-imported statement ("${best.filename}") — some rows below may turn out to be duplicates.`;
+  return `Overlaps about ${best.overlapDays} ${dayWord} with an already-imported statement ("${best.filename}"). Some rows below may turn out to be duplicates.`;
 }
 
 const MISMATCH_TOLERANCE = 0.01;
@@ -152,7 +152,7 @@ const MISMATCH_TOLERANCE = 0.01;
  * row's amount)` land on `closingBalance` (within rounding)? Both balances are
  * read straight off the document's own printed figures; the sum comes from
  * whichever rows THIS parser actually managed to extract. A mismatch beyond
- * `MISMATCH_TOLERANCE` means some row(s) were missed or misparsed — worth
+ * `MISMATCH_TOLERANCE` means some row(s) were missed or misparsed: worth
  * flagging on the `ImportBatch` for visibility, but never worth blocking the
  * import over (the printed `closingBalance` itself is still trusted and still
  * used to reconcile the account either way).
@@ -171,7 +171,7 @@ function checkClosingBalanceReconciliation(
   return { expectedClosingBalance, mismatch };
 }
 
-/** Best-effort delete — a leaked temp file on a container's ephemeral disk is a
+/** Best-effort delete: a leaked temp file on a container's ephemeral disk is a
  * nuisance, never worth failing (or retrying) a job over. */
 async function cleanupTempFile(filePath: string): Promise<void> {
   try {
@@ -183,7 +183,7 @@ async function cleanupTempFile(filePath: string): Promise<void> {
 
 /**
  * Processes one queued PDF-statement upload: unlocks it, parses every row,
- * and turns each parseable, non-duplicate row into a `PendingTransaction` —
+ * and turns each parseable, non-duplicate row into a `PendingTransaction`,
  * the exact same per-row logic `statement-upload.routes.ts` used to run
  * synchronously inline, moved here so a large statement's page-by-page work
  * happens in bounded chunks inside a background worker instead of blocking
@@ -205,7 +205,7 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
     buffer = await fs.readFile(filePath);
   } catch (err) {
     // The temp file is gone (already cleaned up by a prior attempt, or the
-    // disk was wiped) — nothing left to process. This can only recur, so
+    // disk was wiped). Nothing left to process. This can only recur, so
     // fail the batch outright rather than burning retries on it.
     await ImportBatch.findByIdAndUpdate(batchId, {
       status: "failed",
@@ -216,7 +216,7 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
 
   const unlocked = await tryUnlockPdf(buffer, userId);
   if (!unlocked.success) {
-    // Not a transient failure — retrying with the same stored passwords 3
+    // Not a transient failure: retrying with the same stored passwords 3
     // more times (BullMQ's default) would never succeed. Update the batch
     // and return normally (don't throw) so BullMQ marks this job complete,
     // not failed-and-retried.
@@ -231,15 +231,15 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
 
   const rows = parseStatementRows(unlocked.pages, parserKey);
   // The statement's OWN stated closing balance, when the parser for this
-  // bank knows how to find one — read straight off the document, not summed
+  // bank knows how to find one, read straight off the document, not summed
   // from whichever rows below parse cleanly, so it's used to reconcile the
   // linked Account's balance once processing finishes (see the end of this
   // function). `null` for a parser with no closing-balance support yet
-  // (everything except HDFC today) — nothing to reconcile with, not an
+  // (everything except HDFC today): nothing to reconcile with, not an
   // error.
   const closingBalance = findStatementClosingBalance(unlocked.pages, parserKey);
   // The statement's own printed OPENING balance, when a finder is registered for
-  // this parser (HDFC only — see `STATEMENT_OPENING_BALANCE_REGISTRY`'s doc
+  // this parser (HDFC only, see `STATEMENT_OPENING_BALANCE_REGISTRY`'s doc
   // comment). Used purely for the data-quality cross-check below, never to
   // reconcile the account directly.
   const openingBalance = findStatementOpeningBalance(unlocked.pages, parserKey);
@@ -248,14 +248,14 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
     openingBalance,
     closingBalance
   );
-  // The statement's own latest transaction date — the "as of" point
+  // The statement's own latest transaction date: the "as of" point
   // `reconcileBalance`'s staleness guard compares against, so an older statement
   // (or one processed out of chronological order relative to what's already been
   // reconciled) can never regress a more current balance. `null` when there are
   // no dateable rows at all (see `latestRowDate`'s doc comment).
   const asOfDate = latestRowDate(rows);
   // This statement's own date span + whether it overlaps a previously-
-  // imported statement on the same account — see `findOverlapWarning`.
+  // imported statement on the same account (see `findOverlapWarning`).
   // Computed once, up front (before the chunk loop below, which can take a
   // while on a large statement), on the reasoning that a retry re-parses
   // the exact same deterministic bytes into the exact same range either way.
@@ -268,10 +268,10 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
 
   // Resume rather than restart: if a prior attempt at THIS job already
   // persisted some chunks before failing (see the error handling at the
-  // bottom of this function — a chunk-processing error is deliberately left
+  // bottom of this function, a chunk-processing error is deliberately left
   // to throw so BullMQ retries the whole job), a retry re-parses the same
   // deterministic bytes into the same rows, but must not redo the chunks
-  // that already succeeded — replaying them would insert a second
+  // that already succeeded: replaying them would insert a second
   // `PendingTransaction` for each already-inserted row and double-append
   // their `rowResults`. Every persisted chunk is a full `CHUNK_SIZE` (only
   // the very last chunk of a statement can be shorter, and by construction
@@ -286,7 +286,7 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
     const rowResults: RowResult[] = [];
     const resultingIds: string[] = [];
     // Rows that pass the duplicate check in this chunk, paired with the row
-    // number they came from — collected up front so the actual inserts can
+    // number they came from, collected up front so the actual inserts can
     // happen in one `insertMany` round-trip instead of N sequential
     // `.create()` calls. The duplicate check itself has to stay one query
     // per row (each is a genuine conditional read against current
@@ -308,7 +308,7 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
       }
 
       // Raw statement narration ("UPI/DR/103523751353/NETFLIX/HDFC/netflix.bd/
-      // Execu...") is technically correct but unreadable — `cleanMerchantLabel`
+      // Execu...") is technically correct but unreadable: `cleanMerchantLabel`
       // turns it into a short display name ("Netflix"). The original text is
       // never discarded: it moves into `note` whenever the parser left that
       // empty (true for every bank-specific parser today), so nothing is lost,
@@ -355,20 +355,20 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
 
     // Yield to the event loop between chunks so this job can't monopolize
     // the single process this app's HTTP server and every other worker also
-    // run in — the whole point of moving this off the request thread.
+    // run in. The whole point of moving this off the request thread.
     await new Promise((resolve) => setImmediate(resolve));
   }
 
   // Reconcile the linked account's balance to what the statement itself says
-  // it should be — the whole point being that nobody has to go type this in
+  // it should be: the whole point being that nobody has to go type this in
   // by hand after every import. Runs exactly once per successful completion
   // (this line is only ever reached once the chunk loop above finishes
-  // without throwing — a retry of a job that failed mid-loop simply hasn't
+  // without throwing, a retry of a job that failed mid-loop simply hasn't
   // gotten here yet).
   //
   // STALENESS-GUARDED via `reconcileBalance`: an older statement (or one
   // processed out of chronological order relative to what's already been
-  // reconciled — the exact "several overlapping statements imported out of
+  // reconciled, the exact "several overlapping statements imported out of
   // order" scenario this used to be a known, unhandled limitation for) can no
   // longer regress a more current balance. `asOfDate` (this statement's own
   // latest transaction date) is compared against the account's stored
@@ -381,13 +381,13 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
     await invalidateDashboardCache(userId);
 
     // If (and only if) that reconciliation actually applied, every pending
-    // transaction THIS import created already has its effect captured by it
-    // — the statement's closing balance reflects every one of this batch's
+    // transaction THIS import created already has its effect captured by it:
+    // the statement's closing balance reflects every one of this batch's
     // rows, confirmed or not, the instant the import finishes. Stamping them
     // `balanceReconciledAtImport: true` is what stops the confirm route
     // (`pending.routes.ts`, via `applyConfirmedTransactionBalanceEffect`)
     // from ALSO applying each row's own amount as a delta once someone
-    // actually reviews and files it — which would double-count money the
+    // actually reviews and files it, which would double-count money the
     // closing balance already accounted for. When the reconciliation is
     // instead rejected as stale (an older/out-of-order statement), rows stay
     // unstamped and confirming them applies their delta exactly as it always
@@ -419,11 +419,11 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
   // retry the whole job, and a retry needs the same file still on disk. Any
   // chunk that already completed before the failure stays recorded (per the
   // `$push`-not-`$set` persistence above) and is skipped, not redone, by the
-  // `alreadyProcessed` resume logic above — so a successful retry ends with
+  // `alreadyProcessed` resume logic above, so a successful retry ends with
   // each row accounted for exactly once, not duplicated. If every retry
   // attempt is exhausted, the `"failed"` listener registered in
   // `startStatementProcessWorker` below marks the batch failed and cleans up
-  // the temp file — this function itself doesn't need to handle that case.
+  // the temp file. This function itself doesn't need to handle that case.
 }
 
 export const statementProcessQueue = makeQueue<StatementProcessJob>("statement-process");
@@ -431,8 +431,8 @@ export const statementProcessQueue = makeQueue<StatementProcessJob>("statement-p
 /**
  * Constructs the BullMQ Worker that processes queued statement-upload jobs.
  * Deliberately NOT instantiated at module load time (same reasoning as every
- * other `start*Worker` factory in this directory — see e.g.
- * `startGmailWatchRenewalWorker`'s doc comment) — a top-level `export const
+ * other `start*Worker` factory in this directory, see e.g.
+ * `startGmailWatchRenewalWorker`'s doc comment): a top-level `export const
  * statementProcessWorker = makeWorker(...)` would open a real Redis-backed
  * listener as a side effect of simply importing this module, including from
  * this task's own test file, which only needs `processStatementUpload`
@@ -445,13 +445,13 @@ export function startStatementProcessWorker(): Worker<StatementProcessJob> {
   );
 
   // BullMQ's "failed" event fires after EVERY failed attempt, not just the
-  // last one — most of those are expected to retry (that's the whole point
+  // last one: most of those are expected to retry (that's the whole point
   // of `defaultJobOptions.attempts: 3`), so this only acts once retries are
   // genuinely exhausted. Without this, a job that fails all 3 attempts (a
-  // real transient error that never actually clears, a bug, anything) — as
+  // real transient error that never actually clears, a bug, anything), as
   // opposed to `processStatementUpload`'s own two deliberate non-throwing
   // failure paths (unreadable temp file, unlock failure), which already
-  // handle themselves — leaves its `ImportBatch` stuck at `"processing"`
+  // handle themselves, leaves its `ImportBatch` stuck at `"processing"`
   // forever: nothing else ever marks it failed, so the person just sees
   // "Processing your statement…" spin indefinitely with no error and no way
   // to know anything went wrong. `{status: "processing"}` in the filter
@@ -460,7 +460,7 @@ export function startStatementProcessWorker(): Worker<StatementProcessJob> {
   worker.on("failed", async (job) => {
     if (!job) return;
     const attempts = job.opts.attempts ?? 1;
-    if (job.attemptsMade < attempts) return; // will still retry — not exhausted yet
+    if (job.attemptsMade < attempts) return; // will still retry, not exhausted yet
 
     try {
       await ImportBatch.findOneAndUpdate(

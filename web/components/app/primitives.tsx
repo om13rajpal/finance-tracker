@@ -37,7 +37,7 @@ export function Panel({
 /**
  * The § label. Mono, uppercase, tracked, --dim.
  *
- * --dim is 4.37:1 and fails AA at body size — which is exactly why it is
+ * --dim is 4.37:1 and fails AA at body size, which is exactly why it is
  * confined to this: a mono micro-label, never a sentence. If the string you
  * are about to set has a verb in it, you want `<Helper>` instead.
  */
@@ -56,7 +56,7 @@ export function SectionLabel({
   );
 }
 
-/** Sentence-length secondary text. --dim-2 at 5.71:1 — passes AA at any size. */
+/** Sentence-length secondary text. --dim-2 at 5.71:1: passes AA at any size. */
 export function Helper({
   className,
   children,
@@ -121,7 +121,7 @@ export function PanelFooter({
  *
  * On the dashboard it is Guilt-Free Money, which is the number that decides
  * whether you order in tonight. Elsewhere it is whatever that screen exists to
- * tell you. It is never tinted — a total is ink, a category is colour.
+ * tell you. It is never tinted: a total is ink, a category is colour.
  */
 export function FigurePrimary({
   value,
@@ -202,7 +202,7 @@ export function StatRow({
 
 /**
  * The row: chip · content · amount. The single most repeated layout in the
- * product, and the reason the chip column is a fixed 30px — an untethered row
+ * product, and the reason the chip column is a fixed 30px: an untethered row
  * leaves its gutter EMPTY rather than shifting left, so the chip column never
  * wavers as you scan down.
  */
@@ -286,7 +286,7 @@ export function Amount({
 
 /**
  * A progress bar with shadcn Progress's mechanics: the indicator is full width
- * and slides in from the left with `translateX`. Transform only — never width,
+ * and slides in from the left with `translateX`. Transform only: never width,
  * because animating width is a layout property and a layout property in a list
  * of forty rows is a jank generator.
  *
@@ -298,7 +298,7 @@ export function Amount({
  * cannot say how far past the line you went. Three signals carry it instead:
  * the fill runs to 100%, it hits a 7px INK WALL inside the clipped track, and
  * the overage is named in words. The wall is a SHAPE, so it survives greyscale
- * and deuteranopia — and the total is never tinted, because a total is ink.
+ * and deuteranopia, and the total is never tinted, because a total is ink.
  */
 export function Bar({
   percent,
@@ -309,7 +309,7 @@ export function Bar({
   className,
 }: {
   percent: number;
-  /** A Tailwind background utility — always a bucket token, never a raw hex. */
+  /** A Tailwind background utility: always a bucket token, never a raw hex. */
   fill: string;
   over?: boolean;
   live?: boolean;
@@ -348,7 +348,7 @@ export function Bar({
 
 /**
  * The skeleton. The ONE keyframe in the system: 1150ms, --ease-in-out,
- * opacity .34 → .72 — and the one thing removed outright under reduced motion,
+ * opacity .34 → .72, and the one thing removed outright under reduced motion,
  * because a pulsing block is exactly the kind of unrequested movement that rule
  * exists to stop.
  */
@@ -384,7 +384,7 @@ export function BarSkeleton({ className }: { className?: string }) {
 }
 
 /**
- * The empty state — one of the few places the authenticated app is allowed a
+ * The empty state: one of the few places the authenticated app is allowed a
  * little delight. It is a sentence and a way forward, never a shrug.
  */
 export function EmptyState({
@@ -408,7 +408,7 @@ export function EmptyState({
 }
 
 /**
- * The notice — the only error surface in the product.
+ * The notice: the only error surface in the product.
  *
  * `role="alert"` announces it. It is programmatically focusable because a
  * keyboard or screen-reader user otherwise has to hunt for the thing that just
@@ -457,7 +457,7 @@ export const Notice = React.forwardRef<
  * A single component for the three states every query has.
  *
  * Every screen routes its loading / error / empty branches through here so the
- * vocabulary cannot drift between pages — the failure mode this replaces is
+ * vocabulary cannot drift between pages: the failure mode this replaces is
  * nine screens each inventing their own "Loading…".
  */
 export function QueryState<T>({
@@ -545,7 +545,7 @@ export function PanelGrid({
   );
 }
 
-/** A small circular icon button — the row-level affordance. */
+/** A small circular icon button: the row-level affordance. */
 export const IconButton = React.forwardRef<
   HTMLButtonElement,
   React.ButtonHTMLAttributes<HTMLButtonElement> & { icon: IconName; label: string }
@@ -576,7 +576,7 @@ export const IconButton = React.forwardRef<
  * `overflow-x: auto` alone is a mouse-and-trackpad affordance: a keyboard user
  * cannot scroll a container that is not focusable, so any column past the fold
  * is simply unreachable for them. Giving the wrapper `tabIndex={0}` and a
- * `role="region"` with a name makes it a real, focusable, announced scroller —
+ * `role="region"` with a name makes it a real, focusable, announced scroller:
  * the same fix the landing page's horizontal rail carries.
  *
  * The columns that matter most are still visible without scrolling at every
@@ -614,7 +614,7 @@ export function ScrollableTable({
  * and how steadily" and nothing else. The exact numbers are already printed in
  * the table underneath it, so a chart that repeats them would be decoration.
  *
- * Drawn as a single 1.5px ink polyline with no fill and no dots — the same
+ * Drawn as a single 1.5px ink polyline with no fill and no dots: the same
  * stroke weight as every panel border, so it reads as part of the frame rather
  * than as a chart pasted into it. A flat series still draws a flat line rather
  * than dividing by zero.
@@ -670,16 +670,16 @@ export function Sparkline({
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * A centred overlay panel — same accessible-dialog mechanics as the mobile
+ * A centred overlay panel: same accessible-dialog mechanics as the mobile
  * nav sheet in `ProtectedLayout.tsx` (Escape closes it, focus moves onto the
  * panel on open and back to whatever opened it on close, a click on the
  * backdrop closes it too), generalized into a reusable primitive instead of
  * being one-off to the nav.
  *
- * Deliberately not a new dependency (no Radix Dialog) — this app has exactly
+ * Deliberately not a new dependency (no Radix Dialog): this app has exactly
  * one existing accessible-overlay pattern already; this is that pattern with
  * the nav's specific chrome swept off it. `triggerRef` is the element focus
- * should return to on close (typically the button that opened this modal) —
+ * should return to on close (typically the button that opened this modal);
  * without it, a keyboard user who closes the modal is dropped back at the
  * top of the document instead of where they were.
  */
@@ -757,7 +757,7 @@ export function Modal({
   );
 }
 
-/** A right-aligned mono figure with its label above — the panel summary strip. */
+/** A right-aligned mono figure with its label above: the panel summary strip. */
 export function Readout({
   label,
   value,

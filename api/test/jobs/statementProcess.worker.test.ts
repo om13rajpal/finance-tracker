@@ -118,7 +118,7 @@ describe("processStatementUpload (statement-process worker)", () => {
     await processStatementUpload({ batchId: batch._id.toString(), userId, accountId, filePath });
 
     // More than one $push-style progress update happened before the final
-    // status:"completed" update — i.e. this genuinely processed the 270-row
+    // status:"completed" update: i.e. this genuinely processed the 270-row
     // fixture across more than one chunk rather than doing it all in one shot.
     const pushCalls = updateSpy.mock.calls.filter(
       (call) => (call[1] as any)?.$push !== undefined
@@ -151,7 +151,7 @@ describe("processStatementUpload (statement-process worker)", () => {
 
     const updated = await ImportBatch.findById(batch._id);
     // The first chunk (200 rows) completed and was persisted before the
-    // second chunk's insertMany rejected — that progress must survive, not
+    // second chunk's insertMany rejected: that progress must survive, not
     // be wiped out by the failure.
     expect(updated!.status).toBe("processing");
     expect(updated!.rowResults).toHaveLength(200);
@@ -174,7 +174,7 @@ describe("processStatementUpload (statement-process worker)", () => {
     expect(final!.rowResults).toHaveLength(270);
     expect(final!.resultingIds).toHaveLength(270);
     expect(await PendingTransaction.countDocuments({ userId })).toBe(270);
-    // Every original row number appears in the final results exactly once —
+    // Every original row number appears in the final results exactly once:
     // proof the retry didn't reprocess (and re-record) the first chunk.
     const rowNumbers = final!.rowResults.map((r: { row: number }) => r.row).sort((a: number, b: number) => a - b);
     expect(rowNumbers).toEqual(Array.from({ length: 270 }, (_, i) => i + 1));
@@ -229,7 +229,7 @@ describe("processStatementUpload (statement-process worker)", () => {
         batchId: batch._id.toString(),
         userId,
         accountId: account._id.toString(),
-        // No parserKey — falls back to the generic parser, which has no
+        // No parserKey: falls back to the generic parser, which has no
         // closing-balance detection at all.
         filePath,
       });
@@ -263,13 +263,13 @@ describe("processStatementUpload (statement-process worker)", () => {
 
         const worker = startStatementProcessWorker();
         try {
-          // A real, running worker consuming a real Redis queue — this
+          // A real, running worker consuming a real Redis queue: this
           // behavior lives entirely in BullMQ's own retry-exhaustion
           // signal (the Worker's "failed" event), which doesn't exist at
           // the `processStatementUpload` layer other tests in this file
           // call directly. `accountId` isn't a valid ObjectId, so
           // `Account.findOneAndUpdate` throws the same CastError on every
-          // attempt — a genuine, real failure mode this fix was written
+          // attempt: a genuine, real failure mode this fix was written
           // for (found via a real accountId typo during manual testing),
           // not a contrived one. Overriding `attempts`/`backoff` on this
           // one job (rather than using `defaultJobOptions`'s 3 attempts /

@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 
 /**
  * One row per {userId, category} of that month's total expense (absolute value).
- * `categoryId` is `null` for transactions with no category set — Task 10's
+ * `categoryId` is `null` for transactions with no category set: Task 10's
  * `Transaction.categoryId` is nullable (uncategorized transactions are allowed), and
  * that spend still needs to show up somewhere rather than silently vanishing from the
  * month's totals, so it gets its own row keyed by `null` instead of being dropped.
@@ -25,7 +25,7 @@ const monthlySummarySchema = new Schema({
   netWorth: { type: Number, required: true },
 });
 
-// One summary per user per month — `rollupMonth` upserts against this, so re-running
+// One summary per user per month: `rollupMonth` upserts against this, so re-running
 // it for the same month (e.g. after a data correction) updates the existing document
 // instead of erroring on a duplicate key or silently accumulating a second row.
 monthlySummarySchema.index({ userId: 1, month: 1 }, { unique: true });

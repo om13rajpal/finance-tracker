@@ -6,7 +6,7 @@ import { extendTailwindMerge } from "tailwind-merge";
  *
  * This is not optional configuration. Out of the box, tailwind-merge only
  * knows Tailwind's stock class names, so every one of our custom `text-*`
- * utilities looked like a colour to it — and it resolved the "conflict" by
+ * utilities looked like a colour to it, and it resolved the "conflict" by
  * silently deleting the font size:
  *
  *   twMerge("text-h1 text-ink")        -> "text-ink"      // 40px lost
@@ -16,7 +16,7 @@ import { extendTailwindMerge } from "tailwind-merge";
  *
  * The 16px one is the dangerous case: it is the iOS zoom guard on form fields.
  * Below 16px, iOS zooms the viewport on focus and throws the layout sideways
- * mid-sign-in. Losing it is a real bug, not a cosmetic one — and it fails
+ * mid-sign-in. Losing it is a real bug, not a cosmetic one, and it fails
  * silently, in production, on one platform.
  *
  * `input` is genuinely ambiguous: it is a font size in our scale AND a colour
@@ -81,7 +81,7 @@ export const cn = (() => {
         "border-color": [{ border: [...COLORS] }],
         "border-w": [{ border: [...BORDER_WIDTHS] }],
         // Directional widths too. `border-r-panel` is how a one-sided 1.5px
-        // rule is drawn — writing `border-r border-panel` instead sets 1.5px on
+        // rule is drawn: writing `border-r border-panel` instead sets 1.5px on
         // ALL FOUR sides, because `border-panel` is the all-sides utility. That
         // mistake draws three phantom hairlines and is nearly invisible against
         // a panel that already has a border.

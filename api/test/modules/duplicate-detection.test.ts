@@ -157,9 +157,9 @@ describe("findLikelyDuplicatesBatch", () => {
 
     const items = [
       { accountId: "acc-a", amount: -500, date: new Date("2026-08-11") }, // duplicate (1 day apart)
-      { accountId: "acc-a", amount: -500, date: new Date("2026-08-20") }, // not — outside window
+      { accountId: "acc-a", amount: -500, date: new Date("2026-08-20") }, // not: outside window
       { accountId: "acc-b", amount: -900, date: new Date("2026-08-20") }, // duplicate (exact)
-      { accountId: "acc-b", amount: -901, date: new Date("2026-08-20") }, // not — different amount
+      { accountId: "acc-b", amount: -901, date: new Date("2026-08-20") }, // not: different amount
     ];
 
     const result = await findLikelyDuplicatesBatch(userId, items);

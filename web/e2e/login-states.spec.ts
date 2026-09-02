@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 /**
- * Login — every state the real API can put the user in.
+ * Login: every state the real API can put the user in.
  *
  * The network is stubbed so each branch is exercised deterministically, but the
  * shapes are copied from the real server, not invented:
@@ -10,7 +10,7 @@ import { expect, test, type Page } from "@playwright/test";
  *   400 { error: "Validation failed" }      zod, via errorHandler.ts
  *   401 { error: "Invalid or expired code" } auth.service.ts verifyOtp
  *   403 { error: "Email not allowed" }      auth.service.ts requestOtp
- *   429 text/plain                          express-rate-limit's DEFAULT body —
+ *   429 text/plain                          express-rate-limit's DEFAULT body,
  *                                           deliberately NOT json, which is why
  *                                           the client branches on status
  *   500 { error: "<resend message>" }       mail send failure
@@ -34,8 +34,8 @@ async function submitEmail(page: Page) {
  * The login page asks /auth/me on mount to bounce anyone already signed in, and
  * /dashboard asks it again through ProtectedLayout. Stubbing it to 200 up front
  * would redirect us off the login screen before the test began; leaving it
- * unstubbed makes the test depend on whether the real API happens to be running
- * — with the API up, the post-verify redirect correctly bounces straight back
+ * unstubbed makes the test depend on whether the real API happens to be running:
+ * with the API up, the post-verify redirect correctly bounces straight back
  * to /login because the stubbed verify never set a real cookie.
  *
  * So: 401 until verify succeeds, 200 afterwards.
@@ -200,7 +200,7 @@ test.describe("login states", () => {
     await gotoLogin(page);
     await page.getByLabel("Email").fill(EMAIL);
 
-    // Three synchronous clicks inside a single tick — the actual race. Driving
+    // Three synchronous clicks inside a single tick: the actual race. Driving
     // this through the Playwright locator would instead re-resolve the button
     // between clicks, by which point the label has already changed to
     // "Sending…" and the test is measuring something else entirely.

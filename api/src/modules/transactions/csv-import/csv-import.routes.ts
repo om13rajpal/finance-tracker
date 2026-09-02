@@ -41,7 +41,7 @@ csvImportRouter.post("/import", upload.single("file"), async (req, res, next) =>
       }
 
       // Same cleanup as the PDF-statement path (see `cleanMerchantLabel`'s
-      // doc comment) — a generic bank CSV's "Description" column is exactly
+      // doc comment): a generic bank CSV's "Description" column is exactly
       // as noisy as PDF narration, since it's the same underlying bank
       // export. Categorization matches against the CLEANED merchant, not
       // the raw text, so a rule created from what the person actually sees

@@ -19,7 +19,7 @@ const TEST_USER_ID = new ObjectId("000000000000000000000001");
 // flow: upserts a matching User document directly in Mongo, signs a session JWT
 // with the API's own JWT_SECRET (the exact same way auth.service.ts's verifyOtp
 // does), and sets it as the session cookie. This is the same technique used
-// throughout this project's manual Playwright verification during development —
+// throughout this project's manual Playwright verification during development;
 // it does not require, and this app no longer has, any test-only backend endpoint.
 async function loginAsTestUser(context: BrowserContext): Promise<void> {
   const mongoUri = process.env.MONGO_URI;
@@ -73,7 +73,7 @@ test.afterEach(async ({ page }) => {
       await page.request.delete(`/api/accounts/${a._id}`);
     }
   } catch {
-    // best-effort — don't fail the test run over cleanup
+    // best-effort: don't fail the test run over cleanup
   }
 
   try {
@@ -113,7 +113,7 @@ test("golden path: login, add account, add category, add transaction, see net wo
   await page.getByLabel("Nickname").fill("Main Savings");
   await page.getByLabel("Starting Balance").fill("10000");
   await page.getByRole("button", { name: "Add Account" }).click();
-  // exact: true — the accounts list also renders an sr-only label "Update
+  // exact: true, since the accounts list also renders an sr-only label "Update
   // balance for Main Savings" on the same row, which a substring match on
   // "Main Savings" would also match, tripping Playwright's strict mode.
   await expect(page.getByText("Main Savings", { exact: true })).toBeVisible();
@@ -123,7 +123,7 @@ test("golden path: login, add account, add category, add transaction, see net wo
   await page.getByLabel(/Bucket/).selectOption("guilt_free");
   await page.getByLabel("Monthly Budget").fill("5000");
   await page.getByRole("button", { name: "Add Category" }).click();
-  // Scoped to the category-list row's <span> — a plain getByText("Dining Out")
+  // Scoped to the category-list row's <span>: a plain getByText("Dining Out")
   // also matches the newly created category's own <option> in the "Parent
   // Category" select on this same page, tripping Playwright's strict mode.
   await expect(page.locator("span.font-medium", { hasText: "Dining Out" })).toBeVisible();
@@ -131,13 +131,13 @@ test("golden path: login, add account, add category, add transaction, see net wo
   await page.goto("/transactions");
   // id-based, not getByLabel: the <select> is nested inside its <label> (as
   // are all form selects on this page), so its computed accessible name is
-  // "<label text><concatenated option text>" — e.g. tx-account's name becomes
+  // "<label text><concatenated option text>", e.g. tx-account's name becomes
   // "AccountSelect accountMain Savings" once an option is present. The page
   // also has a second, differently-labeled "Import Account" select for CSV
   // import, whose computed name likewise contains the substring "Account".
   // getByLabel("Account") therefore always resolves to both selects here, a
   // real DOM property of this page rather than a naming choice this test can
-  // route around — so these two fields are targeted by their stable ids.
+  // route around, so these two fields are targeted by their stable ids.
   await page.locator("#tx-account").selectOption({ label: "Main Savings" });
   await page.locator("#tx-category").selectOption({ label: "Dining Out" });
   await page.getByLabel(/Amount/).fill("-500");

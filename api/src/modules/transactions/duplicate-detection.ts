@@ -26,14 +26,14 @@ export async function findLikelyDuplicate(
  * The same "is there already a confirmed Transaction with this exact amount,
  * on this account, within `WINDOW_DAYS` days" check `findLikelyDuplicate`
  * does, but for a whole batch of candidates in a bounded number of queries
- * instead of one query per candidate — one `Transaction.find` per DISTINCT
+ * instead of one query per candidate: one `Transaction.find` per DISTINCT
  * `accountId` among `items`, not per item. Built for `GET
  * /pending-transactions`, which needs to flag every row in the review queue
  * up front (so the person can see it before trying to confirm, not be
  * surprised by a 409 or a bulk-confirm skip after the fact) without turning
  * a queue of hundreds of rows into hundreds of round-trips.
  *
- * Returns a `Set` of the input array's INDEXES (not ids — callers may not
+ * Returns a `Set` of the input array's INDEXES (not ids: callers may not
  * have a stable id, e.g. a not-yet-created row) that are likely duplicates.
  */
 export async function findLikelyDuplicatesBatch(

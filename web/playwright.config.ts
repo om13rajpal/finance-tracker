@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   // This external volume generates AppleDouble sidecar files (e.g. "._foo.spec.ts")
-  // for every real file — matched by Playwright's default test glob and crashing the
+  // for every real file, matched by Playwright's default test glob and crashing the
   // runner on their binary content. Same issue/fix as api/vitest.config.ts's `exclude`.
   testIgnore: "**/._*",
   timeout: 30000,

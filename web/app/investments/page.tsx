@@ -40,7 +40,7 @@ import { useToast } from "@/components/ui/Toast";
 /**
  * Sorted · Investments
  *
- * A TABLE, not a list of rows — and that is a deliberate departure. Everywhere
+ * A TABLE, not a list of rows, and that is a deliberate departure. Everywhere
  * else in the product a row is one thing with one amount. A holding is six
  * numbers that only mean anything read against each other and down their own
  * columns: units, average cost, live price, value, and what that adds up to.
@@ -53,7 +53,7 @@ import { useToast } from "@/components/ui/Toast";
  * next to that number.
  *
  * A HOLDING WITH NO PRICE FALLS BACK TO COST. That is what
- * `computeFullNetWorth` does, so it is what this screen does — otherwise the
+ * `computeFullNetWorth` does, so it is what this screen does, otherwise the
  * portfolio total here and the net worth figure on the dashboard would disagree
  * for exactly the symbols the price job has not reached yet.
  */
@@ -111,7 +111,7 @@ export default function InvestmentsPage() {
                 <Readout label="Market value" value={value} />
                 <Readout label="What you paid" value={cost} />
                 {/* Ink, like every other total in the product. A gain is not
-                    tinted green here — the sign and the word carry it, and they
+                    tinted green here: the sign and the word carry it, and they
                     survive greyscale and deuteranopia, which a hue does not. */}
                 <Readout
                   label={gain >= 0 ? "Up by" : "Down by"}
@@ -149,7 +149,7 @@ export default function InvestmentsPage() {
                  its columns sat off-screen behind a scroller with no
                  affordance. Average cost and price move INTO the symbol cell
                  on a phone instead, and come back as their own columns from
-                 `sm` up — nothing is hidden, it is re-laid-out. */
+                 `sm` up: nothing is hidden, it is re-laid-out. */
               <ScrollableTable label="Holdings">
                 <table className="w-full border-collapse text-body-s sm:min-w-[560px]">
                   <caption className="sr-only">
@@ -197,7 +197,7 @@ export default function InvestmentsPage() {
                           </td>
                           <td className="hidden py-12 pr-14 text-right align-top sm:table-cell">
                             <span className="money block">
-                              {h.currentPrice !== null ? formatPrice(h.currentPrice) : "—"}
+                              {h.currentPrice !== null ? formatPrice(h.currentPrice) : "–"}
                             </span>
                             {h.priceStale ? (
                               <span className="mt-2 block font-num text-micro uppercase tracking-micro text-dim">
@@ -223,7 +223,7 @@ export default function InvestmentsPage() {
           </Panel>
 
           {/* ── the lots ─────────────────────────────────────────────────
-              Cost basis is FIFO, matched oldest lot first — so the lots are
+              Cost basis is FIFO, matched oldest lot first, so the lots are
               not an implementation detail, they are the audit trail behind
               every capital-gains figure on the Tax screen. */}
           {(lots.data?.items.length ?? 0) > 0 ? (
@@ -260,7 +260,7 @@ export default function InvestmentsPage() {
                   <tbody>
                     {lots.data!.items.map((lot) => {
                       // Only an untouched lot (nothing FIFO-matched off it yet)
-                      // can be deleted — see the route's own doc comment. A
+                      // can be deleted: see the route's own doc comment. A
                       // partially/fully sold lot has SellEvents referencing it.
                       const deletable = lot.remainingUnits === lot.units;
                       return (
@@ -345,7 +345,7 @@ function Th({
         "pb-8 font-num text-label font-medium uppercase tracking-label text-dim",
         // Every header keeps its gutter except the last. Without it a
         // right-aligned column's header ran straight into the left-aligned one
-        // beside it and printed "BUY PRICEPLATFORM" as a single word — a real
+        // beside it and printed "BUY PRICEPLATFORM" as a single word, a real
         // defect, invisible in the JSX and only findable by looking.
         "pr-14 last:pr-0",
         align === "right" ? "text-right" : "text-left",
@@ -364,13 +364,13 @@ function Th({
 type TradeDirection = "buy" | "sell";
 
 /**
- * Records a single manual trade — the counterpart to the CSV import panel for
+ * Records a single manual trade: the counterpart to the CSV import panel for
  * a one-off buy or sell that isn't sitting in a broker export.
  *
  * THE ACCOUNT FIELD IS OPTIONAL, DELIBERATELY. Picking one turns this from a
- * silent balance adjustment into a real linked expense/income transaction —
+ * silent balance adjustment into a real linked expense/income transaction,
  * exactly as if the purchase or sale had been typed into Transactions by
- * hand — which is what keeps net worth from double-counting the cash a
+ * hand, which is what keeps net worth from double-counting the cash a
  * purchase spends. Leaving it blank still records the lot/sale on its own,
  * matching how a CSV-imported historical trade behaves (no account context
  * available), so nothing about this form is ever a hard requirement to use.
@@ -417,12 +417,12 @@ function BuySellPanel({ accounts }: { accounts: Account[] }) {
       invalidateAfterTrade();
       setForm(empty);
       // No confirmed tax slab config exists yet for this sale's financial
-      // year — it was still recorded correctly (using the current statutory
+      // year: it was still recorded correctly (using the current statutory
       // STCG/LTCG rule), just flagging that nobody's confirmed a config for
       // this FY specifically. See Settings/Tax for adding one.
       showToast(
         result.usedDefaultConfig
-          ? "Sale recorded (using the default tax rule — no confirmed config for this year yet)"
+          ? "Sale recorded (using the default tax rule: no confirmed config for this year yet)"
           : "Sale recorded",
         "success"
       );
@@ -569,7 +569,7 @@ function BuySellPanel({ accounts }: { accounts: Account[] }) {
           label={direction === "buy" ? "Funding account (optional)" : "Credit to account (optional)"}
           helper={
             direction === "buy"
-              ? "Pick one and this shows up as a real expense, deducted from that account — exactly like any other transaction."
+              ? "Pick one and this shows up as a real expense, deducted from that account, exactly like any other transaction."
               : "Pick one and the sale proceeds are credited there as a real income transaction."
           }
         >
@@ -632,7 +632,7 @@ function ImportPanel() {
       queryClient.invalidateQueries({ queryKey: ["holding-lots"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       // A sell row creates SellEvents, which are exactly what the Tax screen
-      // reads — so a trade import moves capital gains too.
+      // reads, so a trade import moves capital gains too.
       queryClient.invalidateQueries({ queryKey: ["capital-gains"] });
     } catch (e) {
       showToast((e as Error).message || "Could not import that file", "error");
@@ -669,7 +669,7 @@ function ImportPanel() {
           type="file"
           accept=".csv"
           // A name of its own. The expected-columns line beside it is helper
-          // text, not a <label> — see the note in transactions/page.tsx.
+          // text, not a <label>: see the note in transactions/page.tsx.
           aria-label="Trade file"
           className="sr-only"
           onChange={(e) => {
@@ -719,7 +719,7 @@ function ImportPanel() {
 
         <Helper>
           A sell row is matched against your oldest lots first and becomes a capital-gains event on
-          the Tax screen. If it asks for more units than you hold, that row is skipped whole — no
+          the Tax screen. If it asks for more units than you hold, that row is skipped whole: no
           partial deduction is ever made.
         </Helper>
       </div>

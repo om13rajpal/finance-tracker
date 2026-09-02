@@ -8,7 +8,7 @@ import { encrypt } from "../../lib/encryption.js";
  * CRUD for the flat, unordered per-user list of statement passwords that
  * `pdf-unlock.service.ts` tries against any statement PDF. Mirrors
  * `categorization.routes.ts`'s shape. `GET` deliberately projects only
- * `{_id, label, createdAt}` — the encrypted value (and obviously never the
+ * `{_id, label, createdAt}`. The encrypted value (and obviously never the
  * plaintext) is not returned once stored, matching how `GmailConnection`'s
  * refresh token is handled.
  */

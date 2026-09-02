@@ -8,7 +8,7 @@
  * `gsap.context()` created inside a layout effect and reverted on unmount.
  * `gsap.matchMedia()` handles the reduced-motion and pointer gates, and
  * reverting the matchMedia instance tears down every tween, ScrollTrigger,
- * SplitText and pin it created — including the inline styles they set.
+ * SplitText and pin it created, including the inline styles they set.
  *
  * That last part is what makes the no-JS guarantee hold: GSAP is only ever
  * allowed to establish a pre-animation state from INSIDE the effect. Nothing on

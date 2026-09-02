@@ -120,7 +120,7 @@ describe("categorization engine", () => {
       priority: 1,
     });
 
-    // transaction has a merchant but no note at all — rule looks at "note"
+    // transaction has a merchant but no note at all: rule looks at "note"
     const result = await applyCategorizationRules("user-1", { merchant: "SOME MERCHANT" });
     expect(result).toBeNull();
   });
@@ -235,7 +235,7 @@ describe("categorization rules routes", () => {
       merchant: "Zepto",
       source: "pdf_statement_parsed",
     });
-    // Same merchant, but NOT in the accepted list — must stay untouched
+    // Same merchant, but NOT in the accepted list: must stay untouched
     // (this app never backfills existing data beyond exactly what the
     // person accepted).
     const notFlagged = await PendingTransaction.create({

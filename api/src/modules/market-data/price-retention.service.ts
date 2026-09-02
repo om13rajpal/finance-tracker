@@ -4,13 +4,13 @@ const RETENTION_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Bounds `PriceSnapshot` collection growth (see the design doc's "Bounded growth" note):
- * snapshots older than 7 days are collapsed down to one per symbol per UTC calendar day —
- * the latest-fetched snapshot that day — with the rest deleted. Snapshots within the last
+ * snapshots older than 7 days are collapsed down to one per symbol per UTC calendar day
+ * (the latest-fetched snapshot that day), with the rest deleted. Snapshots within the last
  * 7 days are left completely untouched, preserving full resolution for recent charts.
  *
  * "Calendar day" is computed from the UTC date (`toISOString().slice(0, 10)`), matching the
  * UTC-consistent date treatment used elsewhere in this codebase (see monthlyRollup.worker.ts's
- * `previousMonthString` doc comment) — a snapshot at 23:55 UTC and one at 00:05 UTC the next
+ * `previousMonthString` doc comment): a snapshot at 23:55 UTC and one at 00:05 UTC the next
  * day are 10 minutes apart but land in different day-buckets and are NOT collapsed together.
  *
  * The 7-day cutoff uses a strict `$lt`: a snapshot exactly 7 days old (to the millisecond) is

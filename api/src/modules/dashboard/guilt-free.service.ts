@@ -16,16 +16,16 @@ export interface GuiltFreeResult {
  *   spent    = Σ this month's actual `guilt_free`-bucket Transaction amounts
  *   remaining = planned − spent
  *
- * - Only `status: "active"` recurring items count toward "planned" — paused/cancelled
+ * - Only `status: "active"` recurring items count toward "planned"; paused/cancelled
  *   items aren't part of the live plan.
  * - A recurring item counts as income purely off `item.type === "income"`, never off
- *   its category's `bucket` — an income category's bucket (if it has one at all) isn't
+ *   its category's `bucket`: an income category's bucket (if it has one at all) isn't
  *   meaningful for this calculation.
  * - "spent" is restricted to categories that are BOTH `bucket: "guilt_free"` AND
  *   `type: "expense"`. `bucket` is a required field on every `Category` document
  *   regardless of `type`, so an income category (e.g. "Salary") can technically carry
  *   `bucket: "guilt_free"` too (it has to hold *some* bucket value) without that being
- *   a real guilt-free spending category — the `type: "expense"` guard keeps such a
+ *   a real guilt-free spending category; the `type: "expense"` guard keeps such a
  *   category from ever being counted as spend.
  */
 export async function computeGuiltFreeMoney(userId: string, month: string): Promise<GuiltFreeResult> {

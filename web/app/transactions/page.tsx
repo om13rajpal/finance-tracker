@@ -71,7 +71,7 @@ import { useToast } from "@/components/ui/Toast";
  *
  * CHIPS NEVER GUESS, and this is the screen where that rule earns its keep.
  * `Transaction.categoryId` is nullable and an uncategorised transaction is the
- * parser's NORMAL output, not a failure — so those rows get a dashed hollow
+ * parser's NORMAL output, not a failure, so those rows get a dashed hollow
  * chip and their category slot becomes a "Categorise" action. An actionable
  * gap, never --alert.
  */
@@ -180,7 +180,7 @@ export default function TransactionsPage() {
           <Panel>
             {/* The filter bar is COLLAPSED by default. Open, it is four fields
                 and 180px of chrome standing between the person and the list
-                they came here to read — and on the overwhelming majority of
+                they came here to read, and on the overwhelming majority of
                 visits every one of those fields is empty. It announces itself
                 when it is doing something. */}
             <div className="mb-14 flex items-baseline justify-between gap-14">
@@ -338,7 +338,7 @@ function FilterBar({
             <option value="">All categories</option>
             {categories.map(({ node, depth }) => (
               <option key={node._id} value={node._id}>
-                {"— ".repeat(depth)}
+                {"– ".repeat(depth)}
                 {node.name}
               </option>
             ))}
@@ -394,7 +394,7 @@ function TransactionRow({
   const [editing, setEditing] = useState(false);
   const [choice, setChoice] = useState(transaction.categoryId ?? "");
   const [makeRule, setMakeRule] = useState(false);
-  // Prefilled with the transaction's own merchant text, but EDITABLE — a rule
+  // Prefilled with the transaction's own merchant text, but EDITABLE: a rule
   // built from a parser-produced merchant string verbatim (an order id, a
   // reference number, anything instance-specific baked into the text) only
   // ever matches that one transaction again, since matching is a plain
@@ -408,7 +408,7 @@ function TransactionRow({
   // NO DIRECTION FALLBACK HERE, deliberately.
   //
   // A `Transaction` with a null categoryId is UNCATEGORISED, and that is the
-  // state the dashed hollow chip exists for — an actionable gap the parser
+  // state the dashed hollow chip exists for: an actionable gap the parser
   // produces every day. Falling back to a direction arrow made those rows look
   // exactly like a resolved row and quietly removed the only signal that
   // something needs filing. Direction is already carried by the sign on the
@@ -428,7 +428,7 @@ function TransactionRow({
         // `createRule` and `matchValue` are only honoured together with a
         // categoryId; sending them as false/empty otherwise would be noise the
         // server has to ignore. `matchValue` is whatever the person edited it
-        // down to above — never the raw, un-narrowed `transaction.merchant`.
+        // down to above, never the raw, un-narrowed `transaction.merchant`.
         body: JSON.stringify(
           makeRule && trimmedMatchValue
             ? { categoryId: choice, createRule: true, matchValue: trimmedMatchValue }
@@ -459,7 +459,7 @@ function TransactionRow({
   const categoryName = entry ? categoryRowName(entry, index) : null;
 
   // `note` carries the original raw bank narration whenever `merchant` was
-  // cleaned up from it (see `cleanMerchantLabel`'s doc comment) — never
+  // cleaned up from it (see `cleanMerchantLabel`'s doc comment), never
   // discarded, just not what's shown by default. When the two differ,
   // there's something worth surfacing on demand: a native `title` tooltip
   // for hover, and a tap-to-toast fallback for touch, where hover doesn't
@@ -498,7 +498,7 @@ function TransactionRow({
                 : ""}
               {" · "}
               {/* THE CATEGORY SLOT IS THE ACTION.
-                  Not a trailing "Change" link after the amount — that put a
+                  Not a trailing "Change" link after the amount: that put a
                   variable-width control in the amount column and every figure
                   in the ledger stopped ending at the same x, which is the one
                   thing a right-aligned money column is for. The category is
@@ -543,7 +543,7 @@ function TransactionRow({
               <option value="">Select a category</option>
               {categories.map(({ node, depth }) => (
                 <option key={node._id} value={node._id}>
-                  {"— ".repeat(depth)}
+                  {"– ".repeat(depth)}
                   {node.name}
                 </option>
               ))}
@@ -568,9 +568,9 @@ function TransactionRow({
               helper={
                 // Reflecting the exact case-insensitive substring rule the
                 // server applies (`categorization.engine.ts`), not vague
-                // reassurance — this text is what decides whether the
+                // reassurance: this text is what decides whether the
                 // rule turns out broad enough to actually catch anything.
-                "Case-insensitive, anywhere in the merchant text. Narrower than the full line above catches more future transactions — a whole parsed line rarely repeats verbatim, just the merchant name usually does."
+                "Case-insensitive, anywhere in the merchant text. Narrower than the full line above catches more future transactions: a whole parsed line rarely repeats verbatim, just the merchant name usually does."
               }
               className="ml-[34px]"
             >
@@ -608,18 +608,18 @@ function TransactionRow({
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Suggested rules — a merchant that keeps showing up uncategorized
+// Suggested rules: a merchant that keeps showing up uncategorized
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * Categorization here has always been 100% reactive — a rule only ever
+ * Categorization here has always been 100% reactive: a rule only ever
  * applies going forward, to whatever gets confirmed or imported AFTER it's
  * created (see `categorization.engine.ts`). Nothing used to notice when the
  * SAME merchant kept landing uncategorized over and over, which is exactly
  * the pattern a rule exists to solve. `GET /categorization-rules/suggestions`
  * finds those merchants; accepting one here creates the rule AND applies it
  * to exactly the items that prompted the suggestion (`applyToPendingIds` /
- * `applyToTransactionIds`) — a deliberate, visible, one-time action, not a
+ * `applyToTransactionIds`), a deliberate, visible, one-time action, not a
  * silent retroactive sweep over everything else that merchant ever touched.
  */
 function CategorizationSuggestionsPanel({
@@ -682,7 +682,7 @@ function CategorizationSuggestionsPanel({
                 <option value="">Category…</option>
                 {categories.map(({ node, depth }) => (
                   <option key={node._id} value={node._id}>
-                    {"— ".repeat(depth)}
+                    {"– ".repeat(depth)}
                     {node.name}
                   </option>
                 ))}
@@ -745,11 +745,11 @@ function PendingPanel({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const selectedItems = items.filter((item) => selected.has(item._id));
   const allSelected = items.length > 0 && selectedItems.length === items.length;
-  // What the LAST bulk-file left unresolved, and why — surfaced as a banner
+  // What the LAST bulk-file left unresolved, and why: surfaced as a banner
   // that stays put until dismissed or acted on, not a toast that's gone in a
   // few seconds. Skipped rows already stay selected (see `bulkConfirm` below)
   // so they're visibly picked out, but a checked checkbox alone doesn't say
-  // WHY one row didn't file while five others next to it did — without this,
+  // WHY one row didn't file while five others next to it did. Without this,
   // that reads as "some just never get filed" instead of "these specific
   // ones need one more thing from you."
   const [bulkSkipNotice, setBulkSkipNotice] = useState<{ needsAccount: number; duplicates: number } | null>(
@@ -784,13 +784,13 @@ function PendingPanel({
     onSuccess: () => {
       invalidate();
       // Confirming one individually is exactly how someone resolves a row a
-      // bulk-file skipped — once they've done that for at least one, the
+      // bulk-file skipped: once they've done that for at least one, the
       // banner's already-somewhat-stale count shouldn't keep sitting there.
       setBulkSkipNotice(null);
       showToast("Filed", "success");
     },
     onError: (err) => {
-      // 409 is the cross-source duplicate guard, not a failure — the parser has
+      // 409 is the cross-source duplicate guard, not a failure: the parser has
       // very likely re-read an email for something already imported by CSV.
       if (err instanceof ApiError && err.status === 409) {
         showToast("That looks like a duplicate of one you already have, so it was not added.");
@@ -825,7 +825,7 @@ function PendingPanel({
     onError: () => showToast("Could not discard those", "error"),
   });
 
-  // Filing a large batch (a full statement's worth of pending rows — seen in
+  // Filing a large batch (a full statement's worth of pending rows, seen in
   // production at 117 items) is several sequential DB round trips PER item,
   // and used to run entirely inline in this one request: at scale that
   // reliably exceeded the production request-timeout path and came back as a
@@ -856,7 +856,7 @@ function PendingPanel({
   const bulkConfirmBatch = bulkConfirmBatchQuery.data;
   const bulkConfirmProcessing = bulkConfirmBatchId !== null && (!bulkConfirmBatch || bulkConfirmBatch.status === "processing");
 
-  // Runs once, the moment a batch actually finishes — everything the old
+  // Runs once, the moment a batch actually finishes: everything the old
   // synchronous mutation's own onSuccess used to do inline, now driven off
   // the poll instead of the enqueue response.
   const notifiedBulkConfirmBatchId = useRef<string | null>(null);
@@ -874,7 +874,7 @@ function PendingPanel({
     const skipped = bulkConfirmBatch.results.filter((r) => r.status === "skipped");
     const confirmedCount = bulkConfirmBatch.results.length - skipped.length;
 
-    // Only the rows that actually got filed leave the selection — anything
+    // Only the rows that actually got filed leave the selection: anything
     // skipped (needs an account, looked like a duplicate) stays selected
     // so it's still visibly picked out once the list re-renders with just
     // that leftover handful, ready for the person to resolve individually.
@@ -885,7 +885,7 @@ function PendingPanel({
       showToast(`Filed ${confirmedCount}`, "success");
       return;
     }
-    // A toast alone said this and then vanished — the banner below stays
+    // A toast alone said this and then vanished. The banner below stays
     // until the person dismisses it or fixes what it's pointing at, which
     // is what actually answers "why didn't this one file."
     setBulkSkipNotice({
@@ -899,7 +899,7 @@ function PendingPanel({
     );
     // `invalidate`/`showToast` are recreated every render; the ref guard above
     // is what actually makes this run once per finished batch, not this
-    // dependency array — same pattern as `ImportPanel`'s analogous effect.
+    // dependency array, same pattern as `ImportPanel`'s analogous effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bulkConfirmBatch]);
 
@@ -942,11 +942,11 @@ function PendingPanel({
       {bulkSkipNotice ? (
         <Notice
           tone="quiet"
-          title={`${bulkSkipNotice.needsAccount + bulkSkipNotice.duplicates} couldn't be filed yet — still selected below`}
+          title={`${bulkSkipNotice.needsAccount + bulkSkipNotice.duplicates} couldn't be filed yet, still selected below`}
           body={
             [
               bulkSkipNotice.needsAccount > 0
-                ? `${bulkSkipNotice.needsAccount} ${bulkSkipNotice.needsAccount === 1 ? "needs" : "need"} an account picked first — you'll see the field on that row.`
+                ? `${bulkSkipNotice.needsAccount} ${bulkSkipNotice.needsAccount === 1 ? "needs" : "need"} an account picked first: you'll see the field on that row.`
                 : null,
               bulkSkipNotice.duplicates > 0
                 ? `${bulkSkipNotice.duplicates} ${bulkSkipNotice.duplicates === 1 ? "looks" : "look"} like something you already have, so ${bulkSkipNotice.duplicates === 1 ? "it wasn't" : "they weren't"} added again.`
@@ -1020,8 +1020,8 @@ function PendingPanel({
                   busy={confirm.isPending}
                   disabled={needsAccount && !chosen}
                   onClick={() => {
-                    // A flagged row can still be filed — it might genuinely be
-                    // a second real charge, not a re-import — but it must be a
+                    // A flagged row can still be filed: it might genuinely be
+                    // a second real charge, not a re-import. But it must be a
                     // deliberate choice, not a silent one, since the same
                     // check that flagged it is what the confirm route itself
                     // would otherwise 409 on.
@@ -1104,7 +1104,7 @@ function AddTransactionPanel({
   /**
    * The server's duplicate guard answers 409 with `{note:"possible_duplicate"}`
    * and will accept the same body again with `force: true`. Holding that body
-   * here is what turns a dead end into a question — "add it anyway?" — instead
+   * here is what turns a dead end into a question ("add it anyway?") instead
    * of a toast the person can only read and re-type around.
    */
   const [duplicate, setDuplicate] = useState<Record<string, unknown> | null>(null);
@@ -1174,7 +1174,7 @@ function AddTransactionPanel({
         <Field
           id="tx-category"
           label="Category"
-          helper="Leave it on auto and your rules will decide — or leave it uncategorised and file it later."
+          helper="Leave it on auto and your rules will decide, or leave it uncategorised and file it later."
         >
           <Select
             id="tx-category"
@@ -1184,7 +1184,7 @@ function AddTransactionPanel({
             <option value="">Auto-categorise</option>
             {categories.map(({ node, depth }) => (
               <option key={node._id} value={node._id}>
-                {"— ".repeat(depth)}
+                {"– ".repeat(depth)}
                 {node.name}
               </option>
             ))}
@@ -1281,18 +1281,18 @@ function ImportPanel({
   const [result, setResult] = useState<ImportBatchResult | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // `pdfBusy` covers only the upload request itself (fast — it just enqueues
+  // `pdfBusy` covers only the upload request itself (fast: it just enqueues
   // a job and returns `202`). Once that resolves, `pdfBatchId` drives a
   // separate poll of `GET /transactions/import-pdf/:batchId` for however
-  // long the background worker actually takes to unlock/parse/insert —
+  // long the background worker actually takes to unlock/parse/insert:
   // see `pdfBatchQuery` below. Statement processing moved off this request
   // entirely (into the `statement-process` BullMQ worker) so a large
-  // statement can't hold this request — or this app's single event loop —
+  // statement can't hold this request, or this app's single event loop,
   // open for seconds at a time.
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfBatchId, setPdfBatchId] = useState<string | null>(null);
   const pdfFileRef = useRef<HTMLInputElement>(null);
-  // "" means "no bank-specific parser" — the server falls back to a generic,
+  // "" means "no bank-specific parser": the server falls back to a generic,
   // lower-accuracy reader. Naming the bank here is what lets the accurate
   // per-bank parser (SBI, HDFC) actually get used; there's no way to detect
   // it from the file alone before it's even unlocked.
@@ -1359,7 +1359,7 @@ function ImportPanel({
         const payload = await res.json().catch(() => ({}));
         throw new Error(payload.error ?? `Import failed: ${res.status}`);
       }
-      // 202: the file is enqueued, not processed yet — `pdfBatchQuery` below
+      // 202: the file is enqueued, not processed yet. `pdfBatchQuery` below
       // takes over from here, polling until the worker finishes.
       const enqueued: ImportPdfEnqueuedResult = await res.json();
       setPdfBatchId(enqueued.batchId);
@@ -1370,7 +1370,7 @@ function ImportPanel({
     }
   }
 
-  // Polls the batch until it leaves "processing" — a 1.5s interval is
+  // Polls the batch until it leaves "processing": a 1.5s interval is
   // frequent enough to feel responsive for a personal-scale statement (a few
   // seconds at most) without hammering the API. Stops itself (returns
   // `false`) once the batch reaches either terminal state.
@@ -1386,7 +1386,7 @@ function ImportPanel({
 
   // Once the batch completes with rows waiting for review, the review queue
   // (fetched separately by `pending`/`["pending-transactions"]` above) needs
-  // refetching — nothing here touches balances/dashboard, since PDF rows are
+  // refetching. Nothing here touches balances/dashboard, since PDF rows are
   // always pending, never confirmed. Runs once per batch, the moment it
   // finishes, not on every poll tick.
   const notifiedBatchId = useRef<string | null>(null);
@@ -1426,7 +1426,7 @@ function ImportPanel({
         {/* The column list below is HELPER TEXT, not a <label>.
             As a label it became the file input's accessible name, so the
             control announced itself as "Date, Debit, Credit Amount,
-            Description" — and any lookup for a field called "Amount" matched
+            Description", and any lookup for a field called "Amount" matched
             a file picker. The input carries its own name instead. */}
         <input
           ref={fileRef}
@@ -1498,7 +1498,7 @@ function ImportPanel({
             {pdfBusy ? "Reading…" : "Choose a PDF"}
           </Button>
           <span className="font-sans text-caption text-dim-2">
-            A bank e-statement. Password-protected is fine — saved passwords are tried automatically.
+            A bank e-statement. Password-protected is fine: saved passwords are tried automatically.
           </span>
         </div>
 
@@ -1525,7 +1525,7 @@ function ImportPanel({
           </div>
         ) : null}
 
-        {/* PDF rows never land as confirmed — they always need a look, so
+        {/* PDF rows never land as confirmed: they always need a look, so
             success points at the review queue above instead of claiming
             "N imported" the way the CSV result does. */}
         {pdfProcessing ? (
@@ -1541,11 +1541,11 @@ function ImportPanel({
               <div className="rounded-panel border-panel border-ink p-18">
                 <SectionLabel>§ Import result</SectionLabel>
                 <p className="m-0 mt-8 text-body-s">
-                  {waiting} row{waiting === 1 ? "" : "s"} read from the statement — waiting for you
+                  {waiting} row{waiting === 1 ? "" : "s"} read from the statement, waiting for you
                   in “From your inbox” above.
                 </p>
                 {/* Non-blocking heads-up: this statement's own date range
-                    overlaps one already imported for this account — a normal
+                    overlaps one already imported for this account, a normal
                     thing to happen (a re-download, or a fresh statement that
                     covers some of the same days), surfaced here instead of
                     only being discovered row-by-row once confirming starts
@@ -1558,7 +1558,7 @@ function ImportPanel({
               <Notice
                 tone="quiet"
                 title="Couldn't find any transaction rows in that PDF."
-                body="The file unlocked fine, but nothing in it matched a recognisable statement layout — a scanned image with no text layer behaves this way too."
+                body="The file unlocked fine, but nothing in it matched a recognisable statement layout. A scanned image with no text layer behaves this way too."
               />
             );
           })()

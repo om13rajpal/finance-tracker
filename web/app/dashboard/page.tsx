@@ -56,7 +56,7 @@ import {
  * THE THESIS OF THIS SCREEN IS ITS HIERARCHY, and the hierarchy is inverted
  * from what a finance app normally does.
  *
- * Guilt-Free Money sits at 108px. Net Worth sits at 52px beside it — a 2.08×
+ * Guilt-Free Money sits at 108px. Net Worth sits at 52px beside it, a 2.08×
  * ratio, so the eye lands on the smaller number first, every morning. That is
  * deliberate: Guilt-Free Money is the number that decides whether you order in
  * tonight, and Net Worth is the number you admire. Only one of the two is
@@ -74,8 +74,8 @@ const RECENT_DAYS = 30;
  * `August 2026 · day 31 of 31`, computed on the SERVER's month.
  *
  * The API's "this month" is a UTC month. In IST that is a different month for
- * five and a half hours at every month end, so this line — which sits directly
- * under a local "today" — is derived from the same UTC window the figures below
+ * five and a half hours at every month end, so this line (which sits directly
+ * under a local "today") is derived from the same UTC window the figures below
  * it are, and names the month explicitly.
  */
 function monthMeta(now = new Date()): string {
@@ -134,13 +134,13 @@ export default function DashboardPage() {
       .filter((a) => a.type !== "credit_card")
       .reduce((sum, a) => sum + a.currentBalance, 0);
     // Net worth counts a card as `Math.abs(currentBalance)` OWED, regardless of
-    // the sign the balance happens to be stored with — mirror that exactly
+    // the sign the balance happens to be stored with, mirror that exactly
     // rather than re-deciding it here.
     const owed = list
       .filter((a) => a.type === "credit_card")
       .reduce((sum, a) => sum + Math.abs(a.currentBalance), 0);
     // A holding with no price ever fetched falls back to its cost basis, which
-    // is what computeFullNetWorth does — otherwise this breakdown would not add
+    // is what computeFullNetWorth does, otherwise this breakdown would not add
     // up to the figure above it.
     const invested = (holdings.data ?? []).reduce(
       (sum, h) => sum + (h.currentValue ?? h.avgCost * h.totalUnits),
@@ -189,7 +189,7 @@ export default function DashboardPage() {
       {/* ── the parser's queue ───────────────────────────────────────────
           The one moment on this screen where the product's most unusual
           capability becomes visible: transactions it filed from a bank email
-          by itself. It is an actionable gap, not an error — so it is a panel
+          by itself. It is an actionable gap, not an error, so it is a panel
           with a way forward, never a red banner. */}
       {pendingCount > 0 ? (
         <Panel className="mb-22 flex-row flex-wrap items-center justify-between gap-18">
@@ -213,7 +213,7 @@ export default function DashboardPage() {
       {dashboard.isError ? (
         <Notice
           title="Could not load dashboard data."
-          body="Please try again shortly. Nothing has been lost — this screen only reads."
+          body="Please try again shortly. Nothing has been lost: this screen only reads."
           className="mb-22"
         />
       ) : null}
@@ -223,7 +223,7 @@ export default function DashboardPage() {
         <Panel aria-labelledby="gf-h">
           <PanelHeader id="gf-h" title="§ Guilt-free money" meta={apiMonthLabel()} className="mb-0" />
           {/* THE UNKNOWN FIGURE IS A DASH, NEVER A ZERO.
-              `?? 0` on a failed request prints "₹0 guilt-free money" — a number
+              `?? 0` on a failed request prints "₹0 guilt-free money", a number
               the app made up, in the exact place a person decides whether they
               can afford dinner. Unknown and nothing left are opposite facts and
               they must never render as the same string. */}
@@ -247,10 +247,10 @@ export default function DashboardPage() {
             </>
           ) : (
             <>
-              <FigurePrimary value="—" className="text-dim-2" />
+              <FigurePrimary value="–" className="text-dim-2" />
               <StatRow>
-                <Stat label="Planned" value="—" />
-                <Stat label="Spent" value="—" />
+                <Stat label="Planned" value="–" />
+                <Stat label="Spent" value="–" />
               </StatRow>
             </>
           )}
@@ -275,7 +275,7 @@ export default function DashboardPage() {
                 id="net-worth-figure"
                 className="money m-0 text-h2 leading-[1.05] text-dim-2 sm:text-[40px] lg:text-figure-2"
               >
-                —
+                –
               </p>
             )}
           </div>
@@ -283,7 +283,7 @@ export default function DashboardPage() {
               The API returns net worth as one number, so this panel used to be
               a figure and a sentence with a hundred and fifty pixels of nothing
               between them. The composition is derivable from two lists the app
-              already loads elsewhere — and "which of these three moved?" is the
+              already loads elsewhere, and "which of these three moved?" is the
               only follow-up question this figure ever prompts. Each line is
               ink; not one of the three is tinted. */}
           <div className="mt-auto pt-22">
@@ -445,7 +445,7 @@ export default function DashboardPage() {
  * One budget row.
  *
  * OVER BUDGET is the one row on this screen you feel something about, and the
- * one where the bar stops being the whole story — the fill is clamped at 100%
+ * one where the bar stops being the whole story: the fill is clamped at 100%
  * so it physically cannot say how far past the line you went. Three signals
  * carry it instead: the fill runs to 100%, it hits a 7px ink wall inside the
  * clipped track, and the overage is named in words. The total itself stays ink.

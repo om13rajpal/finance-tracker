@@ -3,7 +3,7 @@
 /**
  * Sorted · the door
  *
- * Back to ink, and back to the wordmark — and the four discs converge on it,
+ * Back to ink, and back to the wordmark. The four discs converge on it,
  * which is the login constellation's own gesture aimed at the word instead of
  * at a second mark.
  *
@@ -11,7 +11,7 @@
  * four discs scattered. The hero has since been stripped to the core alone, so
  * the gesture now closes a different and better arc: the buckets are not
  * pre-announced at the door, they are taught by the sort and walked through as
- * four rooms, and only here — once they mean something — do they gather back
+ * four rooms, and only here (once they mean something) do they gather back
  * into the word the product is named for. They are also small and held inside
  * the frame here, never cropped by it, which is what stopped the hero's version
  * from reading as composition.
@@ -94,7 +94,7 @@ export function Close() {
         {/*
           NO RUPEE CORE HERE.
           It was centred at 520px, which put a dotted orbit and a 240px ₹
-          straight through the middle of a 260px wordmark — the glyph landed
+          straight through the middle of a 260px wordmark: the glyph landed
           between the T and the E of SORTED. Two marks fighting for the same
           space read as clutter, not as depth, and the word is the one that has
           to win.
@@ -106,7 +106,7 @@ export function Close() {
       </div>
 
       <p className="relative font-num text-meta uppercase tracking-label text-bg">
-        § 06 — sign in
+        § 06: sign in
       </p>
 
       <div className="relative flex flex-col items-start">
@@ -136,11 +136,11 @@ export function Close() {
       </div>
 
       {/*
-        THE FOOT — a designed close, not a stranded line.
+        THE FOOT: a designed close, not a stranded line.
 
         It has been three things now. First three mono strips, the first of
         which was almost word-for-word the header's own, so the page opened and
-        closed on the same sentence — plus the number-grouping trivia nobody
+        closed on the same sentence, plus the number-grouping trivia nobody
         chooses a finance tracker on, and a description of the sign-in mechanism
         aimed at someone who has not signed in. Then one line, which fixed the
         duplication by removing the composition: a single strip of 9.5px type
@@ -150,7 +150,7 @@ export function Close() {
         hairline, then three fields on one baseline: the mark and the name at the
         left, the four buckets in the centre as the page's own summary of itself,
         and the promise at the right. The four dots are the only ornament and
-        they are not ornament — they are the product, at 8px.
+        they are not ornament: they are the product, at 8px.
       */}
       <div className="l-close-foot relative">
         <div className="ink-hair border-t-hair" />
@@ -160,7 +160,7 @@ export function Close() {
             {/*
               AND NO MARK ON THE WORD EITHER. A ring with a ₹ in it, set
               immediately left of the word "Sorted", read as an icon stuck onto
-              the text rather than as a mark standing beside it — the same
+              the text rather than as a mark standing beside it: the same
               clutter as the core, one twentieth the size. The word is the
               wordmark; it does not need a badge.
             */}

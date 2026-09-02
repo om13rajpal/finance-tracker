@@ -234,7 +234,7 @@ describe("CSV import", () => {
 
     expect(res.status).toBe(200);
     // The stored merchant is the CLEANED "Swiggy", not the raw CSV
-    // "SWIGGY ORDER" — see `cleanMerchantLabel` — but the rule (matchValue
+    // "SWIGGY ORDER" (see `cleanMerchantLabel`), but the rule (matchValue
     // "SWIGGY", case-insensitive `contains`) still matches it either way.
     const tx = await Transaction.findOne({ userId, merchant: "Swiggy" });
     expect(tx).not.toBeNull();

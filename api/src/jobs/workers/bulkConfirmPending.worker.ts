@@ -23,7 +23,7 @@ type BulkConfirmResult = {
 
 // Confirming one pending transaction is several sequential DB round trips
 // (categorization lookup, duplicate check, Transaction.create, balance
-// effect, PendingTransaction delete) — meaningfully heavier per-item than a
+// effect, PendingTransaction delete), meaningfully heavier per-item than a
 // parsed statement row, which is why this chunk is smaller than
 // `statementProcess.worker.ts`'s 200. The point is the same: bound how much
 // synchronous work runs before yielding back to the event loop this app's
@@ -40,10 +40,10 @@ function chunk<T>(items: T[], size: number): T[][] {
 
 /**
  * Confirms every listed pending transaction, exactly the per-item logic
- * `pending.routes.ts`'s `/bulk-confirm` used to run synchronously inline —
+ * `pending.routes.ts`'s `/bulk-confirm` used to run synchronously inline:
  * moved here so a large batch's work happens in bounded chunks inside a
  * background worker instead of blocking the request thread (and, in
- * production, exceeding the request-timeout path — see this file's own
+ * production, exceeding the request-timeout path: see this file's own
  * regression coverage) for the whole batch.
  *
  * Progress is persisted to the `BulkConfirmBatch` incrementally, once per
@@ -121,7 +121,7 @@ export async function processBulkConfirm(data: BulkConfirmPendingJob): Promise<v
 
     await BulkConfirmBatch.findByIdAndUpdate(batchId, { $push: { results: { $each: results } } });
 
-    // Yield to the event loop between chunks — see CHUNK_SIZE's doc comment.
+    // Yield to the event loop between chunks (see CHUNK_SIZE's doc comment).
     await new Promise((resolve) => setImmediate(resolve));
   }
 
@@ -133,7 +133,7 @@ export const bulkConfirmPendingQueue = makeQueue<BulkConfirmPendingJob>("bulk-co
 
 /**
  * Constructs the BullMQ Worker that processes queued bulk-confirm jobs.
- * Deliberately NOT instantiated at module load time — see
+ * Deliberately NOT instantiated at module load time. See
  * `startStatementProcessWorker`'s doc comment for why (a top-level
  * `makeWorker(...)` would open a real Redis-backed listener as a side
  * effect of importing this module, including from this file's own tests).

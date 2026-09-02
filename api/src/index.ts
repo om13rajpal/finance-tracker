@@ -9,7 +9,7 @@ async function main() {
   await startBackgroundWorkers();
   // Self-healing safety net: `startBackgroundWorkers` only re-registers the
   // 5 repeatable schedules when THIS process boots. If Redis itself ever
-  // restarts independently (no data persistence — see `scheduleWatchdog.ts`'s
+  // restarts independently (no data persistence: see `scheduleWatchdog.ts`'s
   // doc comment for why that's a real, not theoretical, scenario on this
   // app's current Redis plan), nothing else would notice until this process's
   // own next restart. Runs for the rest of the process's life; nothing here

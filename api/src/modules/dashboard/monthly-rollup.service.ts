@@ -29,12 +29,12 @@ interface RollupAggregateResult {
  * to add it up.
  *
  * `$facet` runs both branches against the same `$match`ed set in one round trip:
- *  - `totals`: a single group over ALL matched transactions, splitting by sign — a
+ *  - `totals`: a single group over ALL matched transactions, splitting by sign: a
  *    non-negative `amount` counts as income, negative counts as expense (absolute
  *    value), matching the sign convention established since Task 10 (see
  *    `recurring.service.ts`'s income/expense transaction creation).
  *  - `byCategory`: restricted to expense transactions (mirrors
- *    `computeBudgetVsSpend`/`computeGuiltFreeMoney`'s "categorized spend" rows — income
+ *    `computeBudgetVsSpend`/`computeGuiltFreeMoney`'s "categorized spend" rows; income
  *    isn't a "spend by category" concept), grouped by `categoryId` as-is. A `null`
  *    `categoryId` (Task 10 explicitly allows uncategorized transactions) groups under
  *    its own `null` row rather than crashing the aggregation or being dropped, so
@@ -75,12 +75,12 @@ async function aggregateMonth(userId: string, month: string): Promise<RollupAggr
 /**
  * Rolls up a single completed month for one user into `MonthlySummary`: aggregate
  * totals via `aggregateMonth` above, plus net worth AS OF NOW (Task 18's
- * `computeFullNetWorth`) captured at rollup time — matching the design spec's rollup
+ * `computeFullNetWorth`) captured at rollup time, matching the design spec's rollup
  * shape (`userId, month, totalIncome, totalExpense, byCategory, netWorth`).
  *
  * Upserts on `{userId, month}` rather than inserting: this must be safe to call more
  * than once for the same month (e.g. a manual re-run after a data correction to a
- * transaction) — a second call updates the existing document's totals in place instead
+ * transaction): a second call updates the existing document's totals in place instead
  * of throwing on the unique `{userId, month}` index or silently duplicating the row.
  */
 export async function rollupMonth(userId: string, month: string): Promise<void> {

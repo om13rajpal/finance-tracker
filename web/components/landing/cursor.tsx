@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * Sorted · the cursor — a precision crosshair
+ * Sorted · the cursor: a precision crosshair
  *
  * A small gapped crosshair that follows the pointer, and tightens into a
  * rotated mark with a guilt-free centre over anything you can act on.
  *
  * WHY A CROSSHAIR. The page's world is an instrument: a departure board of real
- * bank alerts, mono figures, hairline rules, a diagram drawn to scale. A ring —
- * the previous cursor, and the dot-and-lagging-ring before it — is the generic
+ * bank alerts, mono figures, hairline rules, a diagram drawn to scale. A ring
+ * (the previous cursor, and the dot-and-lagging-ring before it) is the generic
  * agency cursor and belongs to no product in particular. A registration mark
  * belongs to this one. It also reads as precision rather than decoration, which
  * is the promise the product is making.
@@ -22,7 +22,7 @@
  * casing costs nothing and never changes.
  *
  * THE STATE CHANGE IS ONE TWEEN. Over an interactive element the mark rotates
- * 45°, TIGHTENS to 0.8, and its guilt-free centre fades in — a plus becoming a
+ * 45°, TIGHTENS to 0.8, and its guilt-free centre fades in: a plus becoming a
  * cross, locking on. It shrinks rather than swells on purpose: the first pass
  * scaled it up and put a 44px cross straight over the "Sign in" label, hiding
  * the word the pointer was aimed at. `closest()` runs on every move because it
@@ -88,7 +88,7 @@ export function Cursor() {
           mark.dataset.hot = next ? "true" : "false";
           // It TIGHTENS onto the target rather than swelling over it. Scaling
           // up put a 44px cross on top of a "Sign in" label and hid the word
-          // the pointer was aimed at — a cursor that obscures what it is
+          // the pointer was aimed at: a cursor that obscures what it is
           // pointing at is working against itself. Rotating and shrinking reads
           // as locking on, and leaves the target readable.
           gsap.to(mark, {
@@ -138,7 +138,7 @@ export function Cursor() {
       style={{ width: SIZE, height: SIZE }}
     >
       <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`} fill="none">
-        {/* the casing — ink underneath, so the mark survives any ground */}
+        {/* the casing: ink underneath, so the mark survives any ground */}
         <g stroke="var(--ink)" strokeWidth={3.6} strokeLinecap="round">
           {arms.map(([x1, y1, x2, y2]) => (
             <line key={`c${x1}${y1}`} x1={x1} y1={y1} x2={x2} y2={y2} />

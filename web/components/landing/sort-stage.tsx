@@ -15,7 +15,7 @@
  * reads its real number. GSAP measures where each row ended up and animates it
  * FROM a point near the top-centre of the stage. So with JavaScript disabled,
  * or under prefers-reduced-motion, you get a finished static diagram of twelve
- * transactions correctly sorted — which is a perfectly good graphic, and is
+ * transactions correctly sorted, which is a perfectly good graphic, and is
  * exactly what the animation resolves to anyway.
  *
  * WHY IT DOES NOT THRASH
@@ -23,14 +23,14 @@
  *     Never a height animation. The levels are PRE-COMPUTED constants in
  *     data.ts, so the scrub performs no layout read at all.
  *   · Row start positions are measured once per ScrollTrigger.refresh via
- *     `offsetLeft`/`offsetTop`, which — unlike getBoundingClientRect — are not
+ *     `offsetLeft`/`offsetTop`, which (unlike getBoundingClientRect) are not
  *     contaminated by the transform GSAP has already applied to the element.
  *     `invalidateOnRefresh` re-runs them on resize.
  *   · Transform and opacity only. No layout property is animated anywhere.
  *
  * RULE 12 NOTE. Inside the product no rupee figure ever animates: a counting
  * number shows the owner a briefly-wrong balance, and they act on balances. The
- * lane totals here belong to nobody and describe no account — they are a
+ * lane totals here belong to nobody and describe no account: they are a
  * demonstration of an arithmetic the product does. The reason for the rule does
  * not reach this page. It still reaches every screen behind the login.
  */
@@ -166,8 +166,8 @@ export function SortStage() {
     >
       {/* ── the statement ───────────────────────────────────────────────── */}
       <div className="l-sort-say flex shrink-0 flex-col justify-center px-22 pb-18 pt-32 lg:px-44 lg:pb-44 lg:pt-44">
-        {/* On desktop the copy takes the lanes' exact vertical measure —
-            `min(74vh,660px)`, the same constant the grid below uses — and pins
+        {/* On desktop the copy takes the lanes' exact vertical measure
+            (`min(74vh,660px)`, the same constant the grid below uses) and pins
             the kicker to its top edge and the statement to its bottom edge. The
             column and the machine then start and stop on the same two lines,
             instead of a centred paragraph bottoming out a quarter-screen above
@@ -175,7 +175,7 @@ export function SortStage() {
             has no height and the three lines simply stack. */}
         <div className="flex flex-col lg:h-[min(74vh,660px)] lg:justify-between">
           <p className="font-num text-meta uppercase tracking-label text-dim">
-            <span style={{ color: "var(--bucket-guiltfree)" }}>§</span> 01 — how it sorts
+            <span style={{ color: "var(--bucket-guiltfree)" }}>§</span> 01: how it sorts
           </p>
           <div>
             <h2

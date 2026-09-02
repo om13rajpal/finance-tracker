@@ -74,7 +74,7 @@ export async function processDueRecurringTransactions(): Promise<void> {
       await applyBalanceDelta(item.userId, item.accountId, amount);
       // This is a real Transaction changing (an auto-created recurring bill/income),
       // just triggered by the scheduled recurringDue worker instead of an HTTP
-      // handler — the dashboard cache is just as stale here as after any other
+      // handler: the dashboard cache is just as stale here as after any other
       // Transaction write, so it must be invalidated the same way.
       await invalidateDashboardCache(item.userId);
     }

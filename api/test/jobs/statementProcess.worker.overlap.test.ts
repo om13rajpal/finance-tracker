@@ -9,7 +9,7 @@ import { ImportBatch } from "../../src/models/ImportBatch.js";
 
 /**
  * Same fabricated-page technique `statementProcess.worker.reconciliation.test.ts`
- * uses (see that file's own doc comment) — `tryUnlockPdf` mocked, everything
+ * uses (see that file's own doc comment): `tryUnlockPdf` mocked, everything
  * past it (parsing, chunking, the overlap check, persistence) real.
  */
 const { unlockMock } = vi.hoisted(() => ({ unlockMock: vi.fn() }));
@@ -83,7 +83,7 @@ function pageWithRows(dates: string[]): PDFExtractPage {
 
 async function writeFakeTempFile(): Promise<string> {
   const p = path.join(os.tmpdir(), `statement-overlap-test-${crypto.randomUUID()}.pdf`);
-  await fs.writeFile(p, Buffer.from("fake pdf bytes — never actually parsed, tryUnlockPdf is mocked"));
+  await fs.writeFile(p, Buffer.from("fake pdf bytes, never actually parsed, tryUnlockPdf is mocked"));
   return p;
 }
 
@@ -104,7 +104,7 @@ async function createAccount(userId: string) {
   return Account.create({ userId, type: "bank", institution: "HDFC Bank", nickname: "Savings", currentBalance: 0 });
 }
 
-describe("processStatementUpload — cross-statement date-range overlap warning", () => {
+describe("processStatementUpload: cross-statement date-range overlap warning", () => {
   afterEach(() => {
     unlockMock.mockReset();
   });

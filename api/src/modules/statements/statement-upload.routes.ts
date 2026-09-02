@@ -18,14 +18,14 @@ function sha256(buffer: Buffer): string {
 
 /**
  * Uploads a (possibly password-protected) bank statement PDF and enqueues it
- * for background processing into review-queue `PendingTransaction`s —
- * mirrors `csv-import.routes.ts`'s shape (multer memory upload, `accountId`
+ * for background processing into review-queue `PendingTransaction`s.
+ * Mirrors `csv-import.routes.ts`'s shape (multer memory upload, `accountId`
  * required, one `ImportBatch` per upload) with these deliberate differences:
  *
  *  - Nothing is auto-confirmed. PDF layout extraction is inherently less
  *    reliable than a CSV export, so every parsed row becomes a
  *    `PendingTransaction` (`source: "pdf_statement_parsed"`) for the person
- *    to review, never a confirmed `Transaction` directly — which is also why
+ *    to review, never a confirmed `Transaction` directly, which is also why
  *    this route never calls `invalidateDashboardCache`; only the pending
  *    confirm route does, once something is actually confirmed.
  *  - File-level idempotency via a SHA-256 hash: re-uploading the exact same
@@ -35,13 +35,13 @@ function sha256(buffer: Buffer): string {
  *    `statement-process` BullMQ worker (`statementProcess.worker.ts`), not
  *    inline in this request. A 500-page statement's unlock + parse + N
  *    inserts, run synchronously in one HTTP request, would hold the request
- *    open and block this app's single event loop for the whole duration —
+ *    open and block this app's single event loop for the whole duration:
  *    wrong for a single-process container on a shared-CPU, 512MB free-tier
  *    deployment. This route does only the cheap, fast parts (auth, hash dedup,
  *    writing the upload to a temp file) and returns `202` immediately with a
  *    `batchId` the frontend polls via `GET /transactions/import-pdf/:batchId`.
  *
- * `parserKey` is optional — a bank-specific parser (see
+ * `parserKey` is optional. A bank-specific parser (see
  * `parsers/registry.ts`) is meaningfully more accurate than the generic
  * fallback, but nothing requires the caller to know or supply it.
  */
@@ -62,14 +62,14 @@ statementUploadRouter.post("/import-pdf", upload.single("file"), async (req, res
     }
 
     // Write the upload to a temp file on local disk and pass only its path
-    // through the BullMQ job payload — not the file's bytes (as base64 or
+    // through the BullMQ job payload, not the file's bytes (as base64 or
     // otherwise). This app's other workers all carry small payloads (e.g.
     // gmail-email-parse's `{userId, historyId}`); Redis/Upstash is
     // coordination infrastructure, not blob storage, and stuffing a
     // multi-MB base64 blob into a job would both hurt Redis performance and
     // hold the same bytes in memory twice (Express's request buffer AND a
     // Redis-serialized copy) at once. Safe to hand off by path because this
-    // app's `render.yaml` runs one single-process container — the worker
+    // app's `render.yaml` runs one single-process container: the worker
     // reading this path is the same machine that wrote it.
     const tempFilePath = path.join(os.tmpdir(), `statement-${crypto.randomUUID()}.pdf`);
     await fs.writeFile(tempFilePath, req.file.buffer);
@@ -102,7 +102,7 @@ statementUploadRouter.post("/import-pdf", upload.single("file"), async (req, res
 /**
  * Polled by the frontend after the `202` above to watch a batch's async
  * processing progress until it reaches a terminal `status`
- * (`"completed"`/`"failed"`). Scoped to `req.userId` — a batch that exists
+ * (`"completed"`/`"failed"`). Scoped to `req.userId`: a batch that exists
  * but belongs to someone else 404s exactly like one that doesn't exist at
  * all, so this route never leaks whether a given id belongs to another
  * account.

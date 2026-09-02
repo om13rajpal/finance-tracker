@@ -1,5 +1,5 @@
 // Always same-origin, proxied through next.config.mjs's rewrite to the real
-// API. The browser must never call the API's own origin directly — the
+// API. The browser must never call the API's own origin directly: the
 // session cookie is sameSite=lax, so a cross-site fetch silently drops it,
 // and every request after login comes back 401.
 export const API_BASE = "/api";
@@ -30,7 +30,7 @@ export class TimeoutError extends Error {
 
 export interface ApiFetchOptions extends RequestInit {
   /**
-   * Abort and throw `TimeoutError` after this many ms. Opt-in — omitting it
+   * Abort and throw `TimeoutError` after this many ms. Opt-in: omitting it
    * preserves the original behaviour exactly, so existing callers are
    * unaffected.
    */

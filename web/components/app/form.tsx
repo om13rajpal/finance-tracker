@@ -275,7 +275,7 @@ export function Checkbox({
 /**
  * Radios drawn as one pill-shaped strip.
  *
- * Used where the option set is small, closed and worth showing at a glance —
+ * Used where the option set is small, closed and worth showing at a glance:
  * expense/income, old/new regime. It is a `radiogroup` of real radio inputs,
  * so arrow keys work and the state is announced; only the paint is bespoke.
  */

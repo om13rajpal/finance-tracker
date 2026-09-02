@@ -46,14 +46,14 @@
  *     · no shadows other than that one stamp. No blur, no elevation.
  *     · real data. Real Indian merchants, real amounts, en-IN grouping.
  *     · transform / opacity / clip-path only. No layout property is animated,
- *       and there is not one scroll listener on the page — ScrollTrigger only.
+ *       and there is not one scroll listener on the page: ScrollTrigger only.
  *
  *   THE THREE GUARANTEES, LOCKED BY e2e/landing.spec.ts
  *     1. With JavaScript disabled the page is complete and readable. GSAP only
  *        ever sets a pre-animation state from inside an effect; nothing is
  *        hidden by CSS waiting to be revealed. The horizontal bucket rail
  *        degrades to a real native horizontal scroller, keyboard-reachable.
- *     2. Under prefers-reduced-motion everything sits at its final frame — no
+ *     2. Under prefers-reduced-motion everything sits at its final frame: no
  *        pins, no jack, no board flicker, no cursor, full opacity, real content.
  *     3. Both calls to action reach /login.
  *

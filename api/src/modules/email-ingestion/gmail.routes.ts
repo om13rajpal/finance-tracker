@@ -21,7 +21,7 @@ gmailRouter.get("/status", requireAuth, async (req, res, next) => {
   }
 });
 
-// Not behind requireAuth — Google redirects the browser here directly. The userId
+// Not behind requireAuth: Google redirects the browser here directly. The userId
 // therefore comes entirely from the `state` param, which must be one this API minted
 // and signed in getAuthUrl (see signOAuthState's comment): an unsigned/forged/expired
 // state is rejected outright rather than trusted as a userId.
@@ -47,7 +47,7 @@ gmailRouter.get("/oauth/callback", async (req, res, next) => {
 
     // Register the actual push-notification watch now, not just the token.
     // Without this, the connection sits at status "connected" with no watch
-    // ever registered — nothing Google-side is watching the inbox, so no
+    // ever registered: nothing Google-side is watching the inbox, so no
     // email ever triggers ingestion, and the daily renewal job's query
     // (watchExpiration <= cutoff) never rescues a connection whose
     // watchExpiration is still null from having skipped this step.

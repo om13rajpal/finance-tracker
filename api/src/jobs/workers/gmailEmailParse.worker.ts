@@ -33,7 +33,7 @@ function getHeader(payload: gmail_v1.Schema$MessagePart | undefined, name: strin
  * against `EmailSource.senderPattern` instead of a substring check. A
  * substring check on the raw header (`from.includes(senderPattern)`) would
  * treat `alerts@hdfcbank.net.evil.com` as a match for the pattern
- * `alerts@hdfcbank.net` — this is financial-data ingestion, so a lookalike
+ * `alerts@hdfcbank.net`: this is financial-data ingestion, so a lookalike
  * sender must never be treated as trusted. Always trusting the address
  * inside `<...>` (rather than the free-text display name before it) also
  * defeats a spoofed display name like `"alerts@hdfcbank.net" <attacker@evil.com>`.
@@ -58,17 +58,17 @@ type ImportLogDraft = {
 /**
  * Attempts to create the `EmailImportLog` row that "claims" this `emailId`.
  *
- * This — not the `findOne` pre-check in the loop below — is the actual
+ * This (not the `findOne` pre-check in the loop below) is the actual
  * dedup guarantee. `EmailImportLog.emailId` has a unique index, so if the
  * same Pub/Sub notification is redelivered while an earlier job for it is
  * still in flight (i.e. it already passed the pre-check but hasn't written
- * its log row yet), both jobs can race past that pre-check — but only ONE of
+ * its log row yet), both jobs can race past that pre-check, but only ONE of
  * them can win this `create()` call. The other gets a MongoDB duplicate-key
  * error (code 11000), which is caught here and treated as "already being
  * processed by another job," not a real error. Only the winner goes on to
  * create the `PendingTransaction` for a `success` result, so a redelivered
  * notification can never produce two `PendingTransaction`s for the same
- * email. This is deliberately not "just trust BullMQ concurrency" — a
+ * email. This is deliberately not "just trust BullMQ concurrency": a
  * duplicate delivery can still land on two different job attempts (retries,
  * multiple worker processes) even at concurrency 1.
  */
@@ -85,7 +85,7 @@ async function tryReserveImportLog(doc: ImportLogDraft): Promise<boolean> {
 /**
  * Recursively walks `payload.parts` (attachments can be nested a level or two
  * deep, e.g. inside a multipart/mixed wrapper) for the first part that is
- * both named like a PDF and carries a real `body.attachmentId` — the
+ * both named like a PDF and carries a real `body.attachmentId`, the
  * reference needed to actually fetch the bytes via a separate API call. A
  * part with inline `body.data` instead of an `attachmentId` is not an
  * attachment in the sense this code cares about (that path doesn't exist
@@ -109,19 +109,19 @@ function findPdfAttachmentPart(
 /**
  * Unlocks, parses and files a trusted-sender email's PDF statement
  * attachment (if it has one) as `pdf_statement_parsed` `PendingTransaction`s
- * with `accountId: null` — an email says what was spent but never which
- * account, same as the existing body-alert path, so account assignment is
+ * with `accountId: null` (an email says what was spent but never which
+ * account, same as the existing body-alert path), so account assignment is
  * deferred entirely to the existing confirm-time flow.
  *
  * Deliberately independent of body-text parsing: one email can have neither,
  * either, or both a parseable alert and a PDF attachment, and this function's
  * own `EmailImportLog` row uses a synthetic `${emailId}:pdf` key (distinct
- * from the plain `emailId` the body-parse claim uses) so the two outcomes —
- * and their own redelivery dedup — never collide.
+ * from the plain `emailId` the body-parse claim uses) so the two outcomes,
+ * and their own redelivery dedup, never collide.
  *
  * NEVER throws: an unlock or parse failure here must not block the rest of
  * this mailbox's history sync (the caller's `for` loop, or the
- * `historyId` advance after it) — it's logged and treated as this one
+ * `historyId` advance after it): it's logged and treated as this one
  * attachment's outcome, nothing more.
  */
 async function processPdfAttachment(params: {
@@ -137,9 +137,9 @@ async function processPdfAttachment(params: {
 
   try {
     const part = findPdfAttachmentPart(payload);
-    if (!part?.body?.attachmentId) return; // no PDF attachment on this email — nothing to do
+    if (!part?.body?.attachmentId) return; // no PDF attachment on this email: nothing to do
 
-    // Fast path only, same caveat as the plain-emailId check above — the real
+    // Fast path only, same caveat as the plain-emailId check above: the real
     // dedup guarantee is `tryReserveImportLog`'s unique-index race below.
     const alreadyLogged = await EmailImportLog.findOne({ emailId: pdfLogKey });
     if (alreadyLogged) return;
@@ -208,15 +208,15 @@ async function processPdfAttachment(params: {
     });
   } catch (err) {
     console.error(`PDF attachment processing failed for email ${emailId}:`, err);
-    // Swallowed deliberately — see this function's doc comment.
+    // Swallowed deliberately: see this function's doc comment.
   }
 }
 
 /**
  * Processes one Gmail push-notification job: lists the mailbox history since
  * the last known `historyId`, matches each new message's sender against this
- * user's `EmailSource`s, runs the matching parser, and — on a successful
- * parse — creates a `PendingTransaction` (never a confirmed `Transaction`;
+ * user's `EmailSource`s, runs the matching parser, and, on a successful
+ * parse, creates a `PendingTransaction` (never a confirmed `Transaction`;
  * per spec nothing from email lands as real data until reviewed/confirmed).
  * Every message produces exactly one `EmailImportLog` row recording the
  * outcome (`success`/`failed`/`unmatched`), which is what makes reprocessing
@@ -260,7 +260,7 @@ export async function processGmailNotification({
   const sources = await EmailSource.find({ userId });
 
   for (const emailId of messageIds) {
-    // Fast path only — skips a wasted Gmail API call for an email we already
+    // Fast path only: skips a wasted Gmail API call for an email we already
     // know we've processed. NOT the dedup guarantee itself; see
     // `tryReserveImportLog` for why that matters under concurrent delivery.
     const alreadyLogged = await EmailImportLog.findOne({ emailId });
@@ -294,7 +294,7 @@ export async function processGmailNotification({
       continue;
     }
 
-    // PDF attachment handling — alongside the body-text parser below, not
+    // PDF attachment handling: alongside the body-text parser below, not
     // instead of it. One email can have neither, either, or both.
     await processPdfAttachment({
       gmail,
@@ -353,7 +353,7 @@ export async function processGmailNotification({
 /**
  * Constructs the BullMQ Worker that processes queued notification jobs.
  * Deliberately NOT instantiated at module load time (same reasoning as
- * `startRecurringDueWorker`/`startGmailWatchRenewalWorker`) — a top-level
+ * `startRecurringDueWorker`/`startGmailWatchRenewalWorker`): a top-level
  * `export const gmailEmailParseWorker = makeWorker(...)` would open a real
  * Redis-backed listener as a side effect of simply importing this module,
  * including from this task's own test file, which only needs

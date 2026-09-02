@@ -3,7 +3,7 @@ import type { PDFExtractPage, PDFExtractText } from "pdf.js-extract";
 /**
  * How close two text items' y-coordinates have to be to count as "the same
  * visual line". `pdf.js-extract` reports y in PDF points, top-to-bottom
- * (confirmed empirically — y increases going down the page); items on one
+ * (confirmed empirically: y increases going down the page); items on one
  * printed line share the same baseline to within float precision, so a small
  * tolerance absorbs that without merging genuinely adjacent lines (statement
  * rows are printed with much more than this much line spacing).
@@ -11,15 +11,15 @@ import type { PDFExtractPage, PDFExtractText } from "pdf.js-extract";
 const Y_TOLERANCE = 3;
 
 /**
- * Reconstructs one page's text content into an ordered array of "lines" —
+ * Reconstructs one page's text content into an ordered array of "lines":
  * each line is every text item whose y falls within `Y_TOLERANCE` of the
  * others, sorted left-to-right by x and joined with single spaces. This is
  * what lets the per-bank row parsers work off plain strings (find lines
  * starting with a date, etc.) instead of raw x/y-positioned fragments, and
- * it's what makes them independently unit-testable with hand-built fixtures —
- * see `statement-row-parser.test.ts`'s `mkPage` helper.
+ * it's what makes them independently unit-testable with hand-built fixtures.
+ * See `statement-row-parser.test.ts`'s `mkPage` helper.
  *
- * Blank lines are dropped; nothing else is filtered here — that's each
+ * Blank lines are dropped; nothing else is filtered here. That's each
  * parser's own responsibility (bank-specific boilerplate differs).
  */
 export function linesFromPage(page: PDFExtractPage): string[] {

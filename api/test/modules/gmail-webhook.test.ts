@@ -8,7 +8,7 @@ import { GmailConnection } from "../../src/models/GmailConnection.js";
 import { encrypt } from "../../src/lib/encryption.js";
 
 // `vi.mock`'s factory is hoisted above ALL of this file's top-level code,
-// including its own imports — and this file statically imports `app.js`,
+// including its own imports, and this file statically imports `app.js`,
 // whose import chain reaches `googleapis` at module-evaluation time (before
 // this file's own body runs). A plain `const historyListMock = vi.fn()`
 // declared below would still be in its temporal dead zone when the factory
@@ -85,7 +85,7 @@ describe("gmail webhook", () => {
 
     expect(res.status).toBe(204);
 
-    // The handler must do the minimum — enqueue and respond — never call the
+    // The handler must do the minimum (enqueue and respond), never call the
     // Gmail API itself. If it had, these mocks (Gmail is fully mocked in this
     // file) would have been invoked as part of handling the request above.
     expect(historyListMock).not.toHaveBeenCalled();
@@ -160,7 +160,7 @@ describe("gmail webhook", () => {
     await processGmailNotification({ userId: "user-1", historyId: "102" });
 
     const pendingAfterRedelivery = await PendingTransaction.find({ userId: "user-1" });
-    expect(pendingAfterRedelivery).toHaveLength(1); // still just the one — email-1 was already logged
+    expect(pendingAfterRedelivery).toHaveLength(1); // still just the one: email-1 was already logged
     const logsAfterRedelivery = await EmailImportLog.find({ userId: "user-1" });
     expect(logsAfterRedelivery).toHaveLength(2); // no new EmailImportLog row was added either
   });
@@ -256,7 +256,7 @@ describe("gmail webhook", () => {
     // Simulate the same Pub/Sub notification being redelivered and processed
     // by two overlapping job runs before either has written its
     // EmailImportLog row (the scenario the `findOne` pre-check alone cannot
-    // prevent — see the comment on `tryReserveImportLog`).
+    // prevent, see the comment on `tryReserveImportLog`).
     await Promise.all([
       processGmailNotification({ userId: "user-race", historyId: "2" }),
       processGmailNotification({ userId: "user-race", historyId: "2" }),

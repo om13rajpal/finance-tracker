@@ -20,7 +20,7 @@ describe("rollupMonth", () => {
     await Transaction.create({ userId, accountId: "acc-1", categoryId: "cat-food", amount: -1500, date: new Date("2026-07-10"), source: "manual", status: "confirmed" });
     await Transaction.create({ userId, accountId: "acc-1", categoryId: "cat-food", amount: -500, date: new Date("2026-07-15"), source: "manual", status: "confirmed" });
     await Transaction.create({ userId, accountId: "acc-1", categoryId: "cat-rent", amount: -20000, date: new Date("2026-07-01"), source: "manual", status: "confirmed" });
-    // outside the target month — must be excluded
+    // outside the target month: must be excluded
     await Transaction.create({ userId, accountId: "acc-1", categoryId: "cat-food", amount: -999, date: new Date("2026-06-15"), source: "manual", status: "confirmed" });
 
     await rollupMonth(userId, "2026-07");

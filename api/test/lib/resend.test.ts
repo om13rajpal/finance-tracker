@@ -25,7 +25,7 @@ describe("sendEmail", () => {
   // This is the exact bug found via a real end-to-end test against the live deployment:
   // the Resend SDK resolves normally with an `error` field on API-level failure, it does
   // not reject the promise. A version of sendEmail that only awaits the call and ignores
-  // the return value would incorrectly resolve here too — this test fails against that
+  // the return value would incorrectly resolve here too: this test fails against that
   // version and passes only once the return value is actually checked.
   it("throws when Resend reports an error, even though the promise resolves", async () => {
     sendMock.mockResolvedValue({

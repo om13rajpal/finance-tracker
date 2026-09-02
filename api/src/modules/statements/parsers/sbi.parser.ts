@@ -5,7 +5,7 @@ import { isMoneyOrDashToken, parseIndianAmount, toIsoDate } from "./utils.js";
 
 /**
  * SBI's row structure, verified directly against a real, unlocked SBI
- * statement during planning (26 pages, 318 transactions — see the plan doc):
+ * statement during planning (26 pages, 318 transactions; see the plan doc):
  *
  *   WDL TFR                                                        <- narration label, own line, just above the row
  *   01/08/2026   01/08/2026   UPI/DR/.../MERCHANT   -   500.00   -   24,690.65   <- row start: two dates, then description-start, then ref | debit | credit | balance
@@ -13,11 +13,11 @@ import { isMoneyOrDashToken, parseIndianAmount, toIsoDate } from "./utils.js";
  *   0000000000000 AT 00001 MAIN                                    <- ...across 1-3 more lines...
  *   BRANCH , CITY                                                  <- ...until the next date-starting line (or the label just above it)
  *
- * The label line "belongs" to the row that FOLLOWS it, not the row above —
- * disambiguated with one line of lookahead (see the main loop below): a
+ * The label line "belongs" to the row that FOLLOWS it, not the row above.
+ * It's disambiguated with one line of lookahead (see the main loop below): a
  * non-row-start line is only ever absorbed as the CURRENT row's description
  * continuation if the line after it is not itself a row start. If it is, this
- * line is the label for that upcoming row instead — UNLESS that line doesn't
+ * line is the label for that upcoming row instead, UNLESS that line doesn't
  * look like a label at all (see `looksLikeLabel`), in which case it's really
  * the current row's own trailing continuation that just happens to sit
  * immediately before the next row starts (confirmed against real data: a row
@@ -26,7 +26,7 @@ import { isMoneyOrDashToken, parseIndianAmount, toIsoDate } from "./utils.js";
  *
  * A closing summary row and disclaimer boilerplate follow the last
  * transaction. Nothing there matches the two-date row-start pattern, so the
- * detector below skips it without special-casing — except the well-known
+ * detector below skips it without special-casing, except the well-known
  * fixed phrases and pagination artifacts filtered out up front, which exist
  * only to stop that trailing text (and the "Page no. N" / repeated "Balance"
  * column header that appears at every page break) from being absorbed as
@@ -50,19 +50,19 @@ function isBoilerplate(line: string): boolean {
 
 /**
  * A genuine narration LABEL for the upcoming row ("WDL TFR", "DEP TFR",
- * "CASH WITHDRAWAL SELF AT", "CASH DEPOSIT SELF AT 00652" — every real
+ * "CASH WITHDRAWAL SELF AT", "CASH DEPOSIT SELF AT 00652": every real
  * example seen) is a short, standalone phrase, never a comma-separated
  * address fragment. Confirmed against a real 118-page SBI statement: a row
  * type that carries its own description inline (e.g. "INTEREST CREDIT",
  * already present as that row's own on-line text) never has a separate
- * label line above it at all — so the line immediately before it is
+ * label line above it at all, so the line immediately before it is
  * actually the PREVIOUS row's trailing continuation (typically its branch
  * address, e.g. "MAIN BRANCH , HISAR"), which just happens to sit right
  * before the next row starts. Mistaking that for the next row's label (the
  * single-lookahead rule below would, without this check) loses it from the
  * row it actually describes AND attaches unrelated text as a false `note`
  * on the row that follows. The comma is what reliably tells the two apart
- * in every real example seen — a label is never comma-punctuated, an
+ * in every real example seen: a label is never comma-punctuated, an
  * address continuation line practically always is.
  */
 function looksLikeLabel(line: string): boolean {
@@ -72,8 +72,8 @@ function looksLikeLabel(line: string): boolean {
 /**
  * Safety cap on how many continuation lines a single row absorbs. The real
  * SBI sample never needed more than 3, but this exists specifically so the
- * LAST transaction on a statement — which has no next row-start to stop
- * absorption — can't run away consuming everything after it if some
+ * LAST transaction on a statement, which has no next row-start to stop
+ * absorption, can't run away consuming everything after it if some
  * boilerplate phrase isn't in the filter list above.
  */
 const MAX_CONTINUATION_LINES = 6;
@@ -118,7 +118,7 @@ export function parseSbiStatement(pages: PDFExtractPage[]): StatementRowResult[]
       current.descParts.push(line);
     }
     // Otherwise: a stray line with nothing to attribute it to (e.g. before the
-    // very first row) — ignored.
+    // very first row): ignored.
   }
   if (current) rawRows.push(current);
 
@@ -155,26 +155,26 @@ export function parseSbiStatement(pages: PDFExtractPage[]): StatementRowResult[]
 
 /**
  * The account's actual CURRENT balance ("Clear Balance" in SBI's own Account
- * Summary block on page 1, "As on <today's date>") — deliberately NOT the
+ * Summary block on page 1, "As on <today's date>"), deliberately NOT the
  * same thing as the last transaction row's own balance, or the "Closing
  * Balance" in the "Statement Summary" block at the very end of the document.
  * Confirmed against a real 118-page SBI export: those two numbers can be
- * meaningfully different — that document's printed transaction rows
+ * meaningfully different: that document's printed transaction rows
  * happened to stop over a year before the statement's own generation date
  * (an SBI export quirk/limit, not a parsing bug), so the trailing summary's
  * "Closing Balance" reflected only the last transaction actually included,
  * not reality. "Clear Balance" is the one number in the document that's
  * always the true, as-of-now balance regardless of whether the transaction
- * list itself is complete — which is exactly what reconciling
+ * list itself is complete, which is exactly what reconciling
  * `Account.currentBalance` needs.
  *
  * The page-1 Account Summary is a two-column layout, and this specific
  * field's label and value don't reliably end up on the same reconstructed
- * line the way every other field on that page does — empirically, "Clear
+ * line the way every other field on that page does: empirically, "Clear
  * Balance" prints as its own standalone line, while its value shows up on a
  * DIFFERENT line that starts with a bare `:` (the colon that would normally
  * follow the label) immediately followed by the amount and a `CR`/`DR`
- * suffix, e.g. `": 9,894.83CR Branch Phone : 9275532076"` — merged with an
+ * suffix, e.g. `": 9,894.83CR Branch Phone : 9275532076"`, merged with an
  * unrelated field from the page's other column that happens to sit at a
  * similar height. Matching on that bare-colon-prefixed shape directly (never
  * seen anywhere else on this page or in the transaction table, which starts

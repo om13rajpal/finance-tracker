@@ -82,7 +82,7 @@ accountsRouter.post("/:id/balance", async (req, res, next) => {
     const { balance } = balanceSchema.parse(req.body);
     const userId = (req as any).userId;
 
-    // Read first (not for a guard — a manual correction ALWAYS wins, no staleness
+    // Read first (not for a guard: a manual correction ALWAYS wins, no staleness
     // check the way `reconcileBalance` has) purely to capture `previousBalance` for
     // the audit-trail snapshot below.
     const previous = await Account.findOne({ _id: req.params.id, userId });

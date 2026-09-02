@@ -89,7 +89,7 @@ describe("withRetry", () => {
     await vi.advanceTimersByTimeAsync(0);
     expect(fn).toHaveBeenCalledTimes(1);
 
-    // Delay before attempt 2 is baseDelayMs (500ms) — not yet at 499ms.
+    // Delay before attempt 2 is baseDelayMs (500ms): not yet at 499ms.
     await vi.advanceTimersByTimeAsync(499);
     expect(fn).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(1);
@@ -122,7 +122,7 @@ describe("withRetry", () => {
     await vi.advanceTimersByTimeAsync(500);
     expect(fn).toHaveBeenCalledTimes(2);
 
-    // attempt 2 (the last one) has already failed by now — it should reject
+    // attempt 2 (the last one) has already failed by now: it should reject
     // immediately with no further timer wait required to observe it.
     await vi.advanceTimersByTimeAsync(0);
     await promise;

@@ -6,13 +6,13 @@ import { monthlyRollupQueue, scheduleMonthlyRollup } from "./workers/monthlyRoll
 import { priceRetentionQueue, schedulePriceRetention } from "./workers/priceRetention.worker.js";
 
 /**
- * The 5 repeatable schedules `startBackgroundWorkers` registers at boot —
+ * The 5 repeatable schedules `startBackgroundWorkers` registers at boot:
  * see each worker file's own `schedule*` doc comment for why re-registering
  * one is always safe (BullMQ upserts by a deterministic dedup key derived
  * from the job name + repeat options, never adds a duplicate).
  *
  * `jobName` is the literal first argument each `schedule*` function passes
- * to its queue's `.add(...)` — it's what a repeatable job entry's own
+ * to its queue's `.add(...)`: it's what a repeatable job entry's own
  * `.name` is checked against below, since `getRepeatableJobs()` returns
  * every repeatable entry on a queue, not just this app's one.
  */
@@ -28,7 +28,7 @@ const SCHEDULES: { label: string; queue: Queue; jobName: string; reschedule: () 
  * The self-healing half of the fix for a real gap: `startBackgroundWorkers`
  * only ever re-registers these 5 repeatable schedules when the API PROCESS
  * itself boots. BullMQ's repeatable-job bookkeeping lives entirely in
- * Redis, not in this process — so if Redis restarts (or is swapped, or
+ * Redis, not in this process, so if Redis restarts (or is swapped, or
  * loses its data some other way) WITHOUT the API process also restarting,
  * every one of these 5 schedules silently stops existing, and nothing
  * would have re-registered them until the API's own next restart. On a
@@ -37,13 +37,13 @@ const SCHEDULES: { label: string; queue: Queue; jobName: string; reschedule: () 
  * gap: this Redis can restart independently of the web service at any time.
  *
  * Checks each of the 5 schedules for a matching-`name` repeatable job entry
- * on its own queue and re-registers exactly the ones missing — never
+ * on its own queue and re-registers exactly the ones missing; never
  * touches a schedule that's already present (an unconditional re-add would
  * be harmless too, since it's idempotent, but only reporting genuine gaps
  * keeps the watchdog's own log output meaningful instead of noise every run).
  *
  * Returns the labels of whatever got re-registered, `[]` when everything
- * was already fine — this is what `startScheduleWatchdog` logs.
+ * was already fine; this is what `startScheduleWatchdog` logs.
  */
 export async function reregisterMissingSchedules(): Promise<string[]> {
   const healed: string[] = [];
@@ -60,10 +60,10 @@ export async function reregisterMissingSchedules(): Promise<string[]> {
   return healed;
 }
 
-const DEFAULT_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes — see doc comment below.
+const DEFAULT_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes; see doc comment below.
 
 export interface ScheduleWatchdog {
-  /** Stops the periodic check. Idempotent — safe to call more than once. */
+  /** Stops the periodic check. Idempotent: safe to call more than once. */
   stop(): void;
 }
 
@@ -71,14 +71,14 @@ export interface ScheduleWatchdog {
  * Starts the periodic check. 10 minutes by default: short enough that a
  * schedule lost to an independent Redis restart is self-healed quickly
  * relative to the shortest real schedule it's protecting (price-refresh-fanout,
- * every 30 minutes — see `priceRefreshFanout.worker.ts`), long enough that the
+ * every 30 minutes; see `priceRefreshFanout.worker.ts`), long enough that the
  * check itself (5 cheap `getRepeatableJobs()` reads, only occasionally
  * followed by a write) is negligible load on whatever Redis this app is
- * pointed at — a deliberate concern after the exact kind of Redis
+ * pointed at: a deliberate concern after the exact kind of Redis
  * request-volume incident this app hit once already.
  *
  * A failed check (Redis genuinely unreachable, say) is logged and swallowed,
- * never thrown — this runs unattended on an interval with nothing to catch
+ * never thrown: this runs unattended on an interval with nothing to catch
  * it, and a transient failure should just be retried on the next tick, not
  * crash the process one interval after start.
  *

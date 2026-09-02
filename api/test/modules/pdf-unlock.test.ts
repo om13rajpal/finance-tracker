@@ -14,7 +14,7 @@ function fixture(name: string): Buffer {
 }
 
 // The real password baked into fixtures/statement-protected.pdf (generated
-// once at implementation time via qpdf — see the comment on the fixture
+// once at implementation time via qpdf, see the comment on the fixture
 // generation script referenced in the plan). Not a secret; it protects a
 // throwaway synthetic PDF committed to this repo.
 const REAL_PASSWORD = "correct-pw-123";
@@ -80,7 +80,7 @@ describe("tryUnlockPdf", () => {
   it("fails fast on a corrupt/non-PDF file without wasting stored-password attempts", async () => {
     const userId = "user-unlock-corrupt";
     // If it incorrectly treated this as "needs a password" and looped through
-    // candidates, this would still resolve to success:false — so this test
+    // candidates, this would still resolve to success:false, so this test
     // asserts the outcome AND (via a spy-free proxy: elapsed calls aren't
     // observable here) documents the intent. The real fast-fail behavior is
     // exercised structurally: a corrupt file is not a PasswordException, so

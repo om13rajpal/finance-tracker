@@ -15,8 +15,8 @@ const OAUTH_STATE_PURPOSE = "gmail_oauth";
  * Mints the `state` value carried through Google's OAuth redirect.
  *
  * This is a short-lived signed token rather than a bare userId because
- * `GET /gmail/oauth/callback` cannot sit behind `requireAuth` — Google redirects the
- * browser to it directly, with no session — so the userId the callback acts on comes
+ * `GET /gmail/oauth/callback` cannot sit behind `requireAuth`: Google redirects the
+ * browser to it directly, with no session, so the userId the callback acts on comes
  * ENTIRELY from this parameter. Unsigned, anyone who could guess or observe a userId
  * could drive the callback and attach their own Gmail account (and therefore their own
  * parsed transactions) to that user's data, or upsert a `GmailConnection` for an
@@ -25,7 +25,7 @@ const OAUTH_STATE_PURPOSE = "gmail_oauth";
  * `purpose` is part of the payload deliberately: session JWTs are signed with this same
  * `JWT_SECRET` and also carry a `userId`, so without it a stolen (or simply
  * self-obtained) session cookie would be a valid `state`. The short expiry bounds how
- * long a leaked authorize URL stays replayable — a connect flow completes in seconds.
+ * long a leaked authorize URL stays replayable: a connect flow completes in seconds.
  */
 export function signOAuthState(userId: string): string {
   return jwt.sign({ userId, purpose: OAUTH_STATE_PURPOSE }, env.JWT_SECRET, {
@@ -35,7 +35,7 @@ export function signOAuthState(userId: string): string {
 
 /**
  * Returns the userId carried by a `state` this API itself minted, or `null` for
- * anything else — unsigned, forged, expired, wrong-purpose, or missing. Callers must
+ * anything else: unsigned, forged, expired, wrong-purpose, or missing. Callers must
  * treat `null` as "reject the request", never as "fall back to the raw value".
  */
 export function verifyOAuthState(state: string | undefined): string | null {
@@ -64,7 +64,7 @@ export async function exchangeCodeForTokens(code: string): Promise<{ refreshToke
   const client = buildOAuthClient();
   const { tokens } = await client.getToken(code);
   if (!tokens.refresh_token) {
-    throw new Error("Google did not return a refresh token — re-consent may be required");
+    throw new Error("Google did not return a refresh token; re-consent may be required");
   }
   return { refreshToken: tokens.refresh_token };
 }

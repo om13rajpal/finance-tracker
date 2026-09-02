@@ -39,7 +39,7 @@ app.get("/health", (_req, res) => {
 // `app.use("/", investmentsRouter)` below: that router is mounted at the
 // app root, so its own `investmentsRouter.use(requireAuth)` middleware runs
 // (and short-circuits with 401) for EVERY request path that reaches it,
-// including "/webhooks/gmail" — regardless of whether investmentsRouter
+// including "/webhooks/gmail", regardless of whether investmentsRouter
 // itself defines a matching route. `/webhooks/gmail` must be reachable
 // without auth (Pub/Sub calls it directly, verified by its own shared
 // secret instead), so it has to be resolved before the request pipeline
@@ -51,7 +51,7 @@ app.use("/webhooks/gmail", gmailWebhookRouter);
 // after investmentsRouter it would be swallowed by that router's requireAuth and
 // answer 401 to every real callback (it only appeared to work locally because
 // cookies ignore port numbers, so the dev cookie set on localhost:3000 is also
-// sent to localhost:4000 — that coincidence does not hold across two real
+// sent to localhost:4000, a coincidence that does not hold across two real
 // deployed hostnames). The individual /gmail routes that DO need a session
 // (connect, status, disconnect) carry their own per-route requireAuth.
 app.use("/gmail", gmailRouter);
@@ -69,7 +69,7 @@ app.use("/email-sources", emailSourcesRouter);
 // Mounted at root (not "/investments") so its internal routes resolve at the
 // exact top-level paths the spec calls for (GET /holdings, /holding-lots,
 // POST /investments/import). Side effect: its own requireAuth middleware runs
-// for EVERY request that reaches this line, not just investment ones — any
+// for EVERY request that reaches this line, not just investment ones: any
 // future route that must stay unauthenticated (like /webhooks/gmail above)
 // has to be mounted BEFORE this line, never after it.
 app.use("/", investmentsRouter);
@@ -82,6 +82,6 @@ app.use("/tax/deductions", deductionsRouter);
 app.use("/tax/income-sources", incomeSourcesRouter);
 app.use("/tax/estimate", estimateRouter);
 app.use("/tax/slab-config", slabConfigRouter);
-// gmailRouter is mounted near the top of this file, not here — see the comment there.
+// gmailRouter is mounted near the top of this file, not here; see the comment there.
 // ... other routers mount here in later tasks ...
 app.use(errorHandler); // must be last

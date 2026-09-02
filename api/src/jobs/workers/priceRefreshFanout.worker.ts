@@ -12,10 +12,10 @@ import type { PriceRefreshJobData } from "./priceRefresh.worker.js";
  * Producer side of the "price-refresh" queue.
  *
  * The price-refresh WORKER (priceRefresh.worker.ts) knows how to fetch and store one
- * symbol's price, but nothing in the app ever enqueued work for it — so without this
+ * symbol's price, but nothing in the app ever enqueued work for it: without this
  * module `PriceSnapshot` stays empty forever, `getLatestPrice` always returns null,
  * and every holding permanently falls back to cost basis. This is the scheduled
- * producer the spec's "Market data refresh — scheduled BullMQ jobs" bullet calls for.
+ * producer the spec's "Market data refresh: scheduled BullMQ jobs" bullet calls for.
  *
  * Split across two queues deliberately, matching the one-job-shape-per-queue
  * convention used by every other worker here: "price-refresh-fanout" carries the
@@ -28,13 +28,13 @@ const FANOUT_INTERVAL_MS = 30 * 60 * 1000;
 
 /**
  * Enqueues one refresh job per distinct symbol that is actually still held (any lot
- * with `remainingUnits > 0`), across all users — prices are shared, not per-user (see
+ * with `remainingUnits > 0`), across all users: prices are shared, not per-user (see
  * the spec's `PriceSnapshot` note), so a symbol held by two users is fetched once.
  *
  * A symbol whose last known price is newer than HALF its own staleness threshold is
  * skipped. That single rule gives each instrument type roughly the cadence the spec
  * asks for without a second schedule: stocks (2h threshold) refresh about hourly,
- * mutual funds (2-day threshold) about daily — and it means the fan-out can run often
+ * mutual funds (2-day threshold) about daily, and it means the fan-out can run often
  * without repeatedly hammering Yahoo/mfapi for data that hasn't changed.
  *
  * Returns how many jobs were enqueued, so a caller (or a test) can tell "nothing was
@@ -65,7 +65,7 @@ export async function enqueueHeldSymbolRefreshes(): Promise<number> {
 
 /**
  * Constructs the fan-out worker. Lazy for the same reason as every other worker
- * factory here — importing this module must not open a Redis listener as a side
+ * factory here: importing this module must not open a Redis listener as a side
  * effect. Call it from `startBackgroundWorkers`.
  */
 export function startPriceRefreshFanoutWorker(): Worker<Record<string, never>> {

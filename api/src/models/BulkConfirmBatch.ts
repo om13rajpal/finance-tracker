@@ -11,10 +11,10 @@ const bulkConfirmResultSchema = new Schema(
 );
 
 /**
- * Tracks one async bulk-confirm run (`POST /pending-transactions/bulk-confirm`)
- * — mirrors `ImportBatch`'s `status`/incremental-results shape, but is its
+ * Tracks one async bulk-confirm run (`POST /pending-transactions/bulk-confirm`):
+ * mirrors `ImportBatch`'s `status`/incremental-results shape, but is its
  * own model rather than reusing `ImportBatch`: bulk-confirm isn't an import
- * (no file, no single `accountId` — the pending rows it confirms can each
+ * (no file, no single `accountId`: the pending rows it confirms can each
  * belong to a different account already), and forcing it through
  * `ImportBatch`'s statement-shaped fields (`filename`, `closingBalance`,
  * `dateRange`, ...) would mean populating several with meaningless values
@@ -24,7 +24,7 @@ const bulkConfirmResultSchema = new Schema(
  * exists: confirming each pending transaction is several sequential DB round
  * trips (categorization lookup, duplicate check, Transaction create, balance
  * effect, PendingTransaction delete), and a large batch (a full statement's
- * worth of pending rows — seen in production at 117 items) running all of
+ * worth of pending rows, seen in production at 117 items) running all of
  * that synchronously inside one HTTP request reliably exceeded the
  * production request-timeout path and returned a raw 502 with the work
  * silently still finishing server-side.

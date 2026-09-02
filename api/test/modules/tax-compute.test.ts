@@ -21,7 +21,7 @@ const newRegimeSlabConfig = {
   },
 };
 
-describe("computeTax — slab computation", () => {
+describe("computeTax: slab computation", () => {
   it("computes zero tax for income entirely within the 0% slab", () => {
     const result = computeTax({
       grossSalary: 400000, otherIncome: 0, stcgAmount: 0, ltcgAmount: 0,
@@ -48,7 +48,7 @@ describe("computeTax — slab computation", () => {
   });
 });
 
-describe("computeTax — Section 87A rebate", () => {
+describe("computeTax: Section 87A rebate", () => {
   it("applies full rebate (tax becomes zero) when taxable income is at the rebate limit", () => {
     const result = computeTax({
       grossSalary: 1275000, otherIncome: 0, stcgAmount: 0, ltcgAmount: 0, // taxable = 1200000 exactly
@@ -70,14 +70,14 @@ describe("computeTax — Section 87A rebate", () => {
   });
 });
 
-describe("computeTax — capital gains taxed separately from slab income", () => {
+describe("computeTax: capital gains taxed separately from slab income", () => {
   it("LTCG above the exemption limit is taxed at the flat LTCG rate, not slab rates, and does not affect the slab computation", () => {
     const result = computeTax({
       grossSalary: 400000, otherIncome: 0, stcgAmount: 0, ltcgAmount: 225000, // 125000 exempt, 100000 taxable @ 12.5%
       totalDeductions: 0, slabConfig: newRegimeSlabConfig,
     });
     expect(result.taxOnCapitalGains).toBe(12500); // 100000 * 0.125
-    // slab-income taxable amount must NOT include the LTCG — verify taxableIncome only reflects salary+other, not +capital gains
+    // slab-income taxable amount must NOT include the LTCG: verify taxableIncome only reflects salary+other, not +capital gains
     expect(result.taxableIncome).toBe(325000); // 400000 - 75000 standard deduction, unaffected by LTCG
   });
 
@@ -98,7 +98,7 @@ describe("computeTax — capital gains taxed separately from slab income", () =>
   });
 });
 
-describe("computeTax — deductions reduce taxable income but never below zero", () => {
+describe("computeTax: deductions reduce taxable income but never below zero", () => {
   it("subtracts totalDeductions from taxable income", () => {
     const result = computeTax({
       grossSalary: 900000, otherIncome: 0, stcgAmount: 0, ltcgAmount: 0,
@@ -118,12 +118,12 @@ describe("computeTax — deductions reduce taxable income but never below zero",
   });
 });
 
-describe("computeTax — end to end, both slab tax and capital gains tax combine into totalTax", () => {
+describe("computeTax: end to end, both slab tax and capital gains tax combine into totalTax", () => {
   it("sums slab tax and capital gains tax correctly, with rebate applied only to slab tax per current rules", () => {
     // This test documents a real, non-obvious rule: Section 87A rebate applies only to
     // tax on slab (ordinary) income, NOT to tax on capital gains, even when total taxable
     // income (including gains) is under the rebate threshold. Verify your implementation
-    // actually follows this — a naive "if taxableIncome <= limit, zero everything" would be wrong.
+    // actually follows this: a naive "if taxableIncome <= limit, zero everything" would be wrong.
     const result = computeTax({
       grossSalary: 1100000, otherIncome: 0, stcgAmount: 100000, ltcgAmount: 0, // slab-taxable = 1025000 (under rebate limit), plus 100000 STCG
       totalDeductions: 0, slabConfig: newRegimeSlabConfig,
@@ -131,12 +131,12 @@ describe("computeTax — end to end, both slab tax and capital gains tax combine
     expect(result.taxableIncome).toBe(1025000);
     expect(result.rebateApplied).toBeGreaterThan(0); // rebate zeroes the slab tax
     expect(result.taxOnSlabIncome).toBeGreaterThan(0); // computed before rebate
-    expect(result.taxOnCapitalGains).toBe(20000); // 100000 * 0.2 STCG rate — untouched by the rebate
+    expect(result.taxOnCapitalGains).toBe(20000); // 100000 * 0.2 STCG rate, untouched by the rebate
     expect(result.totalTax).toBe(20000); // slab tax rebated to 0, capital gains tax stands alone
   });
 });
 
-describe("computeHraExemption — Section 10(13A), old regime only", () => {
+describe("computeHraExemption: Section 10(13A), old regime only", () => {
   it("normal case: bound by the actual-HRA-received leg (leg1), not the other two", () => {
     // basic=600000, hra=280000, rentPaidAnnual=400000, metro
     // leg1 (actual HRA) = 280000

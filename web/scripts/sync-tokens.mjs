@@ -1,5 +1,5 @@
 // Copies the brand kit's tokens.css into web/app/ so Next can import it as a
-// normal local stylesheet. The brand kit is the SOURCE OF TRUTH — never edit
+// normal local stylesheet. The brand kit is the SOURCE OF TRUTH: never edit
 // web/app/tokens.css by hand; edit docs/design/brand-kit/tokens.css and re-run:
 //
 //   pnpm --filter web sync:tokens
@@ -15,7 +15,7 @@ const src = resolve(here, "../../docs/design/brand-kit/tokens.css");
 const dest = resolve(here, "../app/tokens.css");
 
 const banner = `/* ─────────────────────────────────────────────────────────────────────
-   GENERATED FILE — DO NOT EDIT.
+   GENERATED FILE. DO NOT EDIT.
    Source: docs/design/brand-kit/tokens.css
    Regenerate: pnpm --filter web sync:tokens
    ───────────────────────────────────────────────────────────────────── */\n\n`;

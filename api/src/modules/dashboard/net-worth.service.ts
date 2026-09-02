@@ -7,7 +7,7 @@ import { getHoldingsRollup } from "../investments/holdings.service.js";
  * investment holdings (Task 14/15's `getHoldingsRollup`).
  *
  * A holding whose symbol has never had a price fetched reports `currentValue: null`
- * (see `getHoldingsRollup`'s doc comment) — that case falls back to cost basis
+ * (see `getHoldingsRollup`'s doc comment); that case falls back to cost basis
  * (`avgCost * totalUnits`) here rather than being skipped or coerced to 0. Skipping
  * would understate net worth for a real, non-zero position just because the
  * price-refresh job hasn't run for that symbol yet; treating it as 0 would be worse

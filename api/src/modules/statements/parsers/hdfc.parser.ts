@@ -6,25 +6,25 @@ import { isMoneyToken, toIsoDate } from "./utils.js";
 /**
  * HDFC's row structure is genuinely different from SBI's, confirmed via
  * read-only `pdftotext -opw <password> -layout` inspection of real HDFC
- * e-statements (not committed anywhere — see fixture files for the synthetic
+ * e-statements (not committed anywhere; see fixture files for the synthetic
  * stand-ins used in tests):
  *
  *   Date | Narration | Chq. / Ref No. | Value Date | Withdrawal Amount | Deposit Amount | Closing Balance*
  *
  * Two separate amount columns (not one signed column, and not SBI's
- * ref/debit/credit/balance framing) — exactly one of Withdrawal/Deposit is
+ * ref/debit/credit/balance framing): exactly one of Withdrawal/Deposit is
  * ever nonzero per row; whichever is nonzero decides the sign (withdrawal =
  * expense, deposit = income). `Chq. / Ref No.` is often genuinely blank
  * (there's no dash placeholder like SBI's).
  *
  * Confirmed against a REAL HDFC PPF (Public Provident Fund) e-statement:
  * some HDFC statement variants don't zero-pad the empty side of
- * Withdrawal/Deposit at all — they omit that column's value from the row
+ * Withdrawal/Deposit at all: they omit that column's value from the row
  * entirely, so only ONE trailing amount token is printed (plus the closing
  * balance), not two. Every synthetic fixture used elsewhere prints an
  * explicit `0.00` on the empty side, so both shapes have to be handled:
  * `findAnchors` captures whichever 1-or-2 amount tokens are actually present
- * as `amountTokens`, and `resolveAmount` decides direction — trivial when
+ * as `amountTokens`, and `resolveAmount` decides direction: trivial when
  * both columns are present (whichever is nonzero wins, as before), but when
  * only one token is printed there's no column position left to read
  * direction from, so it's inferred from whether the account's own stated
@@ -36,16 +36,16 @@ import { isMoneyToken, toIsoDate } from "./utils.js";
  *
  * The "anchor line" for a transaction is the one physical line containing a
  * `DD/MM/YYYY` date at the start AND the value-date/amount(s)/balance
- * numeric tail at the end — those two things always co-occur on exactly one
+ * numeric tail at the end; those two things always co-occur on exactly one
  * line per transaction. Narration text can wrap onto lines immediately
  * BEFORE the anchor, immediately AFTER it, both, or neither (some rows are a
- * single self-contained line) — real examples confirmed all four shapes.
+ * single self-contained line); real examples confirmed all four shapes.
  * There is no "label line" like SBI's to disambiguate a shared boundary the
  * way SBI's lookahead does, so the lines physically between two anchors are
  * split at the midpoint: the first half is the earlier row's trailing
  * narration, the second half is the later row's leading narration. A single
  * line in the gap goes to whichever side's own on-anchor-line narration is
- * empty (i.e. the side that structurally "needs" it) — every real gap
+ * empty (i.e. the side that structurally "needs" it). Every real gap
  * observed was 0, 1 or 2 lines, and this reduces to the correct split in
  * each of those cases.
  *
@@ -58,16 +58,16 @@ import { isMoneyToken, toIsoDate } from "./utils.js";
  * date range than the PPF statement above, same underlying account): its
  * transaction AND value-date columns print `DD/MM/YY` (2-digit year, e.g.
  * `31/05/26`) instead of `DD/MM/YYYY`. Every other real/synthetic HDFC
- * statement seen so far uses 4-digit years, so both have to be accepted —
+ * statement seen so far uses 4-digit years, so both have to be accepted:
  * `ANCHOR_RE` and `isHdfcDateToken`/`normalizeHdfcDateToken` below all treat
  * a 2-digit year as `20YY` (this is a personal India banking app in 2026;
  * no windowing scheme is needed). Deliberately NOT changed in the shared
  * `isDateToken`/`toIsoDate` (`./utils.ts`), which SBI's parser also uses
- * with 4-digit-year-only statements — this ambiguity is HDFC-specific.
+ * with 4-digit-year-only statements; this ambiguity is HDFC-specific.
  */
 const ANCHOR_RE = /^(\d{2}\/\d{2}\/(?:\d{4}|\d{2}))\s+(.*)$/;
 
-/** Matches `DD/MM/YYYY` or `DD/MM/YY`, for the `Value Date` column — see `ANCHOR_RE`'s doc comment. */
+/** Matches `DD/MM/YYYY` or `DD/MM/YY`, for the `Value Date` column; see `ANCHOR_RE`'s doc comment. */
 const HDFC_DATE_TOKEN_RE = /^\d{2}\/\d{2}\/(?:\d{4}|\d{2})$/;
 
 function isHdfcDateToken(token: string): boolean {
@@ -91,16 +91,16 @@ const BOILERPLATE_RES: RegExp[] = [
   /registered office address/i,
   /\*\*end of statement\*\*/i,
   /statement summary/i,
-  // "Closing Bal" on a real statement, not always the full word "Balance" —
+  // "Closing Bal" on a real statement, not always the full word "Balance":
   // this has to catch both.
   /^opening balance\b.*closing bal/i,
   /generation date/i,
   /requesting branch code/i,
   // The STATEMENT SUMMARY block's own numeric row (opening balance, Dr/Cr
-  // counts, total debits/credits, closing balance — six space-separated
+  // counts, total debits/credits, closing balance: six space-separated
   // number-shaped tokens, the middle two bare integers). Without this, these
   // six tokens are indistinguishable from ordinary text to `isBoilerplate`
-  // and — since they don't start with a date — would silently get vacuumed
+  // and, since they don't start with a date, would silently get vacuumed
   // into the last real transaction's narration by the trailing LOOKAROUND_CAP
   // window below instead of being dropped.
   /^-?[\d,]+(?:\.\d+)?\s+\d+\s+\d+\s+-?[\d,]+(?:\.\d+)?\s+-?[\d,]+(?:\.\d+)?\s+-?[\d,]+(?:\.\d+)?$/,
@@ -110,7 +110,7 @@ const BOILERPLATE_RES: RegExp[] = [
   /does not require signature/i,
   // A "Label : value" account-detail/header line (e.g. "Account Branch :
   // Hissar Haryana", "Statement From : 31/07/25 TO : 31/05/26"). Real UPI
-  // narration text in this bank's statements never starts this way — a
+  // narration text in this bank's statements never starts this way. A
   // wrapped-narration continuation that legitimately begins with a colon
   // (e.g. ": PAYEE NAME") doesn't match this either, since it requires a
   // letter first.
@@ -118,13 +118,13 @@ const BOILERPLATE_RES: RegExp[] = [
 ];
 
 /**
- * The column-header row itself — "Date | Narration | Chq./Ref.No. | Value Dt
+ * The column-header row itself: "Date | Narration | Chq./Ref.No. | Value Dt
  * | Withdrawal Amt(ount). | Deposit Amt(ount). | Closing Balance". Broken out
  * from `isBoilerplate` (which still treats it as boilerplate) because its
  * POSITION also matters: see the `headerBoundary` use in `parseHdfcPage`.
  * Matches both the unabbreviated "Withdrawal Amount" wording every synthetic
  * fixture uses and the abbreviated "Withdrawal Amt." a real HDFC PPF
- * e-statement actually prints — "amount".includes("amt") is false (they only
+ * e-statement actually prints. "amount".includes("amt") is false (they only
  * share a prefix, not a substring), so both have to be checked explicitly.
  */
 function isColumnHeaderLine(line: string): boolean {
@@ -164,18 +164,18 @@ function findAnchors(lines: string[]): Anchor[] {
     const balanceTok = tokens[balanceIdx];
     if (!isMoneyToken(balanceTok)) continue;
 
-    // Consume 1 or (at most) 2 money tokens immediately before the balance —
+    // Consume 1 or (at most) 2 money tokens immediately before the balance:
     // TWO when both Withdrawal and Deposit are printed (an explicit `0.00`
     // on the empty side, the shape every existing fixture uses); ONE when
     // the empty side is omitted from the row entirely instead of
     // zero-padded (a real HDFC PPF e-statement does this). Capped at 2 so a
     // genuine amount token three back never gets mistaken for part of this
-    // run — it has to be the value date, checked next.
+    // run; it has to be the value date, checked next.
     let amountStart = balanceIdx;
     while (amountStart > 0 && isMoneyToken(tokens[amountStart - 1]) && balanceIdx - amountStart < 2) {
       amountStart--;
     }
-    if (amountStart === balanceIdx) continue; // no amount token at all — not a real anchor line
+    if (amountStart === balanceIdx) continue; // no amount token at all: not a real anchor line
 
     const valueDateIdx = amountStart - 1;
     if (valueDateIdx < 0 || !isHdfcDateToken(tokens[valueDateIdx])) continue;
@@ -184,7 +184,7 @@ function findAnchors(lines: string[]): Anchor[] {
 
     // The `Chq. / Ref No.` column, if present, is whatever's left right
     // before the value date. Its own value is never used in the output
-    // (blank vs. present doesn't change parsing), only its PRESENCE — it
+    // (blank vs. present doesn't change parsing), only its PRESENCE: it
     // marks where the on-line narration text ends.
     const middle = tokens.slice(0, valueDateIdx);
     const onLineNarration = middle.length > 1 ? middle.slice(0, -1).join(" ") : "";
@@ -204,7 +204,7 @@ function findAnchors(lines: string[]): Anchor[] {
 /**
  * Resolves an anchor's 1-or-2 raw amount tokens into a single signed amount,
  * or an unresolvable-direction error. `carriedBalance` is the account's
- * balance immediately before this row — the previous anchor's own closing
+ * balance immediately before this row: the previous anchor's own closing
  * balance, or (for the first row of the whole statement) whatever
  * `findOpeningBalance` found in the STATEMENT SUMMARY block, or `null` if
  * neither is available.
@@ -216,7 +216,7 @@ function resolveAmount(anchor: Anchor, carriedBalance: number | null): { amount:
   }
 
   // Exactly one amount token was printed, so there's no column position
-  // left to read direction from — infer it from which way the account's own
+  // left to read direction from. Infer it from which way the account's own
   // stated balance moved relative to `carriedBalance`. Real money, so an
   // unresolvable case (no reference balance at all, or the balance
   // implausibly didn't move) is reported as a row-level error rather than
@@ -239,13 +239,13 @@ function resolveAmount(anchor: Anchor, carriedBalance: number | null): { amount:
  * `carriedBalance` unchanged if this page had no anchors at all).
  *
  * `headerBoundary` is the index, in THIS filtered `lines` array, of the first
- * line that survived filtering after the (removed) column-header row — or
+ * line that survived filtering after the (removed) column-header row, or
  * -1 if this page had no header row at all. `before[0]`'s lookback is
  * clamped to never cross it. Without this, a statement whose transaction
  * table starts right after the header with no blank separator (confirmed
  * against a real HDFC PPF e-statement) lets the plain `LOOKAROUND_CAP`
  * lookback reach past the header into the repeated account/name/address
- * block above it — which isn't just wrong, it's a real person's name and
+ * block above it, which isn't just wrong: it's a real person's name and
  * postal address ending up concatenated into a transaction's merchant text.
  *
  * `summaryBoundary` is the same idea for the OTHER end: the filtered index
@@ -253,7 +253,7 @@ function resolveAmount(anchor: Anchor, carriedBalance: number | null): { amount:
  * `after[last]`'s look-ahead is clamped to never reach past. Bank-boilerplate
  * disclaimer wording varies too much to filter exhaustively line-by-line (a
  * real HDFC e-statement's own disclaimer text wraps across 2-3 physical
- * lines, e.g. "...and does" / "not require signature." — the second half
+ * lines, e.g. "...and does" / "not require signature."; the second half
  * matches none of `BOILERPLATE_RES` on its own), but "STATEMENT SUMMARY" is
  * a reliable, structural start-of-footer signal every one of this bank's
  * statements prints right after the transaction table.
@@ -297,7 +297,7 @@ function parseHdfcPage(
   const rows = anchors.map((anchor, i): StatementRowResult => {
     const resolved = resolveAmount(anchor, balance);
     // Advance the running balance to what this row itself claims, regardless
-    // of whether its own direction could be resolved — one unresolvable row
+    // of whether its own direction could be resolved: one unresolvable row
     // must not throw off every row after it.
     balance = anchor.balance;
 
@@ -323,16 +323,16 @@ function parseHdfcPage(
 const SUMMARY_HEADER_RE = /^opening balance\b.*\bdr count\b.*\bcr count\b.*\bdebits\b.*\bcredits\b.*\bclosing bal/i;
 
 /**
- * Finds this statement's own "Opening Balance" — the value on the line right
+ * Finds this statement's own "Opening Balance": the value on the line right
  * after the STATEMENT SUMMARY block's column header ("Opening Balance | Dr
- * Count | Cr Count | Debits | Credits | Closing Bal") — searched across
+ * Count | Cr Count | Debits | Credits | Closing Bal"), searched across
  * every page's UNfiltered lines (the header/value pair is boilerplate and
  * would otherwise never survive `isBoilerplate`, and doesn't need to: it
  * never matches `ANCHOR_RE` either way, since it doesn't start with a date).
  * Seeds `resolveAmount`'s balance-direction inference for the very first
  * ambiguous (single-amount-column) row, when there's no prior row's balance
  * to compare against. Returns `null` if this document has no summary block
- * at all — that just means a first-row ambiguous case falls back to being
+ * at all; that just means a first-row ambiguous case falls back to being
  * reported as an error instead of a guess.
  */
 function findOpeningBalance(lines: string[]): number | null {
@@ -345,12 +345,12 @@ function findOpeningBalance(lines: string[]): number | null {
 }
 
 /**
- * Finds this statement's own printed "Closing Bal" — the LAST token on the
+ * Finds this statement's own printed "Closing Bal": the LAST token on the
  * same STATEMENT SUMMARY value line `findOpeningBalance` reads the FIRST
  * token of ("Opening Balance | Dr Count | Cr Count | Debits | Credits |
  * Closing Bal", six space-separated tokens in that order on every real
  * statement seen). Used only as `parseHdfcStatementFull`'s fallback for a
- * statement with zero parsed transaction rows — see its call site's doc
+ * statement with zero parsed transaction rows; see its call site's doc
  * comment for why that fallback must not simply reuse `findOpeningBalance`.
  * Returns `null` if this document has no summary block at all.
  */
@@ -367,7 +367,7 @@ function findSummaryClosingBalance(lines: string[]): number | null {
 /**
  * The shared work behind both `parseHdfcStatement` (rows, for actually
  * filing transactions) and `findHdfcClosingBalance` (just the final number,
- * for offering to reconcile the account's own balance after import — see
+ * for offering to reconcile the account's own balance after import, see
  * that function's doc comment). One pass over the pages either way; the two
  * exported functions just pick which half of the result they need, so nether
  * has to re-derive the other's information.
@@ -383,7 +383,7 @@ function parseHdfcStatementFull(pages: PDFExtractPage[]): {
   const results: StatementRowResult[] = [];
   for (const pageLines of allPageLines) {
     // Walk the RAW (unfiltered) lines once, tracking both which ones survive
-    // filtering and — separately — the filtered-array index a column-header
+    // filtering and, separately, the filtered-array index a column-header
     // row would leave behind, since the header itself never appears in
     // `filtered` (see `isColumnHeaderLine`'s doc comment for why its
     // position still matters).
@@ -407,17 +407,17 @@ function parseHdfcStatementFull(pages: PDFExtractPage[]): {
 
   // `carriedBalance` is seeded from the statement's own OPENING balance and
   // only ever advanced by an anchor's own stated balance (see
-  // `parseHdfcPage`'s `endingBalance`) — when zero anchors are found on
+  // `parseHdfcPage`'s `endingBalance`); when zero anchors are found on
   // EVERY page (`results.length === 0`), it's never advanced at all, so it's
   // still just the opening balance verbatim. Returning it as-is here used to
   // silently mean "closing balance == opening balance" any time the
-  // per-anchor parsing failed to find a single row on the whole document —
+  // per-anchor parsing failed to find a single row on the whole document,
   // which is correct for a genuinely empty statement (nothing moved the
   // balance), but was WRONG the one time this was seen for real: a real
   // statement whose transaction rows exist but used a 2-digit year
   // (`ANCHOR_RE` didn't match, a since-fixed bug) parsed zero rows despite
   // covering ~117 real transactions, and this fallback reported the
-  // statement's OPENING balance as its closing balance — a real,
+  // statement's OPENING balance as its closing balance: a real,
   // production-reachable wrong-balance bug, not just a hypothetical one.
   // Preferring the STATEMENT SUMMARY block's own explicitly-labeled "Closing
   // Bal" figure here (when the document has one) fixes that case outright
@@ -434,22 +434,22 @@ export function parseHdfcStatement(pages: PDFExtractPage[]): StatementRowResult[
 }
 
 /**
- * The statement's own final closing balance — the last transaction row's
+ * The statement's own final closing balance: the last transaction row's
  * stated balance, or (if the statement parsed zero transaction rows at all)
  * the STATEMENT SUMMARY block's own explicitly-labeled "Closing Bal" figure
  * (see `findSummaryClosingBalance`), or `null` if this document never
- * established a balance at all (no summary block AND no transaction rows —
+ * established a balance at all (no summary block AND no transaction rows,
  * effectively not a real statement). Used to offer reconciling the linked
  * `Account.currentBalance` after a successful import instead of leaving that
  * as one more thing to type in by hand.
  *
  * The zero-rows fallback reads "Closing Bal" specifically, NOT "Opening
- * Balance" — those two are only the same number for a genuinely empty
+ * Balance". Those two are only the same number for a genuinely empty
  * statement (nothing ever moved the balance). Falling back to Opening
  * Balance would silently under/over-state the real closing balance any time
  * zero rows is actually a PARSING FAILURE on a statement that has real
  * transactions (confirmed against a real HDFC statement whose 2-digit-year
- * dates weren't recognized at all — see `ANCHOR_RE`'s doc comment — which
+ * dates weren't recognized at all, see `ANCHOR_RE`'s doc comment, which
  * made this exact mistake before it was fixed).
  *
  * Deliberately independent of whether every row in the statement parsed
@@ -463,11 +463,11 @@ export function findHdfcClosingBalance(pages: PDFExtractPage[]): number | null {
 
 /**
  * The statement's own printed "Opening Balance" (from the STATEMENT SUMMARY
- * block — see `findOpeningBalance`'s doc comment for the exact layout), exposed
+ * block, see `findOpeningBalance`'s doc comment for the exact layout), exposed
  * for the same reason `findHdfcClosingBalance` is: a data-quality cross-check,
  * not a reconciliation target on its own. `statementProcess.worker.ts` uses this
  * ALONGSIDE `findHdfcClosingBalance` to verify `openingBalance + sum(every
- * successfully-parsed row's amount) ≈ closingBalance` — a mismatch means some
+ * successfully-parsed row's amount) ≈ closingBalance`: a mismatch means some
  * row(s) on this statement were missed or misparsed, even though the closing
  * balance itself (read straight off the document, independent of which rows this
  * parser managed to extract) is still trusted for reconciling the account.

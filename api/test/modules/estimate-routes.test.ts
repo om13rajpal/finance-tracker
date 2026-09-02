@@ -46,7 +46,7 @@ describe("GET /tax/estimate", () => {
     expect(["old", "new"]).toContain(res.body.recommendation);
     // With a full 150000 80C deduction only usable under the old regime, verify it
     // actually shows up as a lower taxableIncome under "old" than under "new" for this
-    // income level — a real behavioral check, not just presence of the fields.
+    // income level: a real behavioral check, not just presence of the fields.
     expect(res.body.old.taxableIncome).toBeLessThan(res.body.new.taxableIncome);
   });
 
@@ -110,12 +110,12 @@ describe("GET /tax/estimate", () => {
     // old regime: grossSalary reduced by HRA exemption before std deduction:
     // (1200000 - 280000) - 50000 std deduction - 0 deductions = 870000
     expect(res.body.old.taxableIncome).toBe(1200000 - 280000 - 50000);
-    // new regime: HRA exemption does NOT apply — grossSalary un-reduced:
+    // new regime: HRA exemption does NOT apply, grossSalary un-reduced:
     // 1200000 - 75000 std deduction - 0 deductions = 1125000
     expect(res.body.new.taxableIncome).toBe(1200000 - 75000);
     // Direct proof the old regime is measurably lower BECAUSE of HRA. The new
     // regime's std deduction (75000) is actually HIGHER than the old regime's
-    // (50000) — a std-deduction-only difference (no HRA) would make old regime's
+    // (50000): a std-deduction-only difference (no HRA) would make old regime's
     // taxableIncome HIGHER than new's by 25000, i.e. a gap of -25000. The actual
     // gap is +255000 (280000 HRA exemption - 25000 std deduction disadvantage),
     // proving the HRA exemption more than makes up for it and is genuinely applied.
@@ -137,7 +137,7 @@ describe("GET /tax/estimate", () => {
       financialYear: "2031-32", regime: "old", standardDeduction: 50000,
       slabs: [{ upTo: null, rate: 0.3 }],
       section87ARebateLimit: 500000, section87ARebateMaxTax: 12500, section80CLimit: 150000,
-      // ltcgRate drifted — would make the two regimes report different capital gains
+      // ltcgRate drifted: would make the two regimes report different capital gains
       // tax on identical gains, which is impossible under Indian law.
       capitalGains: { equity: { stcgHoldingDays: 365, stcgRate: 0.2, ltcgRate: 0.2, ltcgExemptionLimit: 125000 }, debt: { stcgHoldingDays: 0, stcgRate: null, ltcgRate: null, ltcgExemptionLimit: 0 } },
     });

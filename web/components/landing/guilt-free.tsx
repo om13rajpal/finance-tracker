@@ -4,19 +4,19 @@
  * Sorted · the payoff
  *
  * Full-bleed guilt-free pink, and the only figure on the page that behaves like
- * a hero number. Ink on `--bucket-guiltfree` measures 9.80:1 — the best of the
- * four — so an entire viewport of it carries ink type comfortably.
+ * a hero number. Ink on `--bucket-guiltfree` measures 9.80:1 (the best of the
+ * four), so an entire viewport of it carries ink type comfortably.
  *
  * RULE 12 AND WHY IT DOES NOT APPLY HERE
  * Motion rule 12 is in force everywhere behind the login: no rupee figure
- * animates, no count-up, no odometer. The reason is specific — a counting
+ * animates, no count-up, no odometer. The reason is specific: a counting
  * number shows the owner a briefly-wrong balance, and they make decisions on
  * balances. Guilt-Free Money is the number that changes behaviour, so it is the
  * single figure most protected by that rule.
  *
  * The figure below is illustrative. It is not anyone's balance, it is not read
  * from an API, and nobody will act on it. The rule's reason does not reach it,
- * so it counts — and it gets a scramble beat first, which is the point: the
+ * so it counts, and it gets a scramble beat first, which is the point: the
  * digits arrive as noise and resolve into a number, which is exactly what the
  * product does to a month of bank emails.
  *
@@ -86,7 +86,7 @@ export function GuiltFree() {
   // `min-h` is a full viewport only from lg up. On a phone this section's
   // content is roughly a third of 100svh, so a full-viewport floor plus
   // `justify-center` pushed a quarter-screen of empty pink between the rail's
-  // last room and this kicker — dead space, not composure. 62svh keeps the
+  // last room and this kicker: dead space, not composure. 62svh keeps the
   // section reading as a full-bleed band while closing that seam.
   return (
     <section
@@ -94,18 +94,18 @@ export function GuiltFree() {
       className="relative flex min-h-[62svh] w-full flex-col justify-center overflow-hidden px-22 py-64 text-ink lg:min-h-[100svh] lg:px-44"
       style={{ background: "var(--bucket-guiltfree)" }}
     >
-      <p className="font-num text-meta uppercase tracking-label">§ 03 — what is left to spend</p>
+      <p className="font-num text-meta uppercase tracking-label">§ 03: what is left to spend</p>
 
       {/*
         SOLID, NOT OUTLINED.
-        This was `-webkit-text-stroke: 2px` with a transparent fill — outlined
+        This was `-webkit-text-stroke: 2px` with a transparent fill: outlined
         display type, on the theory that a hairline system earns a hairline
         headline. It did not survive the render. Bricolage 800 at -0.055em
         tracking sets glyphs that already touch, and once each one is a hollow
         ring those contours cross INSIDE the letterforms: the counters of the
         double-e in "free" and the join on the hyphen turn into a lattice of
         stray strokes. Reviewed as "I don't understand this font, it looks
-        broken" — and it did, because a 2px outline at 168px is drawing the
+        broken", and it did, because a 2px outline at 168px is drawing the
         skeleton of a typeface rather than the typeface.
         Solid ink, one size down, and the giant number below it stays the only
         thing on this screen operating at poster scale.

@@ -117,7 +117,7 @@ transactionsRouter.patch("/:id", async (req, res, next) => {
       update.date = new Date(updateFields.date);
     }
 
-    // Read the PRE-edit transaction first — `accountId` is never editable (not in
+    // Read the PRE-edit transaction first: `accountId` is never editable (not in
     // `updateSchema`), so the account this balance change applies to is fixed, but
     // the amount's DELTA (new minus old) can only be known by comparing against
     // what it used to be.
@@ -131,8 +131,8 @@ transactionsRouter.patch("/:id", async (req, res, next) => {
 
     // A transaction confirmed from a reconciled statement import (or an
     // email-balance reconciliation) never had its `amount` applied as a
-    // delta in the first place — see `balanceDeltaApplied` on the
-    // `Transaction` model — so adjusting the balance here would be applying
+    // delta in the first place (see `balanceDeltaApplied` on the
+    // `Transaction` model), so adjusting the balance here would be applying
     // a delta that was never there to begin with.
     if (data.amount !== undefined && data.amount !== existing.amount && existing.balanceDeltaApplied !== false) {
       await applyBalanceDelta(userId, existing.accountId, data.amount - existing.amount);
@@ -152,7 +152,7 @@ transactionsRouter.patch("/:id", async (req, res, next) => {
 transactionsRouter.delete("/:id", async (req, res, next) => {
   try {
     const userId = (req as any).userId;
-    // Read before delete — the balance reversal needs the transaction's own
+    // Read before delete: the balance reversal needs the transaction's own
     // amount/accountId, which are gone the instant `deleteOne` succeeds.
     const transaction = await Transaction.findOne({ _id: req.params.id, userId });
     if (!transaction) return res.status(404).json({ error: "Not found" });

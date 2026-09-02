@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
  *    15px and under, which yanks the layout sideways mid-flow. `text-input`
  *    is exactly 16px.
  *
- * 2. THE FOCUS RING IS AN OUTLINE, OFFSET OUTWARD — never a box-shadow ring.
+ * 2. THE FOCUS RING IS AN OUTLINE, OFFSET OUTWARD: never a box-shadow ring.
  *    A zero-offset ring sits flush against the field's own 1.5px ink border
  *    and reproduces the forbidden 1.37:1 `--focus`-on-`--ink` adjacency. The
  *    field is transparent-filled, which makes this look safe; it is not, the
@@ -38,7 +38,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           "border-panel border-ink rounded-pill px-22 py-14",
           "placeholder:text-dim",
           "transition-[border-color] duration-hover ease-out",
-          // Never outline:none without an equivalent replacement — the
+          // Never outline:none without an equivalent replacement: the
           // replacement is the global :focus-visible outline, offset outward.
           "focus-visible:outline-focus focus-visible:outline-[2.5px] focus-visible:outline-offset-[3px]",
           "disabled:opacity-[.55] disabled:cursor-default",

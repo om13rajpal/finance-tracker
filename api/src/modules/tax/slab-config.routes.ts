@@ -42,7 +42,7 @@ const configSchema = z.object({
   }),
 });
 
-// Upsert on {financialYear, regime} — a repeat POST for the same FY+regime updates
+// Upsert on {financialYear, regime}: a repeat POST for the same FY+regime updates
 // the existing config in place rather than creating a duplicate (also enforced at
 // the DB layer by TaxSlabConfig's unique index on {financialYear, regime}).
 slabConfigRouter.post("/", async (req, res, next) => {

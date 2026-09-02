@@ -43,9 +43,9 @@ module.exports = {
         rule:        'var(--rule)',
         'ink-wash':  'var(--ink-wash)',
         'hero-field':'var(--hero-field)',
-        /** 4.37:1 — mono micro-labels ONLY. text-dim on a sentence is a bug. */
+        /** 4.37:1, mono micro-labels ONLY. text-dim on a sentence is a bug. */
         dim:         'var(--dim)',
-        /** 5.71:1 — required for readable secondary prose. */
+        /** 5.71:1, required for readable secondary prose. */
         'dim-2':     'var(--dim-2)',
         focus:       'var(--focus)',
         alert:       'var(--alert)',
@@ -108,7 +108,7 @@ module.exports = {
         2: '2px', 4: '4px', 6: '6px', 8: '8px', 10: '10px', 12: '12px',
         14: '14px', 18: '18px', 22: '22px', 26: '26px', 32: '32px',
         44: '44px', 64: '64px', 96: '96px',
-        chip: '30px',   // the chip diameter — used as the row grid's first column
+        chip: '30px',   // the chip diameter, used as the row grid's first column
         track: '16px',  // budget-bar track height. Deliberately off the 2px scale:
                         // 14px reads thin under a 30px chip, 18px competes with it.
                         // Named so nobody reaches for h-20 (= stock Tailwind 80px).
@@ -151,7 +151,7 @@ module.exports = {
         //
         // The chip track is 44px, not 30px: the 30px chip PLUS its 14px
         // gutter. It has to be baked into the track because this row runs at
-        // column-gap 0 — the tether must sit tight against the chip it leads
+        // column-gap 0, the tether must sit tight against the chip it leads
         // into, so the row cannot simply use gap-x-14 like the plain row does.
         //
         // And a margin on the chip does NOT work: margin on a grid item shifts
@@ -189,7 +189,7 @@ module.exports = {
 
       addComponents({
         /**
-         * .stamp — the one permitted shadow in the system.
+         * .stamp: the one permitted shadow in the system.
          * LOCKED press rule: translateY exactly the shadow offset, shadow
          * collapsed to zero, BOTH transitioned over one duration and one
          * curve. Never scale(): the shadow repaint and a composited scale

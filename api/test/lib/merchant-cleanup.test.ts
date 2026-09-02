@@ -7,11 +7,11 @@ vi.mock("../../src/lib/merchant-llm-cleanup.js", () => ({
 }));
 
 // These narration shapes mirror real HDFC/SBI statement text observed while
-// validating this app against real (redacted here) bank exports — reference
+// validating this app against real (redacted here) bank exports. Reference
 // numbers, VPA handles, and names below are synthetic stand-ins, not real
 // account data, but the surrounding punctuation/structure is unchanged.
 describe("cleanMerchantLabel", () => {
-  describe("known merchants — matched anywhere in the narration", () => {
+  describe("known merchants: matched anywhere in the narration", () => {
     it("extracts Netflix from a slash-delimited UPI debit narration", () => {
       expect(
         cleanMerchantLabel("UPI/DR/103523751353/NETFLIX/HDFC/netflix.bd/Execu 0097691162095 AT 00652 MAIN BRANCH , HISAR")
@@ -135,7 +135,7 @@ describe("cleanMerchantLabel", () => {
 });
 
 // `cleanMerchantLabelSmart` only ever spends an LLM call on tier-3 (generic
-// fallback) results — tiers 1/2 are already high confidence and must reach
+// fallback) results: tiers 1/2 are already high confidence and must reach
 // the exact same answer as the sync `cleanMerchantLabel`, with zero calls
 // into the LLM/cache module, regardless of whether an API key is configured.
 describe("cleanMerchantLabelSmart", () => {

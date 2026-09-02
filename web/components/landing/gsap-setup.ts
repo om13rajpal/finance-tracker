@@ -7,14 +7,14 @@
  * exactly once instead of once per section component (and never inside a render
  * that can run again).
  *
- * All GSAP plugins are free as of 3.13 — SplitText and ScrambleText included —
+ * All GSAP plugins are free as of 3.13 (SplitText and ScrambleText included)
  * and ship inside the public `gsap` npm package. There is no auth token, no
  * private registry and no Club membership involved.
  *
  * WHAT IS NOT HERE, AND WHY: ScrollSmoother. It is installed and it was in
  * scope, but it requires wrapping the whole document in #smooth-wrapper /
  * #smooth-content, which changes the containing block for every `position:
- * fixed` descendant — including the custom cursor — and interacts badly with
+ * fixed` descendant (including the custom cursor) and interacts badly with
  * three pinned ScrollTriggers plus Next's hydration boundary. It was the
  * lowest-value / highest-risk item on the list, so it is deliberately cut. The
  * page uses native scroll.
@@ -33,7 +33,7 @@ if (typeof window !== "undefined") {
    * The house curves, as GSAP eases.
    *
    * `--ease-out` is cubic-bezier(.23, 1, .32, 1) and `--ease-in-out` is
-   * cubic-bezier(.77, 0, .175, 1). Both are monotonic — they never overshoot.
+   * cubic-bezier(.77, 0, .175, 1). Both are monotonic: they never overshoot.
    * That is the point: Sorted has no bounce, elastic or back easing anywhere,
    * because a financial figure that overshoots its final value has lied to the
    * reader for eighty milliseconds. Registering them here means the landing

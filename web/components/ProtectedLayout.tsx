@@ -15,7 +15,7 @@ import { Notice, Skeleton } from "@/components/app/primitives";
  * Sorted · the application shell
  *
  * THE RAIL. Nine routes, nine ink-stroke glyphs drawn in the chip's circular
- * form with NO fill — because a route is not a category, and the fills belong
+ * form with NO fill: a route is not a category, and the fills belong
  * to the taxonomy. Underneath them the four bucket chips sit as a permanent
  * legend: the colour language stated once, as furniture.
  *
@@ -23,7 +23,7 @@ import { Notice, Skeleton } from "@/components/app/primitives";
  * opens every single morning; furniture that re-introduces itself daily is an
  * irritation, not a delight.
  *
- * MOBILE. The sidebar becomes a left Sheet, not a bottom tab bar — nine routes
+ * MOBILE. The sidebar becomes a left Sheet, not a bottom tab bar. Nine routes
  * do not survive five slots, and a "More" overflow is where the tax screen goes
  * to die.
  */
@@ -110,7 +110,7 @@ function Rail({
       </nav>
 
       {/* The taxonomy, stated once and permanently. Not a filter, not a
-          control — a legend. Four buckets is the whole colour system. */}
+          control: a legend. Four buckets is the whole colour system. */}
       <div className="mt-auto border-t border-rule pt-22">
         <span className="block font-num text-label uppercase text-dim">§ Sorted into</span>
         <ul className="m-0 mt-12 flex list-none flex-col gap-8 p-0">
@@ -179,7 +179,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Close the sheet on route change — otherwise tapping a link leaves the
+  // Close the sheet on route change: otherwise tapping a link leaves the
   // drawer sitting over the page you just navigated to.
   useEffect(() => {
     setSheetOpen(false);
@@ -235,7 +235,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
       <main className="flex min-h-screen items-center justify-center bg-bg p-22">
         <Notice
           title="Something went wrong loading this page."
-          body="The app could not reach the server. Please try again shortly — nothing has been lost."
+          body="The app could not reach the server. Please try again shortly. Nothing has been lost."
         />
       </main>
     );

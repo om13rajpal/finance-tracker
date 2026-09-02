@@ -4,10 +4,10 @@ import { ApiError, TimeoutError } from "./api-client";
  * Every failure the login flow can actually produce, mapped to copy that names
  * the fix. Derived from the real API, not invented:
  *
- *   api/src/modules/auth/auth.routes.ts    — zod schemas, the rate limiter
- *   api/src/modules/auth/auth.service.ts   — requestOtp / verifyOtp throws
- *   api/src/lib/errorHandler.ts            — the { error: string } envelope
- *   web/lib/api-client.ts                  — how that envelope becomes ApiError
+ *   api/src/modules/auth/auth.routes.ts    : zod schemas, the rate limiter
+ *   api/src/modules/auth/auth.service.ts   : requestOtp / verifyOtp throws
+ *   api/src/lib/errorHandler.ts            : the { error: string } envelope
+ *   web/lib/api-client.ts                  : how that envelope becomes ApiError
  *
  * Two sharp edges worth knowing about:
  *
@@ -58,13 +58,13 @@ export function toAuthError(err: unknown, stage: "email" | "code"): AuthError {
   }
 
   // fetch() rejects with a TypeError when the network is unreachable. This is
-  // not an ApiError and has no status — it must be caught before anything else
+  // not an ApiError and has no status: it must be caught before anything else
   // or it surfaces to the user as the raw string "Failed to fetch".
   if (!(err instanceof ApiError)) {
     return {
       kind: "offline",
       title: "Couldn't reach the server.",
-      fix: "Check your connection and try again — nothing was sent.",
+      fix: "Check your connection and try again. Nothing was sent.",
       terminal: false,
     };
   }
@@ -111,7 +111,7 @@ export function toAuthError(err: unknown, stage: "email" | "code"): AuthError {
 
     default:
       // 5xx. On /otp/request this is very often the mail provider refusing the
-      // send — the API surfaces Resend's own message, so show it verbatim
+      // send: the API surfaces Resend's own message, so show it verbatim
       // rather than flattening it to a generic failure.
       if (stage === "email") {
         return {
@@ -134,7 +134,7 @@ export function toAuthError(err: unknown, stage: "email" | "code"): AuthError {
 
 /**
  * Client-side validation, so an obviously-empty or malformed field never costs
- * a network round trip — and, just as importantly, never burns one of the 30
+ * a network round trip, and, just as importantly, never burns one of the 30
  * requests in the shared rate-limit window.
  *
  * Returns null when the value is worth sending.

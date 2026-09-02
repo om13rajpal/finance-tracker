@@ -18,10 +18,10 @@ const transactionSchema = new Schema({
   // delta to the linked account's `currentBalance` (via `applyBalanceDelta`).
   // True for the ordinary path (manual entry, CSV import, recurring items,
   // investment buy/sell, a plain confirmed pending transaction). False when a
-  // pending transaction's confirm instead reconciled the balance directly —
+  // pending transaction's confirm instead reconciled the balance directly:
   // either to a statement's closing balance (see `PendingTransaction.
   // balanceReconciledAtImport`) or to an email alert's own stated balance
-  // (`emailBalance`) — because in both of those cases this transaction's
+  // (`emailBalance`), because in both of those cases this transaction's
   // effect on the balance was already captured by the reconciliation, not by
   // a delta. `transactions.routes.ts`'s DELETE and amount-PATCH handlers read
   // this to decide whether reversing/adjusting by `amount` is even correct:
@@ -34,7 +34,7 @@ transactionSchema.index({ userId: 1, date: -1 });
 transactionSchema.index({ userId: 1, categoryId: 1, date: -1 });
 transactionSchema.index({ userId: 1, accountId: 1 });
 // Covers `findLikelyDuplicate`'s exact query shape (userId + accountId +
-// exact amount + a date range) — that check now runs once per parsed row,
+// exact amount + a date range): that check now runs once per parsed row,
 // so a statement with thousands of rows runs it thousands of times per
 // upload; without this, each of those falls back to the broader
 // {userId, accountId} index above and scans every transaction on the

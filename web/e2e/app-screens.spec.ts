@@ -14,7 +14,7 @@ import { resolve } from "node:path";
  *
  * Fixtures are created through the REAL API as a dedicated user, so they obey
  * the same validation and side effects the UI does, and are torn down at the
- * end — this file can be run repeatedly against the dev database.
+ * end, so this file can be run repeatedly against the dev database.
  */
 
 loadEnv({ path: resolve(__dirname, "../../api/.env") });
@@ -78,7 +78,7 @@ async function signIn(context: BrowserContext, userId: ObjectId, email: string):
   ]);
 }
 
-/** The API's month is a UTC month — build fixture dates inside the same one. */
+/** The API's month is a UTC month: build fixture dates inside the same one. */
 function dayInApiMonth(day: number): string {
   const now = new Date();
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), day, 10)).toISOString();
@@ -110,7 +110,7 @@ async function seed(page: Page): Promise<Fixture> {
   });
 
   // A guilt-free category deliberately budgeted BELOW what gets spent, so the
-  // over-budget row — bar clamped to 100%, ink wall, overage named in words —
+  // over-budget row (bar clamped to 100%, ink wall, overage named in words)
   // is exercised rather than assumed.
   const guiltFree = await post("/categories", {
     name: "E2E Eating out",
@@ -256,7 +256,7 @@ test.describe("the authenticated app", () => {
 
     await expect(page.getByText("Could not load dashboard data.")).toBeVisible({ timeout: 20000 });
     // The figure a person makes decisions on must not be invented.
-    await expect(page.locator("#net-worth-figure")).toHaveText("—");
+    await expect(page.locator("#net-worth-figure")).toHaveText("–");
     await expect(page.locator("#net-worth-figure")).not.toHaveText(/₹0/);
     // And "no budgets set yet" would be a lie, not an empty state.
     await expect(page.getByText("No budgets set yet.")).toHaveCount(0);
@@ -324,7 +324,7 @@ test.describe("the authenticated app", () => {
         const shadow = getComputedStyle(el).boxShadow;
         if (!shadow || shadow === "none") continue;
         // The one permitted shadow is a flat 2px ink offset with no blur and
-        // no spread — a stamp, not a lift.
+        // no spread: a stamp, not a lift.
         const flat = /rgba?\([^)]*\)\s+0px\s+[02]px\s+0px\s+0px/.test(shadow);
         if (!flat) bad.push(`${el.tagName}.${(el as HTMLElement).className} :: ${shadow}`);
       }

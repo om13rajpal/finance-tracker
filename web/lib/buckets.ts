@@ -6,7 +6,7 @@
  *
  * Categories in this product are a user-defined TREE of arbitrary depth with
  * arbitrary names, created at runtime. A fixed palette cannot colour an
- * unbounded set without inventing an assignment — and an invented assignment is
+ * unbounded set without inventing an assignment: an invented assignment is
  * a chip that guesses. Buckets, by contrast, are fixed in the API's own type:
  * `fixed_costs | investments | savings | guilt_free`. Four values, forever.
  *
@@ -16,13 +16,13 @@
  * product is built around: `guilt_free` is exactly where the dashboard's
  * Guilt-Free Money figure comes from.
  *
- * MEASURED: ink on all four fills is 8.10 / 6.50 / 4.61 / 9.80 : 1 — every
+ * MEASURED: ink on all four fills is 8.10 / 6.50 / 4.61 / 9.80 : 1. Every
  * bucket is textSafe. The retired six-category set never was (shopping 3.32,
  * health 3.46), and two of its chips sat 9° apart in hue. Fewer chips is
  * strictly more robust here, not a compromise.
  *
  * CHIPS NEVER GUESS. A row whose bucket is not knowable never gets a filled
- * chip — see `resolveChip` below.
+ * chip: see `resolveChip` below.
  */
 
 export type Bucket = "fixed_costs" | "investments" | "savings" | "guilt_free";
@@ -51,7 +51,7 @@ export interface BucketMeta {
   label: string;
   /** Tailwind background utility, resolving to the token. */
   fill: string;
-  /** The bucket's own icon id in the sprite. Always drawn — never omitted. */
+  /** The bucket's own icon id in the sprite. Always drawn: never omitted. */
   icon: "b-fixed" | "b-invest" | "b-savings" | "b-guiltfree";
   /** One line explaining what belongs in it, for the legend and the picker. */
   hint: string;
@@ -62,13 +62,13 @@ export const BUCKET_META: Record<Bucket, BucketMeta> = {
     label: "Fixed costs",
     fill: "bg-bucket-fixed",
     icon: "b-fixed",
-    hint: "Rent, bills, EMIs — the money that leaves whether you think about it or not.",
+    hint: "Rent, bills, EMIs: the money that leaves whether you think about it or not.",
   },
   investments: {
     label: "Investments",
     fill: "bg-bucket-invest",
     icon: "b-invest",
-    hint: "SIPs, stocks, PPF — money moved rather than spent.",
+    hint: "SIPs, stocks, PPF: money moved rather than spent.",
   },
   savings: {
     label: "Savings",
@@ -144,7 +144,7 @@ export function indexCategories(tree: CategoryNode[] | undefined): CategoryIndex
   return index;
 }
 
-/** Depth-first, parents before children — the order a `<select>` should list. */
+/** Depth-first, parents before children: the order a `<select>` should list. */
 export function flattenCategories(
   tree: CategoryNode[] | undefined,
   depth = 0
@@ -159,7 +159,7 @@ export function flattenCategories(
  * How a category should be NAMED in a dense row.
  *
  * The leaf carries. The parent is prepended only when it genuinely
- * disambiguates — never a full breadcrumb, which would push the amount column
+ * disambiguates: never a full breadcrumb, which would push the amount column
  * around on every row.
  */
 export function categoryRowName(entry: IndexedCategory | undefined, index: CategoryIndex): string {
@@ -178,7 +178,7 @@ export function categoryRowName(entry: IndexedCategory | undefined, index: Categ
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// The chip decision — the single place "chips never guess" is enforced
+// The chip decision: the single place "chips never guess" is enforced
 // ───────────────────────────────────────────────────────────────────────────
 
 export type ChipSpec =
@@ -186,7 +186,7 @@ export type ChipSpec =
   | { kind: "bucket"; bucket: Bucket }
   /**
    * Money arriving. `type: "income"` has no destination bucket at all, so it
-   * gets a hollow chip with a solid ink stroke and an up arrow — the same
+   * gets a hollow chip with a solid ink stroke and an up arrow: the same
    * vocabulary the dashboard already uses for RecurringItem, which carries no
    * category field either.
    */
@@ -195,7 +195,7 @@ export type ChipSpec =
   | { kind: "expense" }
   /**
    * `categoryId` is null. This is the Gmail parser's NORMAL output, not an
-   * error — so it is drawn as an actionable gap (dashed hollow chip, question
+   * error, so it is drawn as an actionable gap (dashed hollow chip, question
    * glyph) and never in --alert.
    */
   | { kind: "uncategorised" };

@@ -2,7 +2,7 @@
  * Detects a Google API error caused by a revoked/invalid OAuth refresh token
  * (e.g. the user revoked access in their Google Account, or the token expired
  * from prolonged inactivity). Shared by every place that calls the Gmail API
- * on a user's behalf so they all react the same way — mark the connection
+ * on a user's behalf so they all react the same way: mark the connection
  * disconnected rather than retrying forever or failing silently.
  */
 export function isTokenRevokedError(err: unknown): boolean {

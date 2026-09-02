@@ -12,13 +12,13 @@
  *
  * Four colour rooms, a static proportional bar, and furnished rooms all failed
  * the same way: each one restated the four bucket names in a bigger font. They
- * showed the RESULT of sorting. This shows the ACT of it — the one thing the
+ * showed the RESULT of sorting. This shows the ACT of it: the one thing the
  * product does that a headline cannot say.
  *
  * IT IS ALSO THE ONLY CURVE ON THE PAGE. The hero is a grid of cells, the sort
  * is rows in lanes, the capabilities are rules, the close is type. A calendar
- * of thirty day-cells — the other strong candidate, and the one I preferred in
- * isolation — is ink plus a grid of small cells, which is precisely what the
+ * of thirty day-cells (the other strong candidate, and the one I preferred in
+ * isolation) is ink plus a grid of small cells, which is precisely what the
  * hero already is. Two grids of small squares two sections apart is the same
  * trick twice, and this page has been punished for repetition more than for
  * anything else. Ribbons share no vocabulary with anything else here, which is
@@ -28,7 +28,7 @@
  * immediately below blows that exact number up to 340px. The stream literally
  * pours into the thing the next screen is about.
  *
- * NO SCROLL-JACK. The pour is scrubbed to ordinary page scroll — you drive it,
+ * NO SCROLL-JACK. The pour is scrubbed to ordinary page scroll: you drive it,
  * but the scrollbar is never taken away from you.
  *
  * MOTION. `clip-path` on the ribbons (an inset wipe travelling downward) and
@@ -66,7 +66,7 @@ const GEOMETRY: Ribbon[] = (() => {
     const bx0 = i * (VES_W + GAP);
     const bx1 = bx0 + VES_W;
     // Level height is proportional to the share, scaled so the largest bucket
-    // nearly fills its vessel — the vessels are equal so the LEVELS carry the
+    // nearly fills its vessel: the vessels are equal so the LEVELS carry the
     // comparison a second time, after the ribbon widths have made it once.
     const lvlH = (VES_H - 16) * (b.share / BUCKETS[0].share);
     out.push({
@@ -143,7 +143,7 @@ export function BucketRail() {
       </h2>
       <p className="mt-18 max-w-[54ch] font-sans text-body text-dim-2 lg:text-[20px] lg:leading-snug">
         One income arrives. Four buckets take their cut before you have to think about any
-        of it — filed from the emails your bank already sends. This is that, drawn to scale.
+        of it. Filed from the emails your bank already sends. This is that, drawn to scale.
       </p>
 
       {/* The diagram and its captions share ONE measure, derived from the
@@ -213,7 +213,7 @@ export function BucketRail() {
                   section is the NEXT thing on the page and its entire job is
                   to set ₹18,240 at 340px; on a phone this caption and that
                   figure share a viewport, and two printings of one number a
-                  screen apart read as a duplication bug — the worse for the
+                  screen apart read as a duplication bug: the worse for the
                   payoff being mid-scramble at that moment, so the two disagree
                   by a rupee. The stream pours into it; the number belongs to
                   the screen it pours into. */}

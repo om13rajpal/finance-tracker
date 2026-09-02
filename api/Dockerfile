@@ -11,7 +11,7 @@ RUN pnpm --filter api build
 #
 # This step is load-bearing, not an optimization. The runtime stage previously copied
 # the workspace ROOT node_modules, which under pnpm's isolated layout contains only the
-# root package's own dev tooling plus the `.pnpm` content-addressed store — every
+# root package's own dev tooling plus the `.pnpm` content-addressed store: every
 # runtime dependency (express, mongoose, bullmq, …) lives in `api/node_modules` as a
 # symlink into that store and was never copied at all, so `node dist/index.js` in the
 # published image could not resolve a single one of them.

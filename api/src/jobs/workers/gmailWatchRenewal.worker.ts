@@ -8,7 +8,7 @@ const RENEWAL_WINDOW_MS = 24 * 60 * 60 * 1000;
 /**
  * Renews every `connected` Gmail watch expiring within the next 24 hours
  * (Gmail watches expire after ~7 days; this runs daily, so a 24h buffer
- * comfortably covers one day's worth of drift between runs) — plus any
+ * comfortably covers one day's worth of drift between runs), plus any
  * connection whose watch was never registered at all (`watchExpiration:
  * null`, e.g. connect-time registration failed and was never retried).
  * `$lte` alone does not match a null `watchExpiration`, so that case needs
@@ -46,7 +46,7 @@ export const gmailWatchRenewalQueue = makeQueue<Record<string, never>>("gmail-wa
 /**
  * Constructs the BullMQ Worker that processes renewal jobs. Deliberately NOT
  * instantiated at module load time (same reasoning as `startRecurringDueWorker`
- * in recurringDue.worker.ts) — a top-level `export const gmailWatchRenewalWorker
+ * in recurringDue.worker.ts): a top-level `export const gmailWatchRenewalWorker
  * = makeWorker(...)` would open a real Redis-backed listener as a side effect of
  * simply importing this module, including from this task's own test file, which
  * only needs `renewExpiringWatches`. Call this explicitly from wherever the app
@@ -60,7 +60,7 @@ export function startGmailWatchRenewalWorker(): Worker<Record<string, never>> {
 
 /**
  * Registers the daily repeatable renewal job. Safe to call on every server
- * restart — BullMQ derives the repeatable job's dedup key deterministically
+ * restart: BullMQ derives the repeatable job's dedup key deterministically
  * from the job name + repeat options, so repeated calls with the same name
  * and `every` upsert the same schedule instead of registering a duplicate
  * (see the identical reasoning documented on `scheduleRecurringDueChecks`).

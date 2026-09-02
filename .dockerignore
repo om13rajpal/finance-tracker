@@ -1,6 +1,6 @@
 # The API image is built with the REPO ROOT as its build context (see render.yaml's
 # `dockerContext: .`), and Docker only ever reads the .dockerignore at the context
-# root — `api/.dockerignore` is never consulted for these builds. Without this file a
+# root; `api/.dockerignore` is never consulted for these builds. Without this file a
 # local `docker build` would copy a developer's real `api/.env` straight into the
 # image alongside the source.
 **/.env

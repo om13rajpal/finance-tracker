@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 /**
  * Sorted · six-digit code entry
  *
- * Bespoke — shadcn has no equivalent primitive in this project, and the
+ * Bespoke. Shadcn has no equivalent primitive in this project, and the
  * six-separate-inputs pattern most OTP components use is worth avoiding: it
  * breaks paste, fights password managers, and gives screen readers six unlabelled
  * boxes instead of one field.
@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
  *  · The caret is hidden and the text is transparent; the slots below render the
  *    value. The input itself stays a real, focusable, labelled control.
  *  · The focus ring is drawn on the slot row via `peer-focus-visible`, as an
- *    outline offset outward — never a box-shadow ring against an ink border.
+ *    outline offset outward: never a box-shadow ring against an ink border.
  */
 export interface OtpInputProps {
   value: string;
@@ -63,7 +63,7 @@ export function OtpInput({
          * Deliberately NO maxLength.
          *
          * maxLength truncates the raw string on the way in, BEFORE onChange can
-         * strip separators — so a password manager or OS autofill pasting
+         * strip separators, so a password manager or OS autofill pasting
          * "123 456" gets clipped to "123 45" and lands as five digits with no
          * error. The length cap belongs after the strip, in the handler below.
          */

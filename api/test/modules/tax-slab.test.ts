@@ -21,7 +21,7 @@ function configFor(financialYear: string, regime: "old" | "new", equity: typeof 
 describe("getCapitalGainsConfig", () => {
   // Regression: this used to throw a 404 with no UI anywhere to create the
   // config it was demanding, hard-blocking every sale for any FY nobody had
-  // manually seeded — see DEFAULT_EQUITY_CAPITAL_GAINS's doc comment.
+  // manually seeded. See DEFAULT_EQUITY_CAPITAL_GAINS's doc comment.
   it("falls back to the statutory default (flagged isDefault) when no config exists for the FY at all", async () => {
     const cg = await getCapitalGainsConfig("2098-99");
     expect(cg.isDefault).toBe(true);
@@ -32,7 +32,7 @@ describe("getCapitalGainsConfig", () => {
   });
 
   it("resolves from whichever single regime document exists (capital gains rules are regime-independent), NOT flagged as default", async () => {
-    // Only the "old" regime document exists — classification must still work rather
+    // Only the "old" regime document exists: classification must still work rather
     // than hard-depending on the "new" document happening to be present.
     await TaxSlabConfig.create(configFor("2090-91", "old", EQUITY));
     const cg = await getCapitalGainsConfig("2090-91");

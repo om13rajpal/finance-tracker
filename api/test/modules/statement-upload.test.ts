@@ -27,12 +27,12 @@ const REAL_PASSWORD = "correct-pw-123";
 
 // No BullMQ worker is running in this test process (same reasoning as every
 // other test file here that talks to a queue directly, e.g.
-// priceRefreshFanout.test.ts) — `startBackgroundWorkers` is never called from
+// priceRefreshFanout.test.ts): `startBackgroundWorkers` is never called from
 // test setup. So a route that enqueues a "statement-process" job leaves it
 // sitting `waiting` in Redis until something processes it. This helper plays
 // the part of that worker for exactly one queued job: pop it, run the same
 // `processStatementUpload` a real worker would, and remove it from the
-// queue — letting these tests exercise the full upload -> process -> poll
+// queue, letting these tests exercise the full upload -> process -> poll
 // flow deterministically, without a real background worker's timing.
 async function runNextQueuedJob(): Promise<void> {
   const [job] = await statementProcessQueue.getJobs(["waiting"]);
@@ -79,7 +79,7 @@ describe("POST /transactions/import-pdf", () => {
     expect(res.body.batchId).toBeTruthy();
     expect(res.body.status).toBe("processing");
 
-    // Nothing has actually run yet — no PendingTransactions, no rows recorded.
+    // Nothing has actually run yet: no PendingTransactions, no rows recorded.
     const processingBatch = await ImportBatch.findById(res.body.batchId);
     expect(processingBatch!.status).toBe("processing");
     expect(processingBatch!.source).toBe("pdf_statement");
@@ -129,7 +129,7 @@ describe("POST /transactions/import-pdf", () => {
     const userId = "user-pdf-dupe-row";
     // The generic-fallback parse of statement-unprotected.pdf's one
     // transaction-shaped line ("01/08/2026 SOME MERCHANT 100.00") yields
-    // date 2026-08-01, amount 100 — pre-seed a matching confirmed Transaction.
+    // date 2026-08-01, amount 100. Pre-seed a matching confirmed Transaction.
     await Transaction.create({
       userId,
       accountId: "acc-1",
@@ -167,8 +167,8 @@ describe("POST /transactions/import-pdf", () => {
       .field("accountId", "acc-1")
       .attach("file", fixturePath("statement-protected.pdf"));
 
-    // The route no longer attempts to unlock the PDF itself — that now
-    // happens inside the worker — so this still 202s even though the file
+    // The route no longer attempts to unlock the PDF itself: that now
+    // happens inside the worker, so this still 202s even though the file
     // will ultimately fail to unlock.
     expect(res.status).toBe(202);
     await runNextQueuedJob();
@@ -251,7 +251,7 @@ describe("GET /transactions/import-pdf/:batchId", () => {
       .set("Cookie", authCookie(other));
     expect(res.status).toBe(404);
 
-    // Drain the job this test's upload enqueued but never let run — otherwise
+    // Drain the job this test's upload enqueued but never let run, otherwise
     // its temp file (written to the real OS tmp dir, not mongodb-memory-server)
     // outlives this test.
     await runNextQueuedJob();

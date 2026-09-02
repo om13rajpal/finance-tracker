@@ -11,7 +11,7 @@ import { applySellFifo } from "../../src/modules/investments/holdings-fifo.js";
 import { computeNetWorth } from "../../src/modules/accounts/accounts.service.js";
 import { computeFullNetWorth } from "../../src/modules/dashboard/net-worth.service.js";
 
-// getHoldingsRollup now merges in live prices via getLatestPrice — mock it so these
+// getHoldingsRollup now merges in live prices via getLatestPrice: mock it so these
 // tests exercise the FIFO/rollup logic without touching Redis/Mongo price lookups or
 // (indirectly) any network client.
 vi.mock("../../src/modules/market-data/price-cache.service.js", () => ({
@@ -68,7 +68,7 @@ describe("investments", () => {
 
     it("weights the average cost by remaining units, not a naive average of buyPrice", async () => {
       // 10 units @ 100 fully untouched, 2 units @ 400 (originally 10, 8 sold).
-      // Naive avg of buyPrice would be (100+400)/2 = 250 — wrong.
+      // Naive avg of buyPrice would be (100+400)/2 = 250, which is wrong.
       // Correct weighted avg = (10*100 + 2*400) / 12 = 1800/12 = 150.
       await HoldingLot.create({
         userId: "user-weighted",
@@ -145,7 +145,7 @@ describe("investments", () => {
       expect(rollup[0].priceStale).toBe(true);
     });
 
-    it("does not crash the whole rollup when a symbol has NO available price — returns null price/value and priceStale true", async () => {
+    it("does not crash the whole rollup when a symbol has NO available price: returns null price/value and priceStale true", async () => {
       mockedGetLatestPrice.mockResolvedValueOnce(null);
 
       await HoldingLot.create({
@@ -164,7 +164,7 @@ describe("investments", () => {
       expect(rollup[0].currentPrice).toBeNull();
       expect(rollup[0].currentValue).toBeNull();
       expect(rollup[0].priceStale).toBe(true);
-      // avgCost is unaffected — it's derived purely from buy-side data, not price.
+      // avgCost is unaffected: it's derived purely from buy-side data, not price.
       expect(rollup[0].avgCost).toBe(50);
     });
 
@@ -424,7 +424,7 @@ describe("investments", () => {
     // lot as STCG/LTCG using the TaxSlabConfig for the sell date's financial year. All
     // sell rows in this describe block fall in FY2026-27 (Aug 2026 trade dates), so a
     // config for that FY must exist or recordSale's slab lookup throws and the row is
-    // recorded as "failed" — a regression Task 3 must avoid, not a real test scenario.
+    // recorded as "failed", a regression Task 3 must avoid, not a real test scenario.
     // Only the "new" regime is seeded because recordSale looks up "new" specifically
     // (capital gains rules are regime-independent, so which regime's document is
     // queried doesn't matter for these figures).
@@ -486,7 +486,7 @@ INFY,01/08/2026,buy,8,1500
       expect(lot!.remainingUnits).toBe(8);
     });
 
-    // Symbols are the join key for everything downstream — FIFO sell matching, the
+    // Symbols are the join key for everything downstream: FIFO sell matching, the
     // per-symbol rollup, and the price lookup. A case variant in one CSV row would
     // otherwise silently fork a position into two half-holdings whose sells can't
     // find their own buys, so parsing normalizes symbol case up front.
@@ -670,7 +670,7 @@ HCLTECH,03/08/2026,buy,2,1200
         expect(updatedAccount!.currentBalance).toBe(70000);
       });
 
-      it("net worth is unchanged by a purchase (cash converts to holdings value 1:1 at the same price) — no double counting", async () => {
+      it("net worth is unchanged by a purchase (cash converts to holdings value 1:1 at the same price): no double counting", async () => {
         const userId = "user-buy-networth";
         const cookie = authCookie(userId);
         const account = await createAccount(userId, 100000);
@@ -679,7 +679,7 @@ HCLTECH,03/08/2026,buy,2,1200
         expect(netWorthBefore).toBe(100000); // no holdings yet, just the account
 
         // Mock this specific symbol's live price to EXACTLY the buy price, so the
-        // holding's market value equals its cost basis — making "cash became
+        // holding's market value equals its cost basis, making "cash became
         // holdings value, 1:1" an exact, hand-checkable equality rather than an
         // approximation that depends on whatever the mocked live price is.
         mockedGetLatestPrice.mockResolvedValueOnce({ price: 3000, fetchedAt: new Date(), stale: false });
@@ -701,13 +701,13 @@ HCLTECH,03/08/2026,buy,2,1200
         expect(await computeNetWorth(userId)).toBe(70000);
 
         // But TOTAL net worth (cash + holdings) is back to exactly where it
-        // started — the 30000 that left the account shows up as the holding's
+        // started: the 30000 that left the account shows up as the holding's
         // value, not as a phantom double-count on top of it.
         const netWorthAfter = await computeFullNetWorth(userId);
         expect(netWorthAfter).toBe(100000);
       });
 
-      it("with NO funding account, the purchase legitimately increases net worth at cost basis (nothing was deducted anywhere) — this is the pre-fix double-count case, now scoped to only apply when the caller has no account context, exactly like a CSV import", async () => {
+      it("with NO funding account, the purchase legitimately increases net worth at cost basis (nothing was deducted anywhere): this is the pre-fix double-count case, now scoped to only apply when the caller has no account context, exactly like a CSV import", async () => {
         const userId = "user-buy-noaccount-networth";
         await request(app)
           .post("/holdings")
@@ -723,10 +723,10 @@ HCLTECH,03/08/2026,buy,2,1200
 
         // This file's default price mock (afterEach) returns 1600 for any
         // symbol not overridden per-test, so the holding's market value is
-        // 1600*5=8000 — the ENTIRE 8000 shows up in net worth with nothing
+        // 1600*5=8000: the ENTIRE 8000 shows up in net worth with nothing
         // deducted from any account, since no accountId was given. This is
         // exactly the double-counting scenario this task fixes for CASES THAT
-        // DO supply an account (see the test above) — deliberately still true
+        // DO supply an account (see the test above), deliberately still true
         // here, because CSV-imported historical holdings (which also never
         // supply an account) must keep behaving exactly as before.
         const netWorth = await computeFullNetWorth(userId);
@@ -859,7 +859,7 @@ HCLTECH,03/08/2026,buy,2,1200
 
       // Regression: this used to 400 with a raw "No tax slab config..." error
       // and no way to proceed, because nothing ever seeds a TaxSlabConfig for
-      // the current FY and there's no UI to create one — a hard production
+      // the current FY and there's no UI to create one: a hard production
       // blocker on selling anything at all. Deliberately does NOT call
       // seedCapitalGainsConfig().
       it("still succeeds (using the statutory default) when no tax slab config exists for the FY, and flags usedDefaultConfig", async () => {

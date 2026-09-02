@@ -17,10 +17,10 @@ import { Icon } from "@/components/app/icons";
  * CHIPS NEVER GUESS. Three of the four shapes below are deliberately NOT
  * filled, because their row has no knowable bucket:
  *
- *   · income        — `type: "income"` has no destination bucket at all.
+ *   · income        : `type: "income"` has no destination bucket at all.
  *                     Solid ink stroke, up arrow.
- *   · expense       — direction known, destination not. Solid ink, down arrow.
- *   · uncategorised — `categoryId` is null. This is the Gmail parser's NORMAL
+ *   · expense       : direction known, destination not. Solid ink, down arrow.
+ *   · uncategorised : `categoryId` is null. This is the Gmail parser's NORMAL
  *                     output, so it is a DASHED --dim-2 ring with a question
  *                     glyph: an actionable gap, never an error, never --alert.
  *
@@ -34,17 +34,17 @@ export interface ChipProps {
   size?: 30 | 22;
   className?: string;
   /**
-   * By default the chip is decorative — the row already names its category in
+   * By default the chip is decorative: the row already names its category in
    * text, and announcing "Guilt-free" twice is noise. Set this on a row where
    * the chip is the ONLY carrier of the bucket.
    */
   labelled?: boolean;
   /**
-   * A real brand logo (logo.dev), shown in place of the bucket glyph — bucket
+   * A real brand logo (logo.dev), shown in place of the bucket glyph (bucket
    * chips only, never on the income/expense/uncategorised shapes, which carry
-   * no merchant identity to illustrate. `null`/`undefined` is the normal case
+   * no merchant identity to illustrate). `null`/`undefined` is the normal case
    * (no confident merchant match) and draws the ordinary glyph. A load failure
-   * falls back to the glyph too — this is never allowed to render as a broken
+   * falls back to the glyph too: this is never allowed to render as a broken
    * image.
    */
   logoUrl?: string | null;
@@ -88,7 +88,7 @@ export function Chip({ spec, size = 30, className, labelled = false, logoUrl }: 
     );
   }
 
-  // income / expense — the direction chips. Hollow, solid ink stroke.
+  // income / expense: the direction chips. Hollow, solid ink stroke.
   return (
     <span className={cn(base, "border-panel border-ink bg-transparent")} {...a11y}>
       <Icon name={spec.kind === "income" ? "in" : "out"} size={glyph} />
@@ -98,7 +98,7 @@ export function Chip({ spec, size = 30, className, labelled = false, logoUrl }: 
 
 /**
  * Swaps to the bucket glyph on a failed image load (unknown domain to
- * logo.dev, network hiccup, ad-blocker) — a chip is never allowed to sit
+ * logo.dev, network hiccup, ad-blocker): a chip is never allowed to sit
  * there as a broken image icon. `src` changing (a different merchant) resets
  * the failure state so a previously-broken chip gets a fresh attempt.
  */

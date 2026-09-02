@@ -11,7 +11,7 @@ function cacheKey(userId: string): string {
 
 /**
  * Clears the cached dashboard aggregate for a user. Called by every mutation handler
- * that changes a Transaction, Account, or Holding — see the design spec's Caching &
+ * that changes a Transaction, Account, or Holding: see the design spec's Caching &
  * Database Optimization section ("Computed aggregates ... invalidate-on-write when a
  * transaction/account/holding changes, not blind TTL, since stale numbers in a finance
  * app are actively misleading"). The full audited list of call sites is in
@@ -31,7 +31,7 @@ export interface BudgetVsSpendRow {
 /**
  * Budget-vs-spend, one row per TOP-LEVEL expense category (`parentCategoryId` unset).
  * A transaction categorized under a CHILD (sub-)category rolls up into its parent's
- * `spent` total — sub-categories never get their own row here, matching the
+ * `spent` total; sub-categories never get their own row here, matching the
  * per-top-level-category budget view.
  */
 export async function computeBudgetVsSpend(userId: string, month: string): Promise<BudgetVsSpendRow[]> {
@@ -74,7 +74,7 @@ export interface DashboardResult {
 }
 
 /**
- * Redis-cached with a 5-minute TTL as a safety net only — the primary freshness
+ * Redis-cached with a 5-minute TTL as a safety net only: the primary freshness
  * mechanism is invalidate-on-write via `invalidateDashboardCache`, called from every
  * mutation handler that changes the underlying data. The TTL exists purely to bound
  * the damage of a missed invalidation call site, not as the main correctness

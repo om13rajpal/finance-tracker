@@ -71,21 +71,21 @@ describe("applyBalanceDelta", () => {
     expect(updated!.currentBalance).toBe(0.3);
   });
 
-  it("never touches balanceAsOf — a plain delta is not a reconciliation event", async () => {
+  it("never touches balanceAsOf: a plain delta is not a reconciliation event", async () => {
     const account = await createAccount("user-delta-asof", "bank", 1000);
     await applyBalanceDelta("user-delta-asof", account._id.toString(), -50);
     const updated = await Account.findById(account._id);
     expect(updated!.balanceAsOf).toBeNull();
   });
 
-  it("does not create a BalanceSnapshot — per-transaction deltas are not individually audited", async () => {
+  it("does not create a BalanceSnapshot: per-transaction deltas are not individually audited", async () => {
     const account = await createAccount("user-delta-nosnap", "bank", 1000);
     await applyBalanceDelta("user-delta-nosnap", account._id.toString(), -50);
     expect(await BalanceSnapshot.countDocuments({ accountId: account._id.toString() })).toBe(0);
   });
 
   // This app's `Transaction.accountId` is a plain unvalidated string, not a real
-  // foreign-key reference — much of the existing test suite (and, in principle,
+  // foreign-key reference: much of the existing test suite (and, in principle,
   // real bad data) uses placeholder ids that aren't valid ObjectIds at all. A
   // malformed id must not crash a request whose real work (creating the
   // Transaction) already succeeded.
@@ -142,7 +142,7 @@ describe("reconcileBalance", () => {
     expect(applied).toBe(true);
     const updated = await Account.findById(account._id);
     expect(updated!.currentBalance).toBe(7000);
-    // balanceAsOf is left exactly as it was — an unknown-date reconciliation
+    // balanceAsOf is left exactly as it was: an unknown-date reconciliation
     // can't advance the freshness marker.
     expect(updated!.balanceAsOf!.toISOString()).toBe(new Date("2026-08-15").toISOString());
   });
@@ -176,7 +176,7 @@ describe("reconcileBalance", () => {
     expect(untouched!.currentBalance).toBe(100);
   });
 
-  // Deliberately DOES throw (unlike applyBalanceDelta) for a malformed accountId —
+  // Deliberately DOES throw (unlike applyBalanceDelta) for a malformed accountId:
   // statementProcess.worker.ts relies on exactly this to fail an async job on a
   // genuine accountId typo. Callers that need tolerance (pending.routes.ts, a
   // synchronous user-facing request) get it via applyConfirmedTransactionBalanceEffect
@@ -228,7 +228,7 @@ describe("applyConfirmedTransactionBalanceEffect", () => {
       8000,
       new Date("2026-08-16") // older than the already-applied 2026-08-20
     );
-    // Must remain exactly 9500 — not 9500-300=9200 (a fallback delta) and not 8000
+    // Must remain exactly 9500: not 9500-300=9200 (a fallback delta) and not 8000
     // (the stale reconciliation).
     expect((await Account.findById(account._id))!.currentBalance).toBe(9500);
     expect(balanceDeltaApplied).toBe(false);

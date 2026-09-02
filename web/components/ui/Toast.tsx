@@ -9,7 +9,7 @@ import { Icon } from "@/components/app/icons";
  * Sorted · toasts
  *
  * A toast here is a cream panel with the house 1.5px ink border and the notice
- * radius. No lift, no blur, no coloured fill behind the words — the shadow
+ * radius. No lift, no blur, no coloured fill behind the words: the shadow
  * policy has exactly one exception and it is the stamp under a button, not
  * this.
  *
@@ -22,7 +22,7 @@ import { Icon } from "@/components/app/icons";
  * decorative colour and it never fills a whole surface.
  *
  * ANNOUNCEMENT. The live region is `polite` and it is in the DOM from first
- * render — a live region inserted at the same moment as its content is
+ * render: a live region inserted at the same moment as its content is
  * frequently missed by screen readers, because there was nothing to observe
  * until the change had already happened.
  */
@@ -56,8 +56,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const showToast = useCallback(
     (message: string, variant: Toast["variant"] = "error") => {
-      // Date.now() collides when two toasts fire inside the same millisecond —
-      // which happens on a mutation that reports twice — and React then renders
+      // Date.now() collides when two toasts fire inside the same millisecond,
+      // which happens on a mutation that reports twice, and React then renders
       // two children with the same key.
       const id = Date.now() + Math.random();
       setToasts((prev) => [...prev, { id, message, variant }]);

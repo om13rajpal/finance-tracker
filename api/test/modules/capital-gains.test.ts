@@ -82,7 +82,7 @@ describe("recordSale", () => {
 
   // Regression: recording a sale used to hard-fail (and, per the old version of
   // this test, leave the lot untouched) whenever no TaxSlabConfig existed for
-  // the sell's FY — with no UI anywhere to create one. It now succeeds using
+  // the sell's FY, with no UI anywhere to create one. It now succeeds using
   // the built-in statutory default and flags the resulting event(s) as such.
   it("succeeds using the statutory default (flagged) when no tax slab config exists for the sell's FY", async () => {
     // Deliberately does NOT seed a TaxSlabConfig.

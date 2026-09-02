@@ -4,7 +4,7 @@ import { MerchantCleanupCache } from "../models/MerchantCleanupCache.js";
 /**
  * Upgrades tier-3 (generic-fallback) results from `cleanMerchantLabel` using
  * Google's free Gemini 2.5 Flash model, with a persistent cache so a given
- * narration SHAPE only ever gets sent to the LLM once. Never throws — a
+ * narration SHAPE only ever gets sent to the LLM once. Never throws: a
  * missing key, a network failure, a timeout, or a nonsense response all fall
  * back to the heuristic label the caller already computed. This is a
  * best-effort readability upgrade, never something a statement import

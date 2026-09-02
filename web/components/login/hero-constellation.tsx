@@ -14,7 +14,7 @@ import gsap from "gsap";
  * Two of those colours (#8A4BD1, #C43C63) were retired with that taxonomy, so
  * keeping six would leave this screen as the sole home of two hexes that exist
  * nowhere else in the system. The constellation's meaning comes from it BEING
- * the taxonomy — decoupled to ornament it is just dots.
+ * the taxonomy: decoupled to ornament it is just dots.
  *
  * MOTION, all locked:
  *
@@ -24,7 +24,7 @@ import gsap from "gsap";
  *  · The stage gesture: on email → code, the six connectors advance their dash
  *    pattern by exactly one 10-unit cycle (dasharray `4 6`) over 320ms. Because
  *    the pattern is periodic, the final frame is pixel-identical to the first.
- *    That is the whole trick — the gesture can be skipped under reduced motion,
+ *    That is the whole trick: the gesture can be skipped under reduced motion,
  *    with JS disabled, or on a slow paint, at zero cost. It can never become a
  *    dependency.
  *
@@ -82,7 +82,7 @@ export function HeroConstellation({ stage }: { stage: "email" | "code" }) {
   const played = React.useRef(false);
   const prevStage = React.useRef(stage);
 
-  // Entrance — once, on mount.
+  // Entrance, once, on mount.
   React.useEffect(() => {
     const el = root.current;
     if (!el || played.current) return;
@@ -103,7 +103,7 @@ export function HeroConstellation({ stage }: { stage: "email" | "code" }) {
     return () => ctx.revert();
   }, []);
 
-  // Stage gesture — one dash cycle, end frame === start frame.
+  // Stage gesture: one dash cycle, end frame === start frame.
   React.useEffect(() => {
     if (prevStage.current === stage) return;
     prevStage.current = stage;
@@ -134,7 +134,7 @@ export function HeroConstellation({ stage }: { stage: "email" | "code" }) {
     >
       <title id="hero-title">Sorted</title>
       <desc id="hero-desc">
-        Four spending buckets — guilt-free, investments, savings and fixed costs — arranged
+        Four spending buckets (guilt-free, investments, savings and fixed costs) arranged
         around a rupee symbol and joined to it by dotted connector lines.
       </desc>
 

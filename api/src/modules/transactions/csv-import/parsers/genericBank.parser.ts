@@ -2,7 +2,7 @@ import { parse } from "csv-parse/sync";
 import { ParsedBankRow } from "./types.js";
 
 // Bank statement dates are DD/MM/YYYY (not the US MM/DD/YYYY that JS's `new Date(string)`
-// would assume) — parsed explicitly here via a regex on (day, month, year) capture groups,
+// would assume), parsed explicitly here via a regex on (day, month, year) capture groups,
 // never handed to the Date constructor as a raw string, so this is unambiguous even for
 // dates like "03/04/2024" where both interpretations would otherwise be valid.
 export function parseGenericBankCsv(csvText: string): (ParsedBankRow | { error: string })[] {

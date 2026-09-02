@@ -6,13 +6,13 @@ process.env.MONGO_URI ??= "mongodb://localhost/unused";
  * Mongo is isolated per run by mongodb-memory-server, but Redis was not: the
  * tests connected to exactly the same instance and the same database a running
  * `pnpm dev:api` uses. That is a real, reproducible cross-process failure, not
- * a theoretical one — with the dev API up, two tests fail every time:
+ * a theoretical one: with the dev API up, two tests fail every time:
  *
- *   · priceRefreshFanout "enqueues one job per distinct symbol" — the dev
+ *   · priceRefreshFanout "enqueues one job per distinct symbol": the dev
  *     server's live price-refresh WORKER consumes a job out of the shared queue
  *     between the enqueue and the assertion, so only one of the two is still
  *     waiting when the test looks.
- *   · dashboard "computeFullNetWorth" — a `price:INFY` key cached by ordinary
+ *   · dashboard "computeFullNetWorth": a `price:INFY` key cached by ordinary
  *     dev usage is read by `getLatestPrice`, so the holding is valued at a live
  *     price instead of the cost basis the test set up.
  *
@@ -34,7 +34,7 @@ process.env.GMAIL_PUBSUB_TOPIC ??= "projects/test-project/topics/gmail-notificat
 process.env.GMAIL_WEBHOOK_SECRET ??= "test-webhook-secret";
 // Forced blank, not left unset: a real key sitting in a developer's local
 // api/.env would otherwise leak into every test run (dotenv only fills in
-// keys process.env doesn't already have — see config/env.ts), making the
+// keys process.env doesn't already have; see config/env.ts), making the
 // suite silently start making real, slow, rate-limited network calls to
 // Gemini and turning deterministic tests into flaky ones. Individual tests
 // that need to exercise the LLM path mock `config/env.js` directly (see

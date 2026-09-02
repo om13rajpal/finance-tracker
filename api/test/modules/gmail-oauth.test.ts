@@ -116,14 +116,14 @@ describe("gmail oauth flow", () => {
 
   // /gmail/oauth/callback cannot sit behind requireAuth (Google redirects the browser
   // to it directly), so the userId it acts on comes entirely from the `state` query
-  // param. These pin that `state` must be a value this API itself minted — an
+  // param. These pin that `state` must be a value this API itself minted: an
   // attacker-supplied one must never be able to attach THEIR Gmail account to this
   // user's data, or create a connection document for an arbitrary userId.
   // Google redirects the browser straight to this callback from accounts.google.com,
   // so it must resolve WITHOUT any session cookie. Reaching the gmail router's own
   // 400 (rather than a 401 from an earlier, root-mounted authenticated router) is what
-  // proves that — see the mount-order comment in app.ts.
-  it("is reachable with no session cookie at all — the callback is not behind requireAuth", async () => {
+  // proves that: see the mount-order comment in app.ts.
+  it("is reachable with no session cookie at all, the callback is not behind requireAuth", async () => {
     const res = await request(app).get("/gmail/oauth/callback?code=mock-code&state=whatever");
     expect(res.status).not.toBe(401);
   });
@@ -143,7 +143,7 @@ describe("gmail oauth flow", () => {
     expect(await GmailConnection.countDocuments({})).toBe(before);
   });
 
-  it("rejects a session JWT replayed as state — the signed state is purpose-scoped, not any token signed with the same secret", async () => {
+  it("rejects a session JWT replayed as state, the signed state is purpose-scoped, not any token signed with the same secret", async () => {
     const sessionToken = jwt.sign({ userId: "replay-user" }, process.env.JWT_SECRET as string);
     const res = await request(app).get(`/gmail/oauth/callback?code=mock-code&state=${sessionToken}`);
 

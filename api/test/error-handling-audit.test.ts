@@ -50,7 +50,7 @@ describe("global error handling", () => {
   // AFTER Task 26's original audit ran, and shipped without the try/catch ->
   // next(err) wrapper every other async handler uses. Under Express 4 that means an
   // unexpected rejection (Mongo unreachable, a cast error) never reaches
-  // errorHandler at all — the request just hangs until the client times out. This
+  // errorHandler at all: the request just hangs until the client times out. This
   // test pins the pattern for that handler specifically.
   it("GET /auth/me forwards an unexpected lookup failure to the error handler instead of hanging", async () => {
     const spy = vi.spyOn(User, "findById").mockImplementation((() => {

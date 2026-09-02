@@ -86,7 +86,7 @@ describe("deductions", () => {
     expect(await TaxDeduction.countDocuments({ userId, source: "auto_elss" })).toBe(1);
 
     // With the tagged lot gone, the sync must delete the stale auto row rather than
-    // leave a zero-amount one behind — an auto row can't be deleted through the API,
+    // leave a zero-amount one behind: an auto row can't be deleted through the API,
     // so a lingering Rs. 0 entry would be permanently stuck in the user's list.
     await HoldingLot.deleteOne({ _id: lot._id });
     await syncAutoDeductions(userId, "2025-26");

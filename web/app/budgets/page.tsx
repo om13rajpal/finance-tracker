@@ -39,7 +39,7 @@ import { useToast } from "@/components/ui/Toast";
  *
  * Two jobs on one screen, in the order they matter.
  *
- * FIRST, THE SPLIT. Four rows — one per bucket — showing what this month is
+ * FIRST, THE SPLIT. Four rows, one per bucket, showing what this month is
  * budgeted to do with the money and what has actually gone. This is the screen
  * where the taxonomy stops being a colour scheme and becomes a plan.
  *
@@ -123,7 +123,7 @@ export default function BudgetsPage() {
               // would tell someone their plan had vanished.
               <Notice
                 title="The split is unavailable right now."
-                body="Your categories and their limits are untouched — the app just could not read them."
+                body="Your categories and their limits are untouched. The app just could not read them."
               />
             ) : totalLimit === 0 ? (
               <EmptyState
@@ -200,7 +200,7 @@ export default function BudgetsPage() {
             ) : tree.length === 0 ? (
               <EmptyState
                 title="No categories yet."
-                body="Add one on the right. Name it whatever you like — the bucket you put it in is what gives it a colour."
+                body="Add one on the right. Name it whatever you like: the bucket you put it in is what gives it a colour."
               />
             ) : (
               tree.map((node) => (
@@ -215,7 +215,7 @@ export default function BudgetsPage() {
             )}
             {dashboard.isError && !categories.isError ? (
               <PanelFooter>
-                Spend figures are unavailable right now — limits below are still editable
+                Spend figures are unavailable right now, limits below are still editable
               </PanelFooter>
             ) : null}
           </Panel>
@@ -284,7 +284,7 @@ function CategoryRow({
         style={{ paddingLeft: depth * 22 }}
       >
         {/* An INCOME category has a bucket in the API, but a bucket means
-            "where spending goes" — for money arriving it is a field with no
+            "where spending goes"; for money arriving it is a field with no
             meaning. Colouring it would be the chip guessing. It gets the same
             hollow up-arrow every other income row in the product gets. */}
         <Chip
@@ -500,10 +500,10 @@ function AddCategoryPanel({ tree }: { tree: CategoryNode[] }) {
             value={form.parentCategoryId}
             onChange={(e) => setForm({ ...form, parentCategoryId: e.target.value })}
           >
-            <option value="">None — top level</option>
+            <option value="">None (top level)</option>
             {flat.map(({ node, depth }) => (
               <option key={node._id} value={node._id}>
-                {"— ".repeat(depth)}
+                {"– ".repeat(depth)}
                 {node.name}
               </option>
             ))}

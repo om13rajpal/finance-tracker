@@ -68,7 +68,7 @@ describe("email-parsed transaction confirm flow creates a working categorization
       },
     });
 
-    // Real Task 22 code path — not a hand-constructed PendingTransaction.
+    // Real Task 22 code path, not a hand-constructed PendingTransaction.
     const { processGmailNotification } = await import(
       "../../src/jobs/workers/gmailEmailParse.worker.js"
     );
@@ -78,7 +78,7 @@ describe("email-parsed transaction confirm flow creates a working categorization
     expect(pending).not.toBeNull();
     expect(pending!.merchant).toBe("ZOMATO");
 
-    // Task 22 made accountId nullable on email-parsed pending transactions —
+    // Task 22 made accountId nullable on email-parsed pending transactions:
     // confirm must supply one via the edit fields.
     const confirmRes = await request(app)
       .post(`/pending-transactions/${pending!._id}/confirm`)
@@ -87,7 +87,7 @@ describe("email-parsed transaction confirm flow creates a working categorization
     expect(confirmRes.status).toBe(200);
 
     // A SEPARATE, later /transactions call with the same merchant text and no
-    // categoryId — this is the real proof the auto-created rule works, not
+    // categoryId: this is the real proof the auto-created rule works, not
     // just that a CategorizationRule document exists somewhere.
     const newTxRes = await request(app)
       .post("/transactions")
@@ -173,7 +173,7 @@ describe("HDFC email-embedded balance ('Avl Bal') reconciliation", () => {
       currentBalance: 100,
     });
 
-    // Newer transaction (Aug 20) arrives/confirms FIRST — e.g. Gmail history
+    // Newer transaction (Aug 20) arrives/confirms FIRST: e.g. Gmail history
     // backfill delivered it out of chronological order.
     const newer = await PendingTransaction.create({
       userId,
@@ -208,8 +208,8 @@ describe("HDFC email-embedded balance ('Avl Bal') reconciliation", () => {
       .send({});
     expect(olderRes.status).toBe(200);
 
-    // Must STILL be 9000 — the older email's 9500 figure (and its own -200 delta,
-    // which is deliberately never applied as a fallback either — see
+    // Must STILL be 9000: the older email's 9500 figure (and its own -200 delta,
+    // which is deliberately never applied as a fallback either, see
     // applyConfirmedTransactionBalanceEffect's doc comment) must not overwrite the
     // more current, already-applied reconciliation.
     const finalAccount = await Account.findById(account._id);
