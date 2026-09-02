@@ -219,6 +219,39 @@ describe("processStatementUpload (statement-process worker)", () => {
       expect(updatedBatch!.status).toBe("completed");
     });
 
+    // Regression: "Detect automatically" (the manual upload form's default,
+    // and the only option on the automatic-attachment path when institution
+    // guessing doesn't apply) used to silently mean "no parserKey, use the
+    // generic parser" every time. The generic parser reads the LAST number
+    // on a line, which for this HDFC layout is the Closing Balance column,
+    // not the actual transaction amount: a real, wrong-but-successful parse
+    // with no visible error, found against a real HDFC PPF e-statement whose
+    // amounts all came back as the running balance instead.
+    it("auto-detects HDFC from the statement's own footer text when no parserKey is supplied", async () => {
+      const userId = "user-worker-autodetect-hdfc";
+      const account = await createAccount(userId, 0);
+      const batch = await createProcessingBatch(userId);
+      const filePath = await writeTempFile(fixtureBuffer("statement-hdfc-real.pdf"));
+
+      await processStatementUpload({
+        batchId: batch._id.toString(),
+        userId,
+        accountId: account._id.toString(),
+        // No parserKey at all: this is what "Detect automatically" sends.
+        filePath,
+      });
+
+      const pending = await PendingTransaction.find({ userId }).sort({ date: 1 });
+      expect(pending).toHaveLength(2);
+      // The real transaction amounts (5,000 then 3,000), not the closing
+      // balances (5,000 then 8,000) the generic parser would have grabbed.
+      expect(pending[0].amount).toBe(5000);
+      expect(pending[1].amount).toBe(3000);
+
+      const updatedAccount = await Account.findById(account._id);
+      expect(updatedAccount!.currentBalance).toBe(8000);
+    });
+
     it("does not touch the account balance (or record a closing balance) when the parser has no closing-balance support", async () => {
       const userId = "user-worker-balance-generic";
       const account = await createAccount(userId, 500);

@@ -6,6 +6,7 @@ import { ImportBatch } from "../../models/ImportBatch.js";
 import type { StatementRowResult } from "../../modules/statements/types.js";
 import { findLikelyDuplicate } from "../../modules/transactions/duplicate-detection.js";
 import { tryUnlockPdf } from "../../modules/statements/pdf-unlock.service.js";
+import { detectStatementParserKey } from "../../modules/statements/detect-bank.js";
 import {
   parseStatementRows,
   findStatementClosingBalance,
@@ -229,7 +230,18 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
     return;
   }
 
-  const rows = parseStatementRows(unlocked.pages, parserKey);
+  // `parserKey` is whatever the uploader explicitly picked from the "Statement
+  // format" dropdown. When they left it on "Detect automatically" (the
+  // default, and the ONLY option for every Gmail-auto-ingested attachment,
+  // which has no such dropdown), fall back to reading the bank's own name
+  // straight off the unlocked document before giving up on a bank-specific
+  // parser entirely: without this, "detect automatically" detected nothing
+  // and silently used the generic parser, which picks the LAST number on
+  // each line, i.e. a bank's own closing-balance column for a statement like
+  // HDFC's, instead of the actual transaction amount, an incorrect-but-
+  // successful parse with no visible error.
+  const resolvedParserKey = parserKey ?? detectStatementParserKey(unlocked.pages);
+  const rows = parseStatementRows(unlocked.pages, resolvedParserKey);
   // The statement's OWN stated closing balance, when the parser for this
   // bank knows how to find one, read straight off the document, not summed
   // from whichever rows below parse cleanly, so it's used to reconcile the
@@ -237,12 +249,12 @@ export async function processStatementUpload(data: StatementProcessJob): Promise
   // function). `null` for a parser with no closing-balance support yet
   // (everything except HDFC today): nothing to reconcile with, not an
   // error.
-  const closingBalance = findStatementClosingBalance(unlocked.pages, parserKey);
+  const closingBalance = findStatementClosingBalance(unlocked.pages, resolvedParserKey);
   // The statement's own printed OPENING balance, when a finder is registered for
   // this parser (HDFC only, see `STATEMENT_OPENING_BALANCE_REGISTRY`'s doc
   // comment). Used purely for the data-quality cross-check below, never to
   // reconcile the account directly.
-  const openingBalance = findStatementOpeningBalance(unlocked.pages, parserKey);
+  const openingBalance = findStatementOpeningBalance(unlocked.pages, resolvedParserKey);
   const { expectedClosingBalance, mismatch: closingBalanceMismatch } = checkClosingBalanceReconciliation(
     rows,
     openingBalance,

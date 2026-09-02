@@ -28,10 +28,17 @@ function sha256(buffer: Buffer): string {
  *    to review, never a confirmed `Transaction` directly, which is also why
  *    this route never calls `invalidateDashboardCache`; only the pending
  *    confirm route does, once something is actually confirmed.
- *  - File-level idempotency via a SHA-256 hash: re-uploading the exact same
- *    bytes for this user 409s instead of reprocessing and duplicating pending
- *    rows, unless every prior batch for that hash ended in `"failed"`, in
- *    which case the upload is allowed to retry.
+ *  - Re-uploading the exact same bytes is always allowed, not blocked as a
+ *    dupe: unlike CSV import (whose rows land as confirmed `Transaction`s
+ *    outright), a PDF's rows are never auto-confirmed, so an earlier upload
+ *    might have parsed badly (wrong bank layout, since-fixed parser bug) and
+ *    the person's only recourse is to try again. Duplicate PROTECTION still
+ *    happens, just per-row: each parsed row is checked against `Transaction`
+ *    via `findLikelyDuplicate` in the worker, same as CSV import, so a row
+ *    that matches something already confirmed is reported as a duplicate in
+ *    `rowResults` (see `possible_duplicate`) instead of creating a second
+ *    `PendingTransaction` for it. `fileHash` is still recorded on the batch,
+ *    purely for display/debugging, not as a gate.
  *  - The actual unlock/parse/insert work happens asynchronously in the
  *    `statement-process` BullMQ worker (`statementProcess.worker.ts`), not
  *    inline in this request. A 500-page statement's unlock + parse + N
@@ -55,12 +62,7 @@ statementUploadRouter.post("/import-pdf", upload.single("file"), async (req, res
     if (!accountId) return res.status(400).json({ error: "accountId is required" });
 
     const parserKey = (req.body.parserKey as string | undefined) || undefined;
-
     const fileHash = sha256(req.file.buffer);
-    const existingBatch = await ImportBatch.findOne({ userId, fileHash, status: { $ne: "failed" } });
-    if (existingBatch) {
-      return res.status(409).json({ error: "This statement has already been imported", batchId: existingBatch._id });
-    }
 
     // Write the upload to a temp file on local disk and pass only its path
     // through the BullMQ job payload, not the file's bytes (as base64 or

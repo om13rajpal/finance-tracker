@@ -101,8 +101,13 @@ describe("POST /transactions/import-pdf", () => {
     expect(pending!.categoryId).toBeNull();
   });
 
-  it("re-uploading identical bytes returns 409 and creates nothing new", async () => {
-    const userId = "user-pdf-dupe-upload";
+  it("re-uploading identical bytes is always allowed (never blocked as a whole-file dupe)", async () => {
+    // Unlike CSV import, a PDF's rows land as PendingTransactions, never
+    // auto-confirmed, so an earlier upload might have parsed under the
+    // wrong bank layout (a since-fixed parser bug, or the person picked the
+    // wrong "Statement format" by mistake): re-uploading has to be allowed,
+    // not permanently blocked by the first attempt's bytes.
+    const userId = "user-pdf-reupload-allowed";
     const first = await request(app)
       .post("/transactions/import-pdf")
       .set("Cookie", authCookie(userId))
@@ -111,18 +116,52 @@ describe("POST /transactions/import-pdf", () => {
     expect(first.status).toBe(202);
     await runNextQueuedJob();
 
-    const batchCountAfterFirst = await ImportBatch.countDocuments({ userId });
-    const pendingCountAfterFirst = await PendingTransaction.countDocuments({ userId });
+    const second = await request(app)
+      .post("/transactions/import-pdf")
+      .set("Cookie", authCookie(userId))
+      .field("accountId", "acc-1")
+      .attach("file", fixturePath("statement-unprotected.pdf"));
+    expect(second.status).toBe(202);
+    await runNextQueuedJob();
+
+    // Neither upload's rows are confirmed Transactions, so the second
+    // upload's row isn't flagged a duplicate of the first (findLikelyDuplicate
+    // only checks confirmed Transactions, see the dedicated test below for
+    // the case where it should fire): both batches' rows land as pending.
+    expect(await PendingTransaction.countDocuments({ userId })).toBe(2);
+  });
+
+  it("flags a re-uploaded row as a duplicate once the earlier upload's row is actually confirmed", async () => {
+    const userId = "user-pdf-reupload-after-confirm";
+    const first = await request(app)
+      .post("/transactions/import-pdf")
+      .set("Cookie", authCookie(userId))
+      .field("accountId", "acc-1")
+      .attach("file", fixturePath("statement-unprotected.pdf"));
+    expect(first.status).toBe(202);
+    await runNextQueuedJob();
+
+    const firstPending = await PendingTransaction.findOne({ userId });
+    await request(app)
+      .post(`/pending-transactions/${firstPending!._id}/confirm`)
+      .set("Cookie", authCookie(userId))
+      .send({ accountId: "acc-1" });
 
     const second = await request(app)
       .post("/transactions/import-pdf")
       .set("Cookie", authCookie(userId))
       .field("accountId", "acc-1")
       .attach("file", fixturePath("statement-unprotected.pdf"));
-    expect(second.status).toBe(409);
+    expect(second.status).toBe(202);
+    await runNextQueuedJob();
 
-    expect(await ImportBatch.countDocuments({ userId })).toBe(batchCountAfterFirst);
-    expect(await PendingTransaction.countDocuments({ userId })).toBe(pendingCountAfterFirst);
+    const secondBatch = await ImportBatch.findById(second.body.batchId);
+    const dupRow = secondBatch!.rowResults.find((r: { reason?: string }) => r.reason === "possible_duplicate");
+    expect(dupRow).toBeTruthy();
+    // The first upload's row was already confirmed (deleted from the pending
+    // queue as part of that), and the second upload's matching row never
+    // became a second pending row either: zero pending rows either way.
+    expect(await PendingTransaction.countDocuments({ userId })).toBe(0);
   });
 
   it("re-uploading the same bytes after a FAILED prior batch is allowed to retry, not blocked as a dupe", async () => {

@@ -1351,10 +1351,6 @@ function ImportPanel({
         credentials: "include",
         body,
       });
-      if (res.status === 409) {
-        showToast("You've already imported this exact statement.");
-        return;
-      }
       if (!res.ok) {
         const payload = await res.json().catch(() => ({}));
         throw new Error(payload.error ?? `Import failed: ${res.status}`);
@@ -1537,13 +1533,40 @@ function ImportPanel({
         {pdfBatch?.status === "completed" ? (
           (() => {
             const waiting = pdfBatch.rowResults.filter((r) => r.status === "success").length;
-            return waiting > 0 ? (
+            const duplicates = pdfBatch.rowResults.filter((r) => r.reason === "possible_duplicate").length;
+            const otherFailed = pdfBatch.rowResults.filter(
+              (r) => r.status === "failed" && r.reason !== "possible_duplicate"
+            ).length;
+
+            if (waiting === 0 && duplicates === 0 && otherFailed === 0) {
+              return (
+                <Notice
+                  tone="quiet"
+                  title="Couldn't find any transaction rows in that PDF."
+                  body="The file unlocked fine, but nothing in it matched a recognisable statement layout. A scanned image with no text layer behaves this way too."
+                />
+              );
+            }
+
+            return (
               <div className="rounded-panel border-panel border-ink p-18">
                 <SectionLabel>§ Import result</SectionLabel>
                 <p className="m-0 mt-8 text-body-s">
-                  {waiting} row{waiting === 1 ? "" : "s"} read from the statement, waiting for you
-                  in “From your inbox” above.
+                  {waiting > 0
+                    ? `${waiting} new row${waiting === 1 ? "" : "s"} waiting for you in “From your inbox” above.`
+                    : "No new rows: every parsed row matched a transaction you already have."}
                 </p>
+                {duplicates > 0 ? (
+                  <p className="m-0 mt-8 text-body-s text-dim-2">
+                    {duplicates} row{duplicates === 1 ? "" : "s"} matched a transaction already on this
+                    account and {duplicates === 1 ? "was" : "were"} skipped, not filed twice.
+                  </p>
+                ) : null}
+                {otherFailed > 0 ? (
+                  <p className="m-0 mt-8 text-body-s text-dim-2">
+                    {otherFailed} row{otherFailed === 1 ? "" : "s"} could not be read.
+                  </p>
+                ) : null}
                 {/* Non-blocking heads-up: this statement's own date range
                     overlaps one already imported for this account, a normal
                     thing to happen (a re-download, or a fresh statement that
@@ -1554,12 +1577,6 @@ function ImportPanel({
                   <p className="m-0 mt-8 text-body-s text-dim-2">{pdfBatch.overlapWarning}</p>
                 ) : null}
               </div>
-            ) : (
-              <Notice
-                tone="quiet"
-                title="Couldn't find any transaction rows in that PDF."
-                body="The file unlocked fine, but nothing in it matched a recognisable statement layout. A scanned image with no text layer behaves this way too."
-              />
             );
           })()
         ) : null}
